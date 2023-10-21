@@ -4,13 +4,25 @@ A repository to test various features of the Sinowealth SH68F90A 8051-based micr
 
 ## Features
 
+### MCU
+
 - [x] 3.3V LDO
 - [x] CPU Clock (use 24Mhz as SYSCLK)
-- [x] Serial (EUART)
-    - [x] transmit
-    - [ ] receive
-- [ ] PWM
+- [x] GPIO
+- [x] UART
+    - [x] Transmit
+    - [ ] Receive
+- [x] PWM
+- [ ] SPI
 - [ ] USB
+
+### Keyboard
+
+- [x] ISP (jump)
+- [x] Key Scan
+- [x] RGB Matrix
+- [ ] USB HID
+- [ ] Wireless
 
 ## Code Options
 

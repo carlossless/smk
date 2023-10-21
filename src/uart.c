@@ -3,7 +3,7 @@
 #include "watchdog.h"
 #include <stdint.h>
 
-#define UART_BPS  115200
+#define UART_BPS  14400
 #define UART_MODE 1
 #define UART_RX_EN 0
 #define UART_SBRT_EN 1
