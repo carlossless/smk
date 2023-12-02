@@ -1,5 +1,4 @@
 #include "pwm.h"
-#include "sh68f90a.h"
 #include "matrix.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -227,7 +226,7 @@ void pwm_set_all_columns(uint16_t intensity)
     PWM42DUTY2L = adjusted;
 }
 
-void pwm_interrupt_handler() __interrupt (8)
+void pwm_interrupt_handler() __interrupt (_INT_PWM0)
 {
-    matrix_scan();
+    matrix_scan_step();
 }

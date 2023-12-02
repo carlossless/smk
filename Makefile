@@ -12,14 +12,27 @@ FAMILY = mcs51
 PROC = mcs51
 
 FREQ_SYS ?= 24000000
-XRAM_SIZE ?= 0x0400
+XRAM_SIZE ?= 0x1000
 XRAM_LOC ?= 0x0000
 CODE_SIZE ?= 0xf000 # 61440 bytes (leaving the remaining 4096 for bootloader)
+
+SMK_VERSION ?= alpha
+
+# Ease backup & restore process by keeping same vid & pid as nuphy-air60
+USB_VID ?= 0x05ac
+USB_PID ?= 0x024f
 
 CFLAGS := -V -mmcs51 --model-small \
 	--xram-size $(XRAM_SIZE) --xram-loc $(XRAM_LOC) \
 	--code-size $(CODE_SIZE) \
-	-I$(ROOT_DIR)../include -DFREQ_SYS=$(FREQ_SYS) -DWATCHDOG_ENABLE=1
+	--std-c2x \
+	-I$(ROOT_DIR)../include \
+	-DDEBUG=1 \
+	-DFREQ_SYS=$(FREQ_SYS) \
+	-DWATCHDOG_ENABLE=1 \
+	-DUSB_VID=$(USB_VID) \
+	-DUSB_PID=$(USB_PID) \
+	-DSMK_VERSION=$(SMK_VERSION)
 LFLAGS := $(CFLAGS)
 
 AFLAGS= -plosgff
@@ -35,7 +48,7 @@ clean:
 	rm -rf $(BINDIR) $(OBJDIR)
 
 flash: $(BINDIR)/main.hex
-	$(FLASHER) $<
+	$(FLASHER) $(BINDIR)/main.hex
 
 $(OBJDIR)/%.rel: $(SRCDIR)/%.c
 	@mkdir -p $(@D)

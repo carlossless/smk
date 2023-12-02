@@ -1,5 +1,5 @@
-#ifndef _CLOCK_H_
-#define _CLOCK_H_
+#ifndef CLOCK_H
+#define CLOCK_H
 
 void clock_init();
 

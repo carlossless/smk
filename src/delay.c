@@ -1,25 +1,10 @@
 #include "delay.h"
-#include <stdint.h>
 #include "watchdog.h"
+#include "utils.h"
+#include <stdint.h>
 
-// very naive implementation
-// likely not very accurate
+// very naive implementation, not very accurate or optimized
 // hardcoded for F_SYS = 12Mhz
-
-#define delay3NOP() \
-    __asm     \
-        nop   \
-        nop   \
-        nop   \
-    __endasm  \
-
-#define delay4NOP() \
-    __asm     \
-        nop   \
-        nop   \
-        nop   \
-        nop   \
-    __endasm  \
 
 void delay_ms(uint16_t cnt)
 {
@@ -37,15 +22,15 @@ void delay_us(uint16_t cnt)
 
 #ifdef WATCHDOG_ENABLE
         CLR_WDT();
-        delay3NOP();
+        _nop_3_();
 #else
-        delay4NOP();
+        _nop_4_();
 #endif
 
-        delay4NOP();
-        delay4NOP();
-        delay4NOP();
-        delay4NOP();
-        delay4NOP();
+        _nop_4_();
+        _nop_4_();
+        _nop_4_();
+        _nop_4_();
+        _nop_4_();
     }
 }

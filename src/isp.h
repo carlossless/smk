@@ -1,5 +1,5 @@
-#ifndef _ISP_H_
-#define _ISP_H_
+#ifndef ISP_H
+#define ISP_H
 
 void isp_jump();
 

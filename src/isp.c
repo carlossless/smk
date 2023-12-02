@@ -1,6 +1,7 @@
 #include "isp.h"
 #include "sh68f90a.h"
 
+// *INDENT-OFF*
 void isp_jump() __naked
 {
     __asm
@@ -10,3 +11,4 @@ void isp_jump() __naked
     ljmp 0xff00
     __endasm;
 }
+// *INDENT-ON*

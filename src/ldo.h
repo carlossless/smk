@@ -1,5 +1,5 @@
-#ifndef _LDO_H_
-#define _LDO_H_
+#ifndef LDO_H
+#define LDO_H
 
 void ldo_init();
 
