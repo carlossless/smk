@@ -34,11 +34,16 @@ CFLAGS := -V -mmcs51 --model-small \
 	-DUSB_PID=$(USB_PID) \
 	-DSMK_VERSION=$(SMK_VERSION)
 LFLAGS := $(CFLAGS)
+AFLAGS := -plosgff
 
-AFLAGS= -plosgff
-
-SOURCES := $(SRCDIR)/main.c $(filter-out $(SRCDIR)/main.c, $(wildcard $(SRCDIR)/*.c)) # main.c has to be the first file
-OBJECTS := $(SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.rel)
+# TODO: this should be selected based on the target being built
+LAYOUT_SOURCES := $(wildcard $(SRCDIR)/keyboards/nuphy-air60/layouts/default/*.c)
+# main.c has to be the first file
+C_SOURCES := $(SRCDIR)/main.c \
+	$(filter-out $(SRCDIR)/main.c, $(wildcard $(SRCDIR)/*.c)) \
+	$(LAYOUT_SOURCES)
+A_SOURCES := $(wildcard $(SRCDIR)/*.asm)
+OBJECTS := $(C_SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.rel) $(A_SOURCES:$(SRCDIR)/%.asm=$(OBJDIR)/%.rel)
 
 .PHONY: all clean flash
 
@@ -57,7 +62,7 @@ $(OBJDIR)/%.rel: $(SRCDIR)/%.c
 $(OBJDIR)/%.rel: $(SRCDIR)/%.asm
 	${ASM} ${AFLAGS} $@ $<
 
-$(BINDIR)/main.ihx: $(OBJECTS) $(OBJDIR)/preboot.rel
+$(BINDIR)/main.ihx: $(OBJECTS)
 	@mkdir -p $(@D)
 	$(CC) -m$(FAMILY) -l$(PROC) $(LFLAGS) -o $@ $^
 

@@ -1,7 +1,7 @@
-#include "layout.h"
+#include "../../../../layout.h"
+#include "../../../../matrix.h"
+#include "../../../../report.h"
 #include <stdint.h>
-#include "matrix.h"
-#include "report.h"
 
 #define LAYOUT_60( \
                    K00_0, K01_0, K02_0, K03_0, K04_0, K05_0, K06_0, K07_0, K08_0, K09_0, K10_0, K11_0, K12_0, K13_0, \

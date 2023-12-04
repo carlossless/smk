@@ -8,7 +8,6 @@
 #include "gpio.h"
 #include "matrix.h"
 #include "pwm.h"
-#include "layout.h"
 #include "usb.h"
 #include "debug.h"
 #include "utils.h"

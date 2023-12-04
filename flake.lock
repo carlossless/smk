@@ -38,11 +38,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1699807297,
-        "narHash": "sha256-lAi3TRMyJO9nuh+XvfPg90kddlKy1bgI3WQyjmvYc5E=",
+        "lastModified": 1700339626,
+        "narHash": "sha256-QdTw1K49if9LGIAMz6vIoUz/22hOuKIkipxHzk2vvSY=",
         "owner": "carlossless",
         "repo": "nixpkgs",
-        "rev": "e468eb063b955cece56586c2c26e6c20661c9e30",
+        "rev": "0f5f3c5f073127e722c85d249769ed37d6d8375b",
         "type": "github"
       },
       "original": {
@@ -132,16 +132,15 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1699117143,
-        "narHash": "sha256-O4N3raptKFAwajrgUYt0uO5BlXXTKkRZ1mIFrJFRtUM=",
+        "lastModified": 1701643642,
+        "narHash": "sha256-DcmPjMyNEYG6gzdxzzCnL3g3m0LrmJzxA6idLx4NxAA=",
         "owner": "carlossless",
         "repo": "sinowealth-kb-tool",
-        "rev": "f1a2b93f8eb93535e126f822ccb42c1dd8cb3e67",
+        "rev": "382aa17e3fae1803bd068be9c98ee5c94f71d736",
         "type": "github"
       },
       "original": {
         "owner": "carlossless",
-        "ref": "noodle",
         "repo": "sinowealth-kb-tool",
         "type": "github"
       }
