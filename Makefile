@@ -42,8 +42,7 @@ LAYOUT_SOURCES := $(wildcard $(SRCDIR)/keyboards/nuphy-air60/layouts/default/*.c
 C_SOURCES := $(SRCDIR)/main.c \
 	$(filter-out $(SRCDIR)/main.c, $(wildcard $(SRCDIR)/*.c)) \
 	$(LAYOUT_SOURCES)
-A_SOURCES := $(wildcard $(SRCDIR)/*.asm)
-OBJECTS := $(C_SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.rel) $(A_SOURCES:$(SRCDIR)/%.asm=$(OBJDIR)/%.rel)
+OBJECTS := $(C_SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.rel)
 
 .PHONY: all clean flash
 
@@ -58,9 +57,6 @@ flash: $(BINDIR)/main.hex
 $(OBJDIR)/%.rel: $(SRCDIR)/%.c
 	@mkdir -p $(@D)
 	$(CC) -m$(FAMILY) -l$(PROC) $(CFLAGS) -c $< -o $@
-
-$(OBJDIR)/%.rel: $(SRCDIR)/%.asm
-	${ASM} ${AFLAGS} $@ $<
 
 $(BINDIR)/main.ihx: $(OBJECTS)
 	@mkdir -p $(@D)

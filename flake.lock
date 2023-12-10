@@ -132,15 +132,16 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1701643642,
-        "narHash": "sha256-DcmPjMyNEYG6gzdxzzCnL3g3m0LrmJzxA6idLx4NxAA=",
+        "lastModified": 1702228444,
+        "narHash": "sha256-cC3P3lwrJGOGZKJtAAAim9/Mkp5c3yyfk/n0bEjS9YM=",
         "owner": "carlossless",
         "repo": "sinowealth-kb-tool",
-        "rev": "382aa17e3fae1803bd068be9c98ee5c94f71d736",
+        "rev": "f8b970246ed893c973b9ae607e722fe9c8f09c08",
         "type": "github"
       },
       "original": {
         "owner": "carlossless",
+        "ref": "corrected-isp-behaviour",
         "repo": "sinowealth-kb-tool",
         "type": "github"
       }
@@ -213,11 +214,11 @@
         "systems": "systems_3"
       },
       "locked": {
-        "lastModified": 1694529238,
-        "narHash": "sha256-zsNZZGTGnMOf9YpHKJqMSsa0dXbfmxeoJ7xHlrt+xmY=",
+        "lastModified": 1701680307,
+        "narHash": "sha256-kAuep2h5ajznlPMD9rnQyffWG8EM/C73lejGofXvdM8=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "ff7b65b44d01cf9ba6a71320833626af21126384",
+        "rev": "4022d587cbbfd70fe950c1e2083a02621806a725",
         "type": "github"
       },
       "original": {
