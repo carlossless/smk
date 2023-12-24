@@ -132,16 +132,15 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1702228444,
-        "narHash": "sha256-cC3P3lwrJGOGZKJtAAAim9/Mkp5c3yyfk/n0bEjS9YM=",
+        "lastModified": 1703424050,
+        "narHash": "sha256-GVbIqkSl6YLPcYsPLH08ZtF+xeWFSjnZ4Itq9XWS3FE=",
         "owner": "carlossless",
         "repo": "sinowealth-kb-tool",
-        "rev": "f8b970246ed893c973b9ae607e722fe9c8f09c08",
+        "rev": "93f450ea2962b60008a4846ab73729f09ab988a7",
         "type": "github"
       },
       "original": {
         "owner": "carlossless",
-        "ref": "corrected-isp-behaviour",
         "repo": "sinowealth-kb-tool",
         "type": "github"
       }

@@ -1,5 +1,6 @@
 CC= sdcc
 ASM = sdas8051
+SDAR ?= sdar rc
 OBJCOPY = objcopy
 PACKIHX = packihx
 FLASHER = sinowealth-kb-tool write -p nuphy-air60
@@ -39,10 +40,13 @@ AFLAGS := -plosgff
 # TODO: this should be selected based on the target being built
 LAYOUT_SOURCES := $(wildcard $(SRCDIR)/keyboards/nuphy-air60/layouts/default/*.c)
 # main.c has to be the first file
-C_SOURCES := $(SRCDIR)/main.c \
+MAIN_SOURCES := $(SRCDIR)/main.c \
 	$(filter-out $(SRCDIR)/main.c, $(wildcard $(SRCDIR)/*.c)) \
 	$(LAYOUT_SOURCES)
-OBJECTS := $(C_SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.rel)
+MAIN_OBJECTS := $(MAIN_SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.rel)
+
+LIB_SOURCES := $(wildcard $(SRCDIR)/lib/*.c)
+LIB_OBJECTS := $(LIB_SOURCES:$(SRCDIR)/lib/%.c=$(OBJDIR)/lib/%.rel)
 
 .PHONY: all clean flash
 
@@ -58,7 +62,11 @@ $(OBJDIR)/%.rel: $(SRCDIR)/%.c
 	@mkdir -p $(@D)
 	$(CC) -m$(FAMILY) -l$(PROC) $(CFLAGS) -c $< -o $@
 
-$(BINDIR)/main.ihx: $(OBJECTS)
+$(BINDIR)/main.lib: $(LIB_OBJECTS)
+	@mkdir -p $(@D)
+	$(SDAR) $@ $^
+
+$(BINDIR)/main.ihx: $(MAIN_OBJECTS) $(BINDIR)/main.lib
 	@mkdir -p $(@D)
 	$(CC) -m$(FAMILY) -l$(PROC) $(LFLAGS) -o $@ $^
 

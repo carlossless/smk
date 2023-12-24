@@ -2,7 +2,7 @@
   inputs = {
     nixpkgs.url = "github:carlossless/nixpkgs/fixups"; # latest patches to get astyle 4.3.10 & sdcc 4.3.0 working
     utils.url = "github:numtide/flake-utils";
-    sinowealth-kb-tool.url = "github:carlossless/sinowealth-kb-tool/corrected-isp-behaviour";
+    sinowealth-kb-tool.url = "github:carlossless/sinowealth-kb-tool";
   };
 
   outputs = { self, nixpkgs, utils, sinowealth-kb-tool }:
@@ -22,6 +22,7 @@
             astyle
             sinowealth-kb-tool.packages."${system}".default
             uhubctl
+            srecord
           ];
         };
       }
