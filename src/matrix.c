@@ -118,7 +118,7 @@ uint8_t matrix_task()
         return false;
     }
 
-    bool matrix_changed = false;
+    __xdata bool matrix_changed = false;
 
     for (uint8_t col = 0; col < MATRIX_COLS && !matrix_changed; col++) {
         matrix_changed |= matrix_previous[col] ^ matrix_get_col(col);
@@ -131,24 +131,22 @@ uint8_t matrix_task()
     }
 
     for (uint8_t col = 0; col < MATRIX_COLS; col++) {
-        const matrix_col_t current_col = matrix_get_col(col);
-        const matrix_col_t col_changes = matrix_get_col(col) ^ matrix_previous[col];
+        __xdata const matrix_col_t current_col = matrix_get_col(col);
+        __xdata const matrix_col_t col_changes = current_col ^ matrix_previous[col];
 
         if (!col_changes) {
             continue;
         }
 
-        matrix_col_t row_mask = 1;
+        __xdata matrix_col_t row_mask = 1;
 
-        for (uint8_t row = 0; row < MATRIX_COLS; row++, row_mask <<= 1) {
+        for (uint8_t row = 0; row < MATRIX_ROWS; row++, row_mask <<= 1) {
             if (col_changes & row_mask) {
-                const bool key_pressed = current_col & row_mask;
+                __xdata const bool key_pressed = current_col & row_mask;
 
                 process_key_state(row, col, key_pressed);
             }
         }
-
-        // send_keyboard_report();
 
         matrix_previous[col] = current_col;
     }

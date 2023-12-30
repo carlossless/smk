@@ -23,12 +23,14 @@ SMK_VERSION ?= alpha
 USB_VID ?= 0x05ac
 USB_PID ?= 0x024f
 
+DEBUG ?= 1
+
 CFLAGS := -V -mmcs51 --model-small \
 	--xram-size $(XRAM_SIZE) --xram-loc $(XRAM_LOC) \
 	--code-size $(CODE_SIZE) \
 	--std-c2x \
 	-I$(ROOT_DIR)../include \
-	-DDEBUG=1 \
+	-DDEBUG=$(DEBUG) \
 	-DFREQ_SYS=$(FREQ_SYS) \
 	-DWATCHDOG_ENABLE=1 \
 	-DUSB_VID=$(USB_VID) \
