@@ -67,6 +67,7 @@ void process_key_state(uint8_t row, uint8_t col, bool pressed)
         if (pressed) {
             action_layer = QK_MOMENTARY_GET_LAYER(qcode);
         } else {
+            clear_keys();
             action_layer = 0;
         }
 
