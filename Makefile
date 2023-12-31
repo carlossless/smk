@@ -1,6 +1,6 @@
 CC= sdcc
 ASM = sdas8051
-SDAR ?= sdar rc
+SDAR ?= sdar -rc
 OBJCOPY = objcopy
 PACKIHX = packihx
 FLASHER = sinowealth-kb-tool write -p nuphy-air60
@@ -64,13 +64,13 @@ $(OBJDIR)/%.rel: $(SRCDIR)/%.c
 	@mkdir -p $(@D)
 	$(CC) -m$(FAMILY) -l$(PROC) $(CFLAGS) -c $< -o $@
 
-$(BINDIR)/main.lib: $(LIB_OBJECTS)
+$(BINDIR)/smk.lib: $(LIB_OBJECTS)
 	@mkdir -p $(@D)
 	$(SDAR) $@ $^
 
-$(BINDIR)/main.ihx: $(MAIN_OBJECTS) $(BINDIR)/main.lib
+$(BINDIR)/main.ihx: $(MAIN_OBJECTS) $(BINDIR)/smk.lib
 	@mkdir -p $(@D)
-	$(CC) -m$(FAMILY) -l$(PROC) $(LFLAGS) -o $@ $^
+	$(CC) -m$(FAMILY) -l$(PROC) $(LFLAGS) -o $@ $(MAIN_OBJECTS) -L$(BINDIR) -lsmk
 
 $(BINDIR)/%.hex: $(BINDIR)/%.ihx
 	${PACKIHX} < $< > $@

@@ -1,9 +1,8 @@
 #include "../indicators.h"
 
-bool indicators_update(__xdata keyboard_state_t *keyboard) {
+bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
+{
+    keyboard;
+    current_step;
     return true;
 }
-
-// bool indicators_update_step(__xdata keyboard_state_t *keyboard, uint8_t current_step) {
-//     return true;
-// }
