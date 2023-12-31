@@ -84,35 +84,35 @@ void gpio_init()
     // P6_5 - R4 G
     // P6_6 - R1 B
     // P6_7 - R1 R
-    P6CR = (uint8_t)(_P6_1 | _P6_2 | _P6_3 | _P6_4 | _P6_5 | _P6_6 | _P6_7);
+    P6CR  = (uint8_t)(_P6_1 | _P6_2 | _P6_3 | _P6_4 | _P6_5 | _P6_6 | _P6_7);
     P6PCR = (uint8_t)(_P6_1 | _P6_2 | _P6_3 | _P6_4 | _P6_5 | _P6_6 | _P6_7);
-    P6 = (uint8_t)(_P6_1 | _P6_2 | _P6_3 | _P6_4 | _P6_5 | _P6_6 | _P6_7);
+    P6    = (uint8_t)(_P6_1 | _P6_2 | _P6_3 | _P6_4 | _P6_5 | _P6_6 | _P6_7);
 
     // P4_3 - R4 B
     // P4_4 - R4 R
     // P4_5 - R3 R
     // P4_6 - R3 B
-    P4CR = (uint8_t)(_P4_3 | _P4_4 | _P4_5 | _P4_6);
+    P4CR  = (uint8_t)(_P4_3 | _P4_4 | _P4_5 | _P4_6);
     P4PCR = (uint8_t)(_P4_3 | _P4_4 | _P4_5 | _P4_6);
-    P4 = (uint8_t)(_P4_3 | _P4_4 | _P4_5 | _P4_6);
+    P4    = (uint8_t)(_P4_3 | _P4_4 | _P4_5 | _P4_6);
 
     // P0_2 - R2 R
     // P0_3 - R0 B
     // P0_4 - R0 R
-    P0CR = (uint8_t)(_P0_2 | _P0_3 | _P0_4);
+    P0CR  = (uint8_t)(_P0_2 | _P0_3 | _P0_4);
     P0PCR = (uint8_t)(_P0_2 | _P0_3 | _P0_4);
-    P0 = (uint8_t)(_P0_2 | _P0_3 | _P0_4);
+    P0    = (uint8_t)(_P0_2 | _P0_3 | _P0_4);
 
     // configure driving capabilities
     DRVCON = 0x05; // allow P1 to be changed
-    P1DRV = 0x00; // 25mA
+    P1DRV  = 0x00; // 25mA
 
     DRVCON = 0x45; // allow P2 to be changed
-    P2DRV = 0x00; // 25mA
+    P2DRV  = 0x00; // 25mA
 
     DRVCON = 0x85; // allow P3 to be changed
-    P3DRV = 0x00; // 25mA
+    P3DRV  = 0x00; // 25mA
 
     DRVCON = 0xc5; // allow P5 to be changed
-    P5DRV = 0x00; // 25mA
+    P5DRV  = 0x00; // 25mA
 }

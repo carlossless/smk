@@ -8,7 +8,7 @@
  */
 void clock_init()
 {
-    CLKCON = _HFON; // enable HRCCLK
+    CLKCON = _HFON;  // enable HRCCLK
     PLLCON = _PLLON; // init PLL
 
     while (!(PLLCON & _PLLSTA)) { // wait for PLL to lock phase
@@ -16,5 +16,5 @@ void clock_init()
     }
 
     PLLCON |= _PLLFS; // switch OSCSCLK
-    CLKCON |= _FS; // use HRCCLK as SYSCLK
+    CLKCON |= _FS;    // use HRCCLK as SYSCLK
 }

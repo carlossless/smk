@@ -37,8 +37,8 @@ void main()
 {
     init();
 
-    dprintf("SMK v"TOSTRING(SMK_VERSION)"\r\n");
-    dprintf("DEVICE vId:"TOSTRING(USB_VID)" pId:"TOSTRING(USB_PID)"\n\r");
+    dprintf("SMK v" TOSTRING(SMK_VERSION) "\r\n");
+    dprintf("DEVICE vId:" TOSTRING(USB_VID) " pId:" TOSTRING(USB_PID) "\n\r");
 
     // enable pwm and interrupt (driving matrix scan)
     pwm_enable();
