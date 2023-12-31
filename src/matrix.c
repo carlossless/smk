@@ -257,10 +257,11 @@ inline void matrix_scan_step()
         P5 &= (uint8_t) ~(_P5_0 | _P5_1 | _P5_2);
 
         matrix[current_step] = ~column_state;
+
+        keyboard_update_switches();
     }
 
     // rgb led matrix animation
-    indicators_update(&keyboard_state);
     indicators_update_step(&keyboard_state, current_step);
 
     // move step

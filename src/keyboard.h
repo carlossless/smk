@@ -21,4 +21,7 @@ typedef struct {
 
 extern __xdata keyboard_state_t keyboard_state;
 
+void keyboard_init();
+void keyboard_update_switches();
+
 #endif

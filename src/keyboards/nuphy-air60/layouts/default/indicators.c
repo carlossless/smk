@@ -3,7 +3,7 @@
 #include "../../../../pwm.h"
 #include <stdlib.h>
 
-bool indicators_update_step(__xdata keyboard_state_t *keyboard, uint8_t current_step)
+bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
 {
     static uint16_t current_cycle = 0;
 
