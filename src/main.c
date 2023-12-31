@@ -44,20 +44,16 @@ void main()
     // enable pwm and interrupt (driving matrix scan)
     pwm_enable();
 
+    // connection state only becomes stable after pwm is enabled
+    // they shouldn't be related, assumptions about the circuit are wrong somewhere
+    delay_ms(10);
+
+    keyboard_state.led_state = 0x00;
+    keyboard_state.conn_mode = P5_5;
+    keyboard_state.os_mode   = P5_6;
+
     while (1) {
         CLR_WDT();
-
-        if (keyboard_state.os_mode != P5_6) {
-            keyboard_state.os_mode = P5_6;
-            switch (keyboard_state.os_mode) {
-                case KEYBOARD_OS_MODE_MAC:
-                    dprintf("MAC_MODE\r\n");
-                    break;
-                case KEYBOARD_OS_MODE_WIN:
-                    dprintf("WIN_MODE\r\n");
-                    break;
-            }
-        }
 
         if (keyboard_state.conn_mode != P5_5) {
             keyboard_state.conn_mode = P5_5;
@@ -71,7 +67,18 @@ void main()
             }
         }
 
-        // delay_ms(10);
+        if (keyboard_state.os_mode != P5_6) {
+            keyboard_state.os_mode = P5_6;
+            switch (keyboard_state.os_mode) {
+                case KEYBOARD_OS_MODE_MAC:
+                    dprintf("MAC_MODE\r\n");
+                    break;
+                case KEYBOARD_OS_MODE_WIN:
+                    dprintf("WIN_MODE\r\n");
+                    break;
+            }
+        }
+
         matrix_task();
     }
 }
