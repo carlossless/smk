@@ -46,6 +46,8 @@
 #ifndef USBHIDREPORT_H
 #define USBHIDREPORT_H
 
+// clang-format off
+
 #if !defined(CONCAT) || defined(__DOXYGEN__)
     /** Concatenates the given input into a single token, via the C Preprocessor.
     *
@@ -139,6 +141,8 @@
 #define HID_RI_USAGE_MINIMUM(DataBits, ...)     _HID_RI_ENTRY(HID_RI_TYPE_LOCAL , 0x10, DataBits, __VA_ARGS__)
 #define HID_RI_USAGE_MAXIMUM(DataBits, ...)     _HID_RI_ENTRY(HID_RI_TYPE_LOCAL , 0x20, DataBits, __VA_ARGS__)
 //@}
+
+// clang-format on
 
 /** @} */
 
