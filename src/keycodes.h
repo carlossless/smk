@@ -1,6 +1,8 @@
 #ifndef KEYCODES_H
 #define KEYCODES_H
 
+// clang-format off
+
 enum qk_keycode_ranges {
     // Ranges
     QK_BASIC                       = 0x0000,
@@ -1438,5 +1440,7 @@ enum keycode_aliases {
 
 // Used for SHIFT_ESC
 #define MODS_SHIFT_MASK (MOD_BIT(KC_LSFT)|MOD_BIT(KC_RSFT))
+
+// clang-format on
 
 #endif
