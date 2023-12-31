@@ -25,4 +25,4 @@ jobs:
       with:
         github_access_token: ${{ secrets.GITHUB_TOKEN }}
     - name: Build release
-      run: nix develop --command clang-format --dry-run -Werror -i src/*.{h,c}
+      run: nix develop --command clang-format --dry-run -Werror -i src/**.{h,c}
