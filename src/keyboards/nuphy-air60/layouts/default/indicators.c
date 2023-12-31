@@ -32,15 +32,15 @@ bool indicators_update_step(__xdata keyboard_state_t *keyboard, uint8_t current_
 
     uint16_t color_intensity;
 
-    if (keyboard->keyboard_led_state & (1 << 0)) { // num_lock
+    if (keyboard->led_state & (1 << 0)) { // num_lock
         red_intensity = 1024;
     }
 
-    if (keyboard->keyboard_led_state & (1 << 1)) { // caps_lock
+    if (keyboard->led_state & (1 << 1)) { // caps_lock
         green_intensity = 1024;
     }
 
-    if (keyboard->keyboard_led_state & (1 << 2)) { // scroll_lock
+    if (keyboard->led_state & (1 << 2)) { // scroll_lock
         blue_intensity = 1024;
     }
 
