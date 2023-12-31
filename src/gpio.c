@@ -64,7 +64,7 @@ void gpio_init()
     P1PCR = (uint8_t)(_P1_1 | _P1_2 | _P1_3 | _P1_5);
     P2PCR = (uint8_t)(_P2_0 | _P2_1 | _P2_2 | _P2_3 | _P2_4 | _P2_5);
     P3PCR = (uint8_t)(_P3_0 | _P3_1 | _P3_2 | _P3_3 | _P3_4 | _P3_5);
-    P5PCR = (uint8_t)(_P5_0 | _P5_1 | _P5_2 | _P5_3 | _P5_4 | _P5_7);
+    P5PCR = (uint8_t)(_P5_0 | _P5_1 | _P5_2 | _P5_3 | _P5_4 | _P5_5 | _P5_6 | _P5_7);
     P7PCR = (uint8_t)(_P7_1 | _P1_2 | _P1_3);
 
     // P1_1 - UL R

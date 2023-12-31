@@ -996,7 +996,7 @@ void usb_ep0_out_irq()
     if (usb_ep0_state == USB_EP0_STATE_LED) {
         usb_ep0_state = 0;
 
-        keyboard_state.keyboard_led_state = EP0_OUT_BUF[0];
+        keyboard_state.led_state = EP0_OUT_BUF[0];
 
         CLEAR_EP0_CNT;
         SET_EP0_IN_RDY;
