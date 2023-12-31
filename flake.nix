@@ -19,7 +19,7 @@
             sdcc
             gnumake
             binutils
-            astyle
+            clang-tools
             sinowealth-kb-tool.packages."${system}".default
             uhubctl
             srecord

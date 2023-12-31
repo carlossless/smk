@@ -6,43 +6,44 @@
 #include "debug.h"
 #include "utils.h"
 #include "usbhidreport.h"
+#include "keyboard.h"
 #include <stdint.h>
 #include <string.h>
 
 #ifndef USB_VID
-    #define USB_VID             0xdead
+#    define USB_VID 0xdead
 #endif
 
 #ifndef USB_PID
-    #define USB_PID             0xbeef
+#    define USB_PID 0xbeef
 #endif
 
-#define BCDHID                  0x0111 // HID Class Spec Version
+#define BCDHID 0x0111 // HID Class Spec Version
 
 enum usb_string_index {
-    USB_STRING_LANGUAGE_ID    = 0,
-    USB_STRING_MANUFACTURER   = 1,
-    USB_STRING_PRODUCT        = 2,
-    USB_STRING_SERIAL_NUMBER  = 3,
+    USB_STRING_LANGUAGE_ID   = 0,
+    USB_STRING_MANUFACTURER  = 1,
+    USB_STRING_PRODUCT       = 2,
+    USB_STRING_SERIAL_NUMBER = 3,
 };
 
 enum report_id {
-    REPORT_ID_ACPI = 1,
+    REPORT_ID_ACPI     = 1,
     REPORT_ID_CONSUMER = 2,
-    REPORT_ID_ISP = 5,
-    REPORT_ID_NKRO = 6,
+    REPORT_ID_ISP      = 5,
+    REPORT_ID_NKRO     = 6,
 };
 
 typedef enum {
-    USB_EP0_STATE_DEFAULT = 0x00,
-    USB_EP0_STATE_IN_DATA = 0x01,
+    USB_EP0_STATE_DEFAULT     = 0x00,
+    USB_EP0_STATE_IN_DATA     = 0x01,
     USB_EP0_STATE_RECV_STATUS = 0x02,
-    USB_EP0_STATE_LED = 0x04,
-    USB_EP0_STATE_ISP = 0x05,
+    USB_EP0_STATE_LED         = 0x04,
+    USB_EP0_STATE_ISP         = 0x05,
 } usb_ep0_state_t;
 
 const uint8_t hid_report_desc_keyboard[] = {
-// *INDENT-OFF*
+    // clang-format off
     HID_RI_USAGE_PAGE(8, 0x01),     // Generic Desktop Controls
     HID_RI_USAGE(8, 0x06),          // System Control
     HID_RI_COLLECTION(8, 0x01),     // Application
@@ -86,11 +87,11 @@ const uint8_t hid_report_desc_keyboard[] = {
         HID_RI_REPORT_COUNT(8, 0x01),
         HID_RI_OUTPUT(8, HID_IOF_CONSTANT),
     HID_RI_END_COLLECTION(0),
-// *INDENT-ON*
+    // clang-format on
 };
 
 const uint8_t hid_report_desc_extra[] = {
-// *INDENT-OFF*
+    // clang-format off
     HID_RI_USAGE_PAGE(8, 0x01),           // Generic Desktop
     HID_RI_USAGE(8, 0x80),                // System Control
     HID_RI_COLLECTION(8, 0x01),           // Application
@@ -146,107 +147,107 @@ const uint8_t hid_report_desc_extra[] = {
         HID_RI_REPORT_COUNT(8, 120),
         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
     HID_RI_END_COLLECTION(0),
-// *INDENT-ON*
+    // clang-format on
 };
 
 usb_desc_device_c usb_desc_device = {
-    .bLength              = sizeof(struct usb_desc_device),
-    .bDescriptorType      = USB_DESC_DEVICE,
-    .bcdUSB               = 0x0110,
-    .bDeviceClass         = USB_DEV_CLASS_PER_INTERFACE,
-    .bDeviceSubClass      = USB_DEV_SUBCLASS_PER_INTERFACE,
-    .bDeviceProtocol      = USB_DEV_PROTOCOL_PER_INTERFACE,
-    .bMaxPacketSize0      = 8,
-    .idVendor             = USB_VID,
-    .idProduct            = USB_PID,
-    .bcdDevice            = 0x0000,
-    .iManufacturer        = USB_STRING_MANUFACTURER,
-    .iProduct             = USB_STRING_PRODUCT,
-    .iSerialNumber        = USB_STRING_SERIAL_NUMBER,
-    .bNumConfigurations   = 1,
+    .bLength            = sizeof(struct usb_desc_device),
+    .bDescriptorType    = USB_DESC_DEVICE,
+    .bcdUSB             = 0x0110,
+    .bDeviceClass       = USB_DEV_CLASS_PER_INTERFACE,
+    .bDeviceSubClass    = USB_DEV_SUBCLASS_PER_INTERFACE,
+    .bDeviceProtocol    = USB_DEV_PROTOCOL_PER_INTERFACE,
+    .bMaxPacketSize0    = 8,
+    .idVendor           = USB_VID,
+    .idProduct          = USB_PID,
+    .bcdDevice          = 0x0000,
+    .iManufacturer      = USB_STRING_MANUFACTURER,
+    .iProduct           = USB_STRING_PRODUCT,
+    .iSerialNumber      = USB_STRING_SERIAL_NUMBER,
+    .bNumConfigurations = 1,
 };
 
 usb_desc_interface_c usb_desc_interface_main = {
-    .bLength              = sizeof(struct usb_desc_interface),
-    .bDescriptorType      = USB_DESC_INTERFACE,
-    .bInterfaceNumber     = 0,
-    .bAlternateSetting    = 0,
-    .bNumEndpoints        = 1,
-    .bInterfaceClass      = USB_IFACE_CLASS_HID,
-    .bInterfaceSubClass   = USB_IFACE_SUBCLASS_HID_BOOT,
-    .bInterfaceProtocol   = USB_IFACE_PROTOCOL_REPORT,
-    .iInterface           = 0,
+    .bLength            = sizeof(struct usb_desc_interface),
+    .bDescriptorType    = USB_DESC_INTERFACE,
+    .bInterfaceNumber   = 0,
+    .bAlternateSetting  = 0,
+    .bNumEndpoints      = 1,
+    .bInterfaceClass    = USB_IFACE_CLASS_HID,
+    .bInterfaceSubClass = USB_IFACE_SUBCLASS_HID_BOOT,
+    .bInterfaceProtocol = USB_IFACE_PROTOCOL_REPORT,
+    .iInterface         = 0,
 };
 
 usb_desc_hid_c usb_desc_hid_main = {
-    .bLength              = sizeof(struct usb_desc_hid),
-    .bDescriptorType      = USB_DESC_CLASS_HID,
-    .bcdHID               = BCDHID,
-    .bCountryCode         = 0,
-    .bNumDescriptors      = 1,
-    .bDescriptorType1     = USB_DESC_CLASS_REPORT,
-    .wDescriptorLength1   = sizeof(hid_report_desc_keyboard)
+    .bLength            = sizeof(struct usb_desc_hid),
+    .bDescriptorType    = USB_DESC_CLASS_HID,
+    .bcdHID             = BCDHID,
+    .bCountryCode       = 0,
+    .bNumDescriptors    = 1,
+    .bDescriptorType1   = USB_DESC_CLASS_REPORT,
+    .wDescriptorLength1 = sizeof(hid_report_desc_keyboard),
 };
 
 usb_desc_endpoint_c usb_desc_endpoint_main = {
-    .bLength              = sizeof(struct usb_desc_endpoint),
-    .bDescriptorType      = USB_DESC_ENDPOINT,
-    .bEndpointAddress     = 1 | USB_DIR_IN,
-    .bmAttributes         = USB_XFER_INTERRUPT,
-    .wMaxPacketSize       = 8, // 8 bytes
-    .bInterval            = 1, // 1ms
+    .bLength          = sizeof(struct usb_desc_endpoint),
+    .bDescriptorType  = USB_DESC_ENDPOINT,
+    .bEndpointAddress = 1 | USB_DIR_IN,
+    .bmAttributes     = USB_XFER_INTERRUPT,
+    .wMaxPacketSize   = 8, // 8 bytes
+    .bInterval        = 1, // 1ms
 };
 
 usb_desc_interface_c usb_desc_interface_extra = {
-    .bLength              = sizeof(struct usb_desc_interface),
-    .bDescriptorType      = USB_DESC_INTERFACE,
-    .bInterfaceNumber     = 1,
-    .bAlternateSetting    = 0,
-    .bNumEndpoints        = 1,
-    .bInterfaceClass      = USB_IFACE_CLASS_HID,
-    .bInterfaceSubClass   = USB_IFACE_SUBCLASS_NONE,
-    .bInterfaceProtocol   = USB_IFACE_PROTOCOL_BOOT,
-    .iInterface           = 0,
+    .bLength            = sizeof(struct usb_desc_interface),
+    .bDescriptorType    = USB_DESC_INTERFACE,
+    .bInterfaceNumber   = 1,
+    .bAlternateSetting  = 0,
+    .bNumEndpoints      = 1,
+    .bInterfaceClass    = USB_IFACE_CLASS_HID,
+    .bInterfaceSubClass = USB_IFACE_SUBCLASS_NONE,
+    .bInterfaceProtocol = USB_IFACE_PROTOCOL_BOOT,
+    .iInterface         = 0,
 };
 
 usb_desc_hid_c usb_desc_hid_extra = {
-    .bLength              = sizeof(struct usb_desc_hid),
-    .bDescriptorType      = USB_DESC_CLASS_HID,
-    .bcdHID               = BCDHID,
-    .bCountryCode         = 0,
-    .bNumDescriptors      = 1,
-    .bDescriptorType1     = USB_DESC_CLASS_REPORT,
-    .wDescriptorLength1   = sizeof(hid_report_desc_extra)
+    .bLength            = sizeof(struct usb_desc_hid),
+    .bDescriptorType    = USB_DESC_CLASS_HID,
+    .bcdHID             = BCDHID,
+    .bCountryCode       = 0,
+    .bNumDescriptors    = 1,
+    .bDescriptorType1   = USB_DESC_CLASS_REPORT,
+    .wDescriptorLength1 = sizeof(hid_report_desc_extra),
 };
 
 usb_desc_endpoint_c usb_desc_endpoint_extra = {
-    .bLength              = sizeof(struct usb_desc_endpoint),
-    .bDescriptorType      = USB_DESC_ENDPOINT,
-    .bEndpointAddress     = 2 | USB_DIR_IN,
-    .bmAttributes         = USB_XFER_INTERRUPT,
-    .wMaxPacketSize       = 16, // 16 bytes
-    .bInterval            = 1, // 1ms
+    .bLength          = sizeof(struct usb_desc_endpoint),
+    .bDescriptorType  = USB_DESC_ENDPOINT,
+    .bEndpointAddress = 2 | USB_DIR_IN,
+    .bmAttributes     = USB_XFER_INTERRUPT,
+    .wMaxPacketSize   = 16, // 16 bytes
+    .bInterval        = 1,  // 1ms
 };
 
 usb_configuration_c usb_config = {
     {
-        .bLength              = sizeof(struct usb_desc_configuration),
-        .bDescriptorType      = USB_DESC_CONFIGURATION,
-        .bNumInterfaces       = 2,
-        .bConfigurationValue  = 1,
-        .iConfiguration       = 0,
-        .bmAttributes         = USB_ATTR_RESERVED_1 | USB_ATTR_REMOTE_WAKEUP,
-        .bMaxPower            = 250, // 500mA
+        .bLength             = sizeof(struct usb_desc_configuration),
+        .bDescriptorType     = USB_DESC_CONFIGURATION,
+        .bNumInterfaces      = 2,
+        .bConfigurationValue = 1,
+        .iConfiguration      = 0,
+        .bmAttributes        = USB_ATTR_RESERVED_1 | USB_ATTR_REMOTE_WAKEUP,
+        .bMaxPower           = 250, // 500mA
     },
     {
-        { .interface = &usb_desc_interface_main },
-        { .hid       = &usb_desc_hid_main },
-        { .endpoint  = &usb_desc_endpoint_main },
-        { .interface = &usb_desc_interface_extra },
-        { .hid       = &usb_desc_hid_extra },
-        { .endpoint  = &usb_desc_endpoint_extra },
-        { 0 }
-    }
+        {.interface = &usb_desc_interface_main},
+        {.hid = &usb_desc_hid_main},
+        {.endpoint = &usb_desc_endpoint_main},
+        {.interface = &usb_desc_interface_extra},
+        {.hid = &usb_desc_hid_extra},
+        {.endpoint = &usb_desc_endpoint_extra},
+        {0},
+    },
 };
 
 usb_configuration_set_c usb_configs[] = {
@@ -254,23 +255,23 @@ usb_configuration_set_c usb_configs[] = {
 };
 
 static usb_desc_langid_c usb_langid = {
-    .bLength          = sizeof(struct usb_desc_langid) + sizeof(uint16_t) * 1,
-    .bDescriptorType  = USB_DESC_STRING,
-    .wLANGID          = { /* English (United States) */ 0x0409 },
+    .bLength         = sizeof(struct usb_desc_langid) + sizeof(uint16_t) * 1,
+    .bDescriptorType = USB_DESC_STRING,
+    .wLANGID         = {/* English (United States) */ 0x0409},
 };
 
 usb_ascii_string_c usb_strings[] = {
-    [USB_STRING_MANUFACTURER - 1] = "contact@carlossless.io",
-    [USB_STRING_PRODUCT - 1] = "SMK Keyboard",
-    [USB_STRING_SERIAL_NUMBER - 1] = "0001"
+    [USB_STRING_MANUFACTURER - 1]  = "contact@carlossless.io",
+    [USB_STRING_PRODUCT - 1]       = "SMK Keyboard",
+    [USB_STRING_SERIAL_NUMBER - 1] = "0001",
 };
 
 usb_descriptor_set_c usb_descriptor_set = {
-    .device           = &usb_desc_device,
-    .config_count     = ARRAYSIZE(usb_configs),
-    .configs          = usb_configs,
-    .string_count     = ARRAYSIZE(usb_strings),
-    .strings          = usb_strings,
+    .device       = &usb_desc_device,
+    .config_count = ARRAYSIZE(usb_configs),
+    .configs      = usb_configs,
+    .string_count = ARRAYSIZE(usb_strings),
+    .strings      = usb_strings,
 };
 
 // interrupt handlers
@@ -318,32 +319,32 @@ uint8_t *ep0_xfer_src;
 
 // usb state
 usb_device_state_t __xdata usb_device_state;
-uint8_t __xdata received_usb_addr;
-uint8_t __xdata active_configuration;
-uint8_t __xdata interface0_protocol;
-uint8_t __xdata interface1_protocol;
-__bit usb_remote_wakeup;
-uint8_t __xdata idle_time;
-usb_ep0_state_t __xdata usb_ep0_state;
+uint8_t __xdata            received_usb_addr;
+uint8_t __xdata            active_configuration;
+uint8_t __xdata            interface0_protocol;
+uint8_t __xdata            interface1_protocol;
+__bit                      usb_remote_wakeup;
+uint8_t __xdata            idle_time;
+usb_ep0_state_t __xdata    usb_ep0_state;
 
 void usb_init()
 {
-    usb_device_state = USB_DEVICE_STATE_DEFAULT;
-    received_usb_addr = 0;
+    usb_device_state     = USB_DEVICE_STATE_DEFAULT;
+    received_usb_addr    = 0;
     active_configuration = 0;
-    interface0_protocol = 0;
-    interface1_protocol = 0;
-    usb_remote_wakeup = 0;
-    usb_ep0_state = USB_EP0_STATE_DEFAULT;
-    idle_time = 0;
+    interface0_protocol  = 0;
+    interface1_protocol  = 0;
+    usb_remote_wakeup    = 0;
+    usb_ep0_state        = USB_EP0_STATE_DEFAULT;
+    idle_time            = 0;
 
     ep0_xfer_bytes_left = 0;
-    ep0_xfer_src = 0;
+    ep0_xfer_src        = 0;
 
     USBADDR = 0;
-    USBIE1 = (_OVERIE | _SETUPIE | _SOFIA | _RESMIE | _SUSPIE | _PBRSTIE);
-    USBIE2 = (_OEP0IE | _IEP0IE);
-    USBCON = (_ENUSB | _SW1CON);
+    USBIE1  = (_OVERIE | _SETUPIE | _SOFIA | _RESMIE | _SUSPIE | _PBRSTIE);
+    USBIE2  = (_OEP0IE | _IEP0IE);
+    USBCON  = (_ENUSB | _SW1CON);
     IEN1 |= _EUSB;
 }
 
@@ -363,7 +364,7 @@ static void usb_setup_irq()
     get_ep0_out_buffer((uint8_t *)&req);
     EA = 1;
 
-    uint8_t type = req.bmRequestType;
+    uint8_t type    = req.bmRequestType;
     uint8_t request = req.bRequest;
 
     switch (type) {
@@ -539,8 +540,8 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
             USBIF1 &= ~_SOFIF;
         } else {
             // why is this being cleared and why in this fashion?
-            USBIF1 &= ~(_SETUPIF);       // Clear SETUPIF
-            USBIF1 &= ~(_OVERIF | _OW);  // SETUP OVERIF & OW
+            USBIF1 &= ~(_SETUPIF);      // Clear SETUPIF
+            USBIF1 &= ~(_OVERIF | _OW); // SETUP OVERIF & OW
 
             if (temp_usbif1 & _PUPIF) {
                 USBIF1 &= ~_PUPIF;
@@ -800,29 +801,28 @@ static void usb_get_descriptor_handler(__xdata struct usb_req_setup *req)
     uint8_t *__xdata addr;
     uint16_t __xdata length;
 
-    __xdata uint8_t *buf = scratch;
-    uint8_t type = req->wValue >> 8;
-    uint8_t index = req->wValue & 0xff;
-    usb_descriptor_set_c *set = &usb_descriptor_set;
+    __xdata uint8_t *     buf   = scratch;
+    uint8_t               type  = req->wValue >> 8;
+    uint8_t               index = req->wValue & 0xff;
+    usb_descriptor_set_c *set   = &usb_descriptor_set;
 
-#define APPEND(addr, length) \
-    do { \
+#define APPEND(addr, length)       \
+    do {                           \
         memcpy(buf, addr, length); \
-        buf += length; \
-    } while(0)
+        buf += length;             \
+    } while (0)
 
 #define APPEND_DESC(desc) APPEND(desc, (desc)->bLength)
 
     if (type == USB_DESC_DEVICE) {
         APPEND_DESC(set->device);
 
-        addr = scratch;
+        addr   = scratch;
         length = scratch[0];
     } else if (type == USB_DESC_CONFIGURATION && index < set->config_count) {
-        usb_configuration_c *config = set->configs[index];
-        __xdata struct usb_desc_configuration *config_desc =
-            (__xdata struct usb_desc_configuration *)buf;
-        __code const union usb_config_item *config_item = &config->items[0];
+        usb_configuration_c *                  config      = set->configs[index];
+        __xdata struct usb_desc_configuration *config_desc = (__xdata struct usb_desc_configuration *)buf;
+        __code const union usb_config_item *   config_item = &config->items[0];
 
         APPEND_DESC(&config->desc);
 
@@ -835,15 +835,16 @@ static void usb_get_descriptor_handler(__xdata struct usb_req_setup *req)
             config_desc->wTotalLength = (uint16_t)(buf - scratch);
         }
 
-        addr = scratch;
+        addr   = scratch;
         length = config_desc->wTotalLength;
     } else if (type == USB_DESC_STRING && index == USB_STRING_LANGUAGE_ID) {
         APPEND_DESC(&usb_langid);
 
-        addr = scratch;
+        addr   = scratch;
         length = scratch[0];
     } else if (type == USB_DESC_STRING && index - 1 < set->string_count) {
         __code const char *string = set->strings[index - 1];
+
         *buf++ = 2;               // bLength
         *buf++ = USB_DESC_STRING; // bDescriptorType
 
@@ -853,7 +854,7 @@ static void usb_get_descriptor_handler(__xdata struct usb_req_setup *req)
             scratch[0] += 2;
         }
 
-        addr = scratch;
+        addr   = scratch;
         length = scratch[0];
     } else if (type == USB_DESC_CLASS_REPORT) {
         uint8_t iface_index = req->wIndex;
@@ -874,12 +875,12 @@ static void usb_get_descriptor_handler(__xdata struct usb_req_setup *req)
         if (iface_index == 0) {
             APPEND_DESC(&usb_desc_hid_main);
 
-            addr = scratch;
+            addr   = scratch;
             length = scratch[0];
         } else if (iface_index == 1) {
             APPEND_DESC(&usb_desc_hid_extra);
 
-            addr = scratch;
+            addr   = scratch;
             length = scratch[0];
         } else {
             STALL_EP0();
@@ -994,6 +995,9 @@ void usb_ep0_out_irq()
 {
     if (usb_ep0_state == USB_EP0_STATE_LED) {
         usb_ep0_state = 0;
+
+        keyboard_state.keyboard_led_state = EP0_OUT_BUF[0];
+
         CLEAR_EP0_CNT;
         SET_EP0_IN_RDY;
     } else if (usb_ep0_state == USB_EP0_STATE_ISP) {
@@ -1029,7 +1033,7 @@ void usb_ep0_in_irq()
 
 static void setup_ep0_in_xfer(uint8_t *src, uint16_t len)
 {
-    ep0_xfer_src = src;
+    ep0_xfer_src        = src;
     ep0_xfer_bytes_left = len;
 }
 

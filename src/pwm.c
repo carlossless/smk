@@ -23,24 +23,24 @@ P2_0 - PWM10 - C14
 P1_5 - PWM25 - C15
 */
 
-#define PWM_CLK_DIV             0b010 // PWM_CLK = SYS_CLK / 4
-#define PWM_SS_BIT              (1 << 3)
-#define PWM_MOD_BIT             (1 << 4)
-#define PWM_INT_ENABLE_BIT      (1 << 6)
-#define PWM_MODE_ENABLE_BIT     (1 << 7)
+#define PWM_CLK_DIV         0b010 // PWM_CLK = SYS_CLK / 4
+#define PWM_SS_BIT          (1 << 3)
+#define PWM_MOD_BIT         (1 << 4)
+#define PWM_INT_ENABLE_BIT  (1 << 6)
+#define PWM_MODE_ENABLE_BIT (1 << 7)
 
-#define PWM_PERD                0x0400 // 1024 / PWM_CLK ~= 43 us
+#define PWM_PERD 0x0400 // 1024 / PWM_CLK ~= 43 us
 
-#define PWM_DUTY1               PWM_PERD
-#define PWM_DUTY2               0
+#define PWM_DUTY1 PWM_PERD
+#define PWM_DUTY2 0
 
-#define PWM_PERDH_INIT          ((uint8_t)(PWM_PERD>>8))
-#define PWM_PERDL_INIT          ((uint8_t)(PWM_PERD))
+#define PWM_PERDH_INIT ((uint8_t)(PWM_PERD >> 8))
+#define PWM_PERDL_INIT ((uint8_t)(PWM_PERD))
 
-#define PWM_DUTY1H_INIT         ((uint8_t)(PWM_DUTY1>>8))
-#define PWM_DUTY1L_INIT         ((uint8_t)(PWM_DUTY1))
-#define PWM_DUTY2H_INIT         ((uint8_t)(PWM_DUTY2>>8))
-#define PWM_DUTY2L_INIT         ((uint8_t)(PWM_DUTY2))
+#define PWM_DUTY1H_INIT ((uint8_t)(PWM_DUTY1 >> 8))
+#define PWM_DUTY1L_INIT ((uint8_t)(PWM_DUTY1))
+#define PWM_DUTY2H_INIT ((uint8_t)(PWM_DUTY2 >> 8))
+#define PWM_DUTY2L_INIT ((uint8_t)(PWM_DUTY2))
 
 void pwm_init()
 {
@@ -226,7 +226,7 @@ void pwm_set_all_columns(uint16_t intensity)
     PWM42DUTY2L = adjusted;
 }
 
-void pwm_interrupt_handler() __interrupt (_INT_PWM0)
+void pwm_interrupt_handler() __interrupt(_INT_PWM0)
 {
     matrix_scan_step();
 }
