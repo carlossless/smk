@@ -270,10 +270,10 @@ typedef __code const struct usb_desc_hid usb_desc_hid_c;
 struct usb_configuration {
     struct usb_desc_configuration desc;
     union usb_config_item {
-        usb_desc_generic_c *  generic;
+        usb_desc_generic_c   *generic;
         usb_desc_interface_c *interface;
-        usb_desc_hid_c *      hid;
-        usb_desc_endpoint_c * endpoint;
+        usb_desc_hid_c       *hid;
+        usb_desc_endpoint_c  *endpoint;
     } items[];
 };
 
@@ -285,12 +285,12 @@ typedef __code const struct usb_configuration *__code const usb_configuration_se
  * A group of USB descriptors for a single device.
  */
 struct usb_descriptor_set {
-    usb_desc_device_c *          device;
+    usb_desc_device_c           *device;
     usb_desc_device_qualifier_c *device_qualifier;
     uint8_t                      config_count;
-    usb_configuration_set_c *    configs;
+    usb_configuration_set_c     *configs;
     uint8_t                      string_count;
-    usb_ascii_string_c *         strings;
+    usb_ascii_string_c          *strings;
 };
 
 typedef __code const struct usb_descriptor_set usb_descriptor_set_c;

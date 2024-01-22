@@ -801,7 +801,7 @@ static void usb_get_descriptor_handler(__xdata struct usb_req_setup *req)
     uint8_t *__xdata addr;
     uint16_t __xdata length;
 
-    __xdata uint8_t *     buf   = scratch;
+    __xdata uint8_t      *buf   = scratch;
     uint8_t               type  = req->wValue >> 8;
     uint8_t               index = req->wValue & 0xff;
     usb_descriptor_set_c *set   = &usb_descriptor_set;
@@ -820,9 +820,9 @@ static void usb_get_descriptor_handler(__xdata struct usb_req_setup *req)
         addr   = scratch;
         length = scratch[0];
     } else if (type == USB_DESC_CONFIGURATION && index < set->config_count) {
-        usb_configuration_c *                  config      = set->configs[index];
+        usb_configuration_c                   *config      = set->configs[index];
         __xdata struct usb_desc_configuration *config_desc = (__xdata struct usb_desc_configuration *)buf;
-        __code const union usb_config_item *   config_item = &config->items[0];
+        __code const union usb_config_item    *config_item = &config->items[0];
 
         APPEND_DESC(&config->desc);
 
