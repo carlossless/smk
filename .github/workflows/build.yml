@@ -1,18 +1,24 @@
+on:
+  push: {}
+  pull_request:
+    types: [opened, reopened, synchronize]
 
-name: "Build"
-on: [pull_request, push]
+name: Build
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     - uses: cachix/install-nix-action@v22
       with:
         github_access_token: ${{ secrets.GITHUB_TOKEN }}
     - uses: cachix/cachix-action@v12
       with:
         name: smk
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+        authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
     - name: Build release
       run: nix develop --command make all
     - name: Archive code coverage results
@@ -25,12 +31,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     - uses: cachix/install-nix-action@v22
       with:
         github_access_token: ${{ secrets.GITHUB_TOKEN }}
     - uses: cachix/cachix-action@v12
       with:
         name: smk
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+        authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
     - name: Build release
       run: nix develop --command clang-format --dry-run -Werror -style=file -i src/**.{h,c}
