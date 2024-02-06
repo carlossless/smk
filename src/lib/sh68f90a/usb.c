@@ -1,12 +1,12 @@
 #include "usb.h"
 #include "watchdog.h"
 #include "isp.h"
-#include "usbdef.h"
+#include "../../usbdef.h"
 #include "usbregs.h"
-#include "debug.h"
-#include "utils.h"
-#include "usbhidreport.h"
-#include "keyboard.h"
+#include "../../debug.h"
+#include "../../utils.h"
+#include "../../usbhidreport.h"
+#include "../../keyboard.h"
 #include <stdint.h>
 #include <string.h>
 

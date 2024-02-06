@@ -47,8 +47,11 @@ MAIN_SOURCES := $(SRCDIR)/main.c \
 	$(LAYOUT_SOURCES)
 MAIN_OBJECTS := $(MAIN_SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.rel)
 
-LIB_SOURCES := $(wildcard $(SRCDIR)/lib/*.c)
-LIB_OBJECTS := $(LIB_SOURCES:$(SRCDIR)/lib/%.c=$(OBJDIR)/lib/%.rel)
+LIBSINO8051_SOURCES := $(wildcard $(SRCDIR)/lib/sh68f90a/*.c)
+LIBSINO8051_OBJECTS := $(LIBSINO8051_SOURCES:$(SRCDIR)/lib/sh68f90a/%.c=$(OBJDIR)/lib/sh68f90a/%.rel)
+
+OVERRIDABLE_SOURCES := $(wildcard $(SRCDIR)/overridable/*.c)
+OVERRIDABLE_OBJECTS := $(OVERRIDABLE_SOURCES:$(SRCDIR)/overridable/%.c=$(OBJDIR)/overridable/%.rel)
 
 .PHONY: all clean flash
 
@@ -64,13 +67,17 @@ $(OBJDIR)/%.rel: $(SRCDIR)/%.c
 	@mkdir -p $(@D)
 	$(CC) -m$(FAMILY) -l$(PROC) $(CFLAGS) -c $< -o $@
 
-$(BINDIR)/smk.lib: $(LIB_OBJECTS)
+$(BINDIR)/overridable.lib: $(OVERRIDABLE_OBJECTS)
 	@mkdir -p $(@D)
 	$(SDAR) $@ $^
 
-$(BINDIR)/main.ihx: $(MAIN_OBJECTS) $(BINDIR)/smk.lib
+$(BINDIR)/sino8051.lib: $(LIBSINO8051_OBJECTS)
 	@mkdir -p $(@D)
-	$(CC) -m$(FAMILY) -l$(PROC) $(LFLAGS) -o $@ $(MAIN_OBJECTS) -L$(BINDIR) -lsmk
+	$(SDAR) $@ $^
+
+$(BINDIR)/main.ihx: $(MAIN_OBJECTS) $(BINDIR)/sino8051.lib $(BINDIR)/overridable.lib
+	@mkdir -p $(@D)
+	$(CC) -m$(FAMILY) -l$(PROC) $(LFLAGS) -o $@ $(MAIN_OBJECTS) -L$(BINDIR) -loverridable -lsino8051
 
 $(BINDIR)/%.hex: $(BINDIR)/%.ihx
 	${PACKIHX} < $< > $@

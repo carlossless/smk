@@ -1,6 +1,6 @@
 #include "host.h"
 #include "debug.h"
-#include "usb.h"
+#include "lib/sh68f90a/usb.h"
 
 /* send report */
 void host_keyboard_send(report_keyboard_t *report)

@@ -1,6 +1,6 @@
 #include "delay.h"
 #include "watchdog.h"
-#include "utils.h"
+#include "../../utils.h"
 #include <stdint.h>
 
 // very naive implementation, not very accurate or optimized

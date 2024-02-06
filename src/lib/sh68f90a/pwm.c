@@ -1,5 +1,5 @@
 #include "pwm.h"
-#include "matrix.h"
+#include "../../matrix.h"
 #include <stdint.h>
 #include <stdio.h>
 

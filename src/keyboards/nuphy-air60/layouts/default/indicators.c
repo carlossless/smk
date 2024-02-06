@@ -1,6 +1,6 @@
 #include "../../../../indicators.h"
-#include "../../../../sh68f90a.h"
-#include "../../../../pwm.h"
+#include "../../../../lib/sh68f90a/sh68f90a.h"
+#include "../../../../lib/sh68f90a/pwm.h"
 #include <stdlib.h>
 
 bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)

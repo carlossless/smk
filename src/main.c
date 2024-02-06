@@ -1,17 +1,18 @@
-#include "clock.h"
-#include "ldo.h"
-#include "watchdog.h"
-#include "delay.h"
-#include "isp.h"
-#include "uart.h"
-#include "stdio.h"
-#include "gpio.h"
+#include "lib/sh68f90a/clock.h"
+#include "lib/sh68f90a/ldo.h"
+#include "lib/sh68f90a/watchdog.h"
+#include "lib/sh68f90a/delay.h"
+#include "lib/sh68f90a/isp.h"
+#include "lib/sh68f90a/uart.h"
+#include "lib/sh68f90a/gpio.h"
 #include "matrix.h"
-#include "pwm.h"
-#include "usb.h"
+#include "lib/sh68f90a/pwm.h"
+#include "lib/sh68f90a/usb.h"
 #include "debug.h"
 #include "utils.h"
 #include "keyboard.h"
+
+#include <stdio.h>
 
 void init()
 {
