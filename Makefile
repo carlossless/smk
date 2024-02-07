@@ -12,7 +12,8 @@ BINDIR = bin
 FAMILY = mcs51
 PROC = mcs51
 
-FREQ_SYS ?= 24000000
+FREQ_SYS ?= 24000000 # 24Mhz, could be keyboard specific
+WATHCDOG_ENABLE ?= 1 # could be keyboard specific
 XRAM_SIZE ?= 0x1000
 XRAM_LOC ?= 0x0000
 CODE_SIZE ?= 0xf000 # 61440 bytes (leaving the remaining 4096 for bootloader)
@@ -32,7 +33,7 @@ CFLAGS := -V -mmcs51 --model-small \
 	-I$(ROOT_DIR)../include \
 	-DDEBUG=$(DEBUG) \
 	-DFREQ_SYS=$(FREQ_SYS) \
-	-DWATCHDOG_ENABLE=1 \
+	-DWATCHDOG_ENABLE=$(WATHCDOG_ENABLE) \
 	-DUSB_VID=$(USB_VID) \
 	-DUSB_PID=$(USB_PID) \
 	-DSMK_VERSION=$(SMK_VERSION)
@@ -53,15 +54,18 @@ LIBSINO8051_OBJECTS := $(LIBSINO8051_SOURCES:$(SRCDIR)/lib/sh68f90a/%.c=$(OBJDIR
 OVERRIDABLE_SOURCES := $(wildcard $(SRCDIR)/overridable/*.c)
 OVERRIDABLE_OBJECTS := $(OVERRIDABLE_SOURCES:$(SRCDIR)/overridable/%.c=$(OBJDIR)/overridable/%.rel)
 
-.PHONY: all clean flash
+KEYBOARDS_LAYOUTS = nuphy-air60_default
 
-all: $(BINDIR)/main.hex
+.PHONY: all
+all: $(KEYBOARDS_LAYOUTS:%=$(BINDIR)/%.hex)
 
+.PHONY: clean
 clean:
 	rm -rf $(BINDIR) $(OBJDIR)
 
-flash: $(BINDIR)/main.hex
-	$(FLASHER) $(BINDIR)/main.hex
+.PHONY: %_flash
+%_flash: $(BINDIR)/%.hex
+	$(FLASHER) $(BINDIR)/%.hex
 
 $(OBJDIR)/%.rel: $(SRCDIR)/%.c
 	@mkdir -p $(@D)
@@ -75,12 +79,12 @@ $(BINDIR)/sino8051.lib: $(LIBSINO8051_OBJECTS)
 	@mkdir -p $(@D)
 	$(SDAR) $@ $^
 
-$(BINDIR)/main.ihx: $(MAIN_OBJECTS) $(BINDIR)/sino8051.lib $(BINDIR)/overridable.lib
+$(BINDIR)/%.ihx: $(MAIN_OBJECTS) $(BINDIR)/sino8051.lib $(BINDIR)/overridable.lib
 	@mkdir -p $(@D)
 	$(CC) -m$(FAMILY) -l$(PROC) $(LFLAGS) -o $@ $(MAIN_OBJECTS) -L$(BINDIR) -loverridable -lsino8051
 
 $(BINDIR)/%.hex: $(BINDIR)/%.ihx
 	${PACKIHX} < $< > $@
 
-$(BINDIR)/%.bin: $(BINDIR)/%.ihx
+$(BINDIR)/%.bin: $(BINDIR)/%.hex
 	$(OBJCOPY) -I ihex -O binary $< $@
