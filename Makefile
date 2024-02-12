@@ -52,11 +52,13 @@ MAIN_SOURCES := $(SRCDIR)/main.c \
 	$(LAYOUT_SOURCES)
 MAIN_OBJECTS := $(MAIN_SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.rel)
 
-LIBSINO8051_SOURCES := $(wildcard $(SRCDIR)/lib/sh68f90a/*.c)
-LIBSINO8051_OBJECTS := $(LIBSINO8051_SOURCES:$(SRCDIR)/lib/sh68f90a/%.c=$(OBJDIR)/lib/sh68f90a/%.rel)
+PLATFORM_SOURCES := $(wildcard $(SRCDIR)/platform/sh68f90a/*.c)
+PLATFORM_OBJECTS := $(PLATFORM_SOURCES:$(SRCDIR)/platform/sh68f90a/%.c=$(OBJDIR)/platform/sh68f90a/%.rel)
+PLATFORM_LIB := platform
 
 USER_SOURCES := $(wildcard $(SRCDIR)/user/*.c)
 USER_OBJECTS := $(USER_SOURCES:$(SRCDIR)/user/%.c=$(OBJDIR)/user/%.rel)
+USER_LIB := user
 
 KEYBOARDS_LAYOUTS = nuphy-air60_default
 
@@ -75,17 +77,17 @@ $(OBJDIR)/%.rel: $(SRCDIR)/%.c
 	@mkdir -p $(@D)
 	$(CC) -m$(FAMILY) -l$(PROC) $(CFLAGS) -c $< -o $@
 
-$(BINDIR)/overridable.lib: $(OVERRIDABLE_OBJECTS)
+$(BINDIR)/user.lib: $(USER_OBJECTS)
 	@mkdir -p $(@D)
 	$(SDAR) $@ $^
 
-$(BINDIR)/sino8051.lib: $(LIBSINO8051_OBJECTS)
+$(BINDIR)/platform.lib: $(PLATFORM_OBJECTS)
 	@mkdir -p $(@D)
 	$(SDAR) $@ $^
 
-$(BINDIR)/%.ihx: $(MAIN_OBJECTS) $(BINDIR)/sino8051.lib $(BINDIR)/overridable.lib
+$(BINDIR)/%.ihx: $(MAIN_OBJECTS) $(BINDIR)/$(PLATFORM_LIB).lib $(BINDIR)/$(USER_LIB).lib
 	@mkdir -p $(@D)
-	$(CC) -m$(FAMILY) -l$(PROC) $(LFLAGS) -o $@ $(MAIN_OBJECTS) -L$(BINDIR) -loverridable -lsino8051
+	$(CC) -m$(FAMILY) -l$(PROC) $(LFLAGS) -o $@ $(MAIN_OBJECTS) -L$(BINDIR) -l$(USER_LIB) -l$(PLATFORM_LIB)
 
 $(BINDIR)/%.hex: $(BINDIR)/%.ihx
 	${PACKIHX} < $< > $@

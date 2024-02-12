@@ -1,7 +1,7 @@
 #ifndef KBDEF_H
 #define KBDEF_H
 
-#include "../../lib/sh68f90a/sh68f90a.h"
+#include "../../platform/sh68f90a/sh68f90a.h"
 
 #define MATRIX_ROWS 5
 #define MATRIX_COLS 16

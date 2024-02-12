@@ -1,6 +1,6 @@
 #include "../../../../user/indicators.h"
-#include "../../../../lib/sh68f90a/sh68f90a.h"
-#include "../../../../lib/sh68f90a/pwm.h"
+#include "../../../../platform/sh68f90a/sh68f90a.h"
+#include "../../../../platform/sh68f90a/pwm.h"
 #include <stdlib.h>
 
 void indicators_pre_update()
