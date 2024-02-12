@@ -42,17 +42,21 @@ AFLAGS := -plosgff
 
 # TODO: this should be selected based on the target being built
 LAYOUT_SOURCES := $(wildcard $(SRCDIR)/keyboards/nuphy-air60/layouts/default/*.c)
+KEYBOARD_SOURCES := $(wildcard $(SRCDIR)/keyboards/nuphy-air60/*.c)
+
 # main.c has to be the first file
 MAIN_SOURCES := $(SRCDIR)/main.c \
 	$(filter-out $(SRCDIR)/main.c, $(wildcard $(SRCDIR)/*.c)) \
+	$(wildcard $(SRCDIR)/smk/*.c) \
+	$(KEYBOARD_SOURCES) \
 	$(LAYOUT_SOURCES)
 MAIN_OBJECTS := $(MAIN_SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.rel)
 
 LIBSINO8051_SOURCES := $(wildcard $(SRCDIR)/lib/sh68f90a/*.c)
 LIBSINO8051_OBJECTS := $(LIBSINO8051_SOURCES:$(SRCDIR)/lib/sh68f90a/%.c=$(OBJDIR)/lib/sh68f90a/%.rel)
 
-OVERRIDABLE_SOURCES := $(wildcard $(SRCDIR)/overridable/*.c)
-OVERRIDABLE_OBJECTS := $(OVERRIDABLE_SOURCES:$(SRCDIR)/overridable/%.c=$(OBJDIR)/overridable/%.rel)
+USER_SOURCES := $(wildcard $(SRCDIR)/user/*.c)
+USER_OBJECTS := $(USER_SOURCES:$(SRCDIR)/user/%.c=$(OBJDIR)/user/%.rel)
 
 KEYBOARDS_LAYOUTS = nuphy-air60_default
 

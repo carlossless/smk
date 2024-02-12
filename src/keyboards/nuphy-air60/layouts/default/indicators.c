@@ -1,7 +1,19 @@
-#include "../../../../indicators.h"
+#include "../../../../user/indicators.h"
 #include "../../../../lib/sh68f90a/sh68f90a.h"
 #include "../../../../lib/sh68f90a/pwm.h"
 #include <stdlib.h>
+
+void indicators_pre_update()
+{
+    // set all rgb sinks to low (animation step will enable needed ones)
+    P0 &= ~(_P0_2 | _P0_3 | _P0_4);
+    P1 &= ~(_P1_1 | _P1_2 | _P1_3);
+    P4 &= ~(_P4_3 | _P4_4 | _P4_5 | _P4_6);
+    P5 &= ~(_P5_7);
+    P6 &= ~(_P6_1 | _P6_2 | _P6_3 | _P6_4 | _P6_5 | _P6_6 | _P6_7);
+
+    pwm_disable();
+}
 
 bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
 {
@@ -85,4 +97,12 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
     pwm_set_all_columns(color_intensity);
 
     return false;
+}
+
+void indicators_post_update()
+{
+    // clear pwm isr flag
+    PWM00CON &= ~(1 << 5);
+
+    pwm_enable();
 }

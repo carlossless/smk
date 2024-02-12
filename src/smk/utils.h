@@ -8,13 +8,6 @@
     nop   \
     __endasm
 
-#define _nop_3_() \
-    __asm     \
-    nop   \
-    nop   \
-    nop   \
-    __endasm
-
 #define _nop_4_() \
     __asm     \
     nop   \

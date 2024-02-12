@@ -1,6 +1,6 @@
-#include "../../../../layout.h"
-#include "../../../../matrix.h"
-#include "../../../../report.h"
+#include "../../kbdef.h"
+#include "../../../../user/layout.h"
+#include "../../../../smk/report.h"
 #include <stdint.h>
 
 #define LAYOUT_60( \

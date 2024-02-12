@@ -5,12 +5,12 @@
 #include "lib/sh68f90a/isp.h"
 #include "lib/sh68f90a/uart.h"
 #include "lib/sh68f90a/gpio.h"
-#include "matrix.h"
 #include "lib/sh68f90a/pwm.h"
 #include "lib/sh68f90a/usb.h"
-#include "debug.h"
-#include "utils.h"
-#include "keyboard.h"
+#include "smk/debug.h"
+#include "smk/matrix.h"
+#include "smk/utils.h"
+#include "smk/keyboard.h"
 
 #include <stdio.h>
 

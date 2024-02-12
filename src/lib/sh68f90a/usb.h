@@ -2,7 +2,7 @@
 #define USB_H
 
 #include "sh68f90a.h"
-#include "../../report.h"
+#include "../../smk/report.h"
 #include <stdint.h>
 
 void usb_init();

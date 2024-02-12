@@ -1,8 +1,8 @@
 #ifndef LAYOUT_H
 #define LAYOUT_H
 
-#include "matrix.h"
-#include "keycodes.h"
+#include "../smk/matrix.h"
+#include "../smk/keycodes.h"
 #include <stdbool.h>
 
 extern const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS];

@@ -1,30 +1,14 @@
 #include "matrix.h"
-#include "lib/sh68f90a/sh68f90a.h"
-#include "lib/sh68f90a/pwm.h"
-#include "lib/sh68f90a/delay.h"
-#include "layout.h"
 #include "report.h"
 #include "debug.h"
-#include "indicators.h"
+#include "../lib/sh68f90a/sh68f90a.h"
+#include "../lib/sh68f90a/pwm.h"
+#include "../lib/sh68f90a/delay.h"
+#include "../user/layout.h"
+#include "../user/indicators.h"
+#include "../user/matrix.h"
 #include <stdlib.h>
 #include <stdbool.h>
-
-#define C0  P5_0
-#define C1  P5_1
-#define C2  P5_2
-#define C3  P3_5
-#define C4  P3_4
-#define C5  P3_3
-#define C6  P3_2
-#define C7  P3_1
-#define C8  P3_0
-#define C9  P2_5
-#define C10 P2_4
-#define C11 P2_3
-#define C12 P2_2
-#define C13 P2_1
-#define C14 P2_0
-#define C15 P1_5
 
 void animation_step(uint8_t current_step);
 
@@ -158,103 +142,15 @@ uint8_t matrix_task()
 
 inline void matrix_scan_step()
 {
-    // set all rgb sinks to low (animation step will enable needed ones)
-    P0 &= ~(_P0_2 | _P0_3 | _P0_4);
-    P1 &= ~(_P1_1 | _P1_2 | _P1_3);
-    P4 &= ~(_P4_3 | _P4_4 | _P4_5 | _P4_6);
-    P5 &= ~(_P5_7);
-    P6 &= ~(_P6_1 | _P6_2 | _P6_3 | _P6_4 | _P6_5 | _P6_6 | _P6_7);
+    indicators_pre_update();
 
-    pwm_disable();
-
-    // ignore until matrix has been read
+    // ignore until updated matrix has been read/flushed
     if (!matrix_updated) {
-        // set all columns to high
-        P1 |= (uint8_t)(_P1_5);
-        P2 |= (uint8_t)(_P2_0 | _P2_1 | _P2_2 | _P2_3 | _P2_4 | _P2_5);
-        P3 |= (uint8_t)(_P3_0 | _P3_1 | _P3_2 | _P3_3 | _P3_4 | _P3_5);
-        P5 |= (uint8_t)(_P5_0 | _P5_1 | _P5_2);
+        matrix_pre_scan(current_step);
 
-        // set current (!) column to low
-        switch (current_step) {
-            case 0:
-                C0 = 0;
-                break;
+        uint8_t column_state = matrix_get_col(current_step); 
 
-            case 1:
-                C1 = 0;
-                break;
-
-            case 2:
-                C2 = 0;
-                break;
-
-            case 3:
-                C3 = 0;
-                break;
-
-            case 4:
-                C4 = 0;
-                break;
-
-            case 5:
-                C5 = 0;
-                break;
-
-            case 6:
-                C6 = 0;
-                break;
-
-            case 7:
-                C7 = 0;
-                break;
-
-            case 8:
-                C8 = 0;
-                break;
-
-            case 9:
-                C9 = 0;
-                break;
-
-            case 10:
-                C10 = 0;
-                break;
-
-            case 11:
-                C11 = 0;
-                break;
-
-            case 12:
-                C12 = 0;
-                break;
-
-            case 13:
-                C13 = 0;
-                break;
-
-            case 14:
-                C14 = 0;
-                break;
-
-            case 15:
-                C15 = 0;
-                break;
-        }
-
-        // grab key for the column state
-        // P7_1 - R0
-        // P7_2 - R1
-        // P7_3 - R2
-        // P5_3 - R3
-        // P5_4 - R4
-        uint8_t column_state = (((P7 >> 1) & 0x07) | (P5 & 0x18)) | 0xe0;
-
-        // set all columns down to low
-        P1 &= (uint8_t) ~(_P1_5);
-        P2 &= (uint8_t) ~(_P2_0 | _P2_1 | _P2_2 | _P2_3 | _P2_4 | _P2_5);
-        P3 &= (uint8_t) ~(_P3_0 | _P3_1 | _P3_2 | _P3_3 | _P3_4 | _P3_5);
-        P5 &= (uint8_t) ~(_P5_0 | _P5_1 | _P5_2);
+        matrix_post_scan();
 
         matrix[current_step] = ~column_state;
 
@@ -272,8 +168,5 @@ inline void matrix_scan_step()
         matrix_updated = true;
     }
 
-    // clear pwm isr flag
-    PWM00CON &= ~(1 << 5);
-
-    pwm_enable();
+    indicators_post_update();
 }
