@@ -148,7 +148,7 @@ inline void matrix_scan_step()
     if (!matrix_updated) {
         matrix_pre_scan(current_step);
 
-        uint8_t column_state = matrix_get_col(current_step); 
+        uint8_t column_state = matrix_get_col(current_step);
 
         matrix_post_scan();
 

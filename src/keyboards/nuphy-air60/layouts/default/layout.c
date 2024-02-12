@@ -3,6 +3,8 @@
 #include "../../../../smk/report.h"
 #include <stdint.h>
 
+// clang-format off
+
 #define LAYOUT_60( \
                    K00_0, K01_0, K02_0, K03_0, K04_0, K05_0, K06_0, K07_0, K08_0, K09_0, K10_0, K11_0, K12_0, K13_0, \
                    K00_1, K01_1, K02_1, K03_1, K04_1, K05_1, K06_1, K07_1, K08_1, K09_1, K10_1, K11_1, K12_1, K13_1, \
@@ -71,6 +73,8 @@ const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______, _______, _______,                            _______,                   _______, _______, _______, _______, _______
     ),
 };
+
+// clang-format on
 
 bool process_record_user(uint16_t keycode, bool key_pressed)
 {

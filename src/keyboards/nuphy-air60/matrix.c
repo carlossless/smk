@@ -74,7 +74,6 @@ void matrix_pre_scan(uint8_t col)
             KB_C15 = 0;
             break;
     }
-
 }
 
 uint8_t matrix_scan_col(uint8_t col)

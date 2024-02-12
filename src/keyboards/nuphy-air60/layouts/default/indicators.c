@@ -27,19 +27,19 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
         }
     }
 
-    uint16_t red_intensity = 0;
+    uint16_t red_intensity   = 0;
     uint16_t green_intensity = 0;
-    uint16_t blue_intensity = 0;
+    uint16_t blue_intensity  = 0;
 
     if (current_cycle < 1024) {
         blue_intensity = 1024 - (uint16_t)abs((int16_t)((current_cycle + 1024) % 2048) - 1024);
-        red_intensity = 1024 - (uint16_t)abs((int16_t)((current_cycle) % 2048) - 1024);
+        red_intensity  = 1024 - (uint16_t)abs((int16_t)((current_cycle) % 2048) - 1024);
     } else if (current_cycle >= 1024 && current_cycle < 2048) {
-        red_intensity = 1024 - (uint16_t)abs((int16_t)((current_cycle) % 2048) - 1024);
+        red_intensity   = 1024 - (uint16_t)abs((int16_t)((current_cycle) % 2048) - 1024);
         green_intensity = 1024 - (uint16_t)abs((int16_t)((current_cycle + 1024) % 2048) - 1024);
     } else if (current_cycle >= 2048) {
         green_intensity = 1024 - (uint16_t)abs((int16_t)((current_cycle + 1024) % 2048) - 1024);
-        blue_intensity = 1024 - (uint16_t)abs((int16_t)((current_cycle) % 2048) - 1024);
+        blue_intensity  = 1024 - (uint16_t)abs((int16_t)((current_cycle) % 2048) - 1024);
     }
 
     uint16_t color_intensity;
@@ -64,6 +64,7 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
             P4_5 = 1;
             P4_4 = 1;
             P1_1 = 1;
+
             color_intensity = red_intensity;
             break;
 
@@ -74,6 +75,7 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
             P6_4 = 1;
             P6_5 = 1;
             P1_2 = 1;
+
             color_intensity = green_intensity;
             break;
 
@@ -84,6 +86,7 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
             P4_6 = 1;
             P4_3 = 1;
             P1_3 = 1;
+
             color_intensity = blue_intensity;
             break;
 

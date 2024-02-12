@@ -41,4 +41,4 @@ jobs:
         name: smk
         authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
     - name: Build release
-      run: nix develop --command clang-format --dry-run -Werror -style=file -i src/**.{h,c}
+      run: nix develop --command find src/ -iname "*.h" -o -iname "*.c" -exec clang-format --dry-run -Werror -style=file -i {} \;

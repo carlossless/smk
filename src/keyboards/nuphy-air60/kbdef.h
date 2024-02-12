@@ -17,16 +17,16 @@
 // TODO
 
 // Column Pins Bits
-#define KB_C0_P5_0 _P5_0
-#define KB_C1_P5_1 _P5_1
-#define KB_C2_P5_2 _P5_2
-#define KB_C3_P3_5 _P3_5
-#define KB_C4_P3_4 _P3_4
-#define KB_C5_P3_3 _P3_3
-#define KB_C6_P3_2 _P3_2
-#define KB_C7_P3_1 _P3_1
-#define KB_C8_P3_0 _P3_0
-#define KB_C9_P2_5 _P2_5
+#define KB_C0_P5_0  _P5_0
+#define KB_C1_P5_1  _P5_1
+#define KB_C2_P5_2  _P5_2
+#define KB_C3_P3_5  _P3_5
+#define KB_C4_P3_4  _P3_4
+#define KB_C5_P3_3  _P3_3
+#define KB_C6_P3_2  _P3_2
+#define KB_C7_P3_1  _P3_1
+#define KB_C8_P3_0  _P3_0
+#define KB_C9_P2_5  _P2_5
 #define KB_C10_P2_4 _P2_4
 #define KB_C11_P2_3 _P2_3
 #define KB_C12_P2_2 _P2_2
