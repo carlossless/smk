@@ -19,11 +19,10 @@
             sdcc
             gnumake
             binutils
-            clang-tools
+            clang-tools # for clang-format
             sinowealth-kb-tool.packages."${system}".default
             uhubctl
             srecord
-            cmake
           ];
         };
       }
