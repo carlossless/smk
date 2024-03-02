@@ -1,7 +1,9 @@
-#include "../../../../layout.h"
-#include "../../../../matrix.h"
-#include "../../../../report.h"
+#include "../../kbdef.h"
+#include "../../../../user/layout.h"
+#include "../../../../smk/report.h"
 #include <stdint.h>
+
+// clang-format off
 
 #define LAYOUT_60( \
                    K00_0, K01_0, K02_0, K03_0, K04_0, K05_0, K06_0, K07_0, K08_0, K09_0, K10_0, K11_0, K12_0, K13_0, \
@@ -71,6 +73,8 @@ const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______, _______, _______,                            _______,                   _______, _______, _______, _______, _______
     ),
 };
+
+// clang-format on
 
 bool process_record_user(uint16_t keycode, bool key_pressed)
 {

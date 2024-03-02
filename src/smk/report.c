@@ -1,7 +1,7 @@
 #include "report.h"
-#include "layout.h"
-#include <string.h>
 #include "host.h"
+#include "../user/layout.h"
+#include <string.h>
 
 static uint8_t real_mods = 0;
 static uint8_t weak_mods = 0;

@@ -1,6 +1,6 @@
 CC= sdcc
 ASM = sdas8051
-SDAR ?= sdar rc
+SDAR ?= sdar -rc
 OBJCOPY = objcopy
 PACKIHX = packihx
 FLASHER = sinowealth-kb-tool write -p nuphy-air60
@@ -12,7 +12,8 @@ BINDIR = bin
 FAMILY = mcs51
 PROC = mcs51
 
-FREQ_SYS ?= 24000000
+FREQ_SYS ?= 24000000 # 24Mhz, could be keyboard specific
+WATHCDOG_ENABLE ?= 1 # could be keyboard specific
 XRAM_SIZE ?= 0x1000
 XRAM_LOC ?= 0x0000
 CODE_SIZE ?= 0xf000 # 61440 bytes (leaving the remaining 4096 for bootloader)
@@ -32,7 +33,7 @@ CFLAGS := -V -mmcs51 --model-small \
 	-I$(ROOT_DIR)../include \
 	-DDEBUG=$(DEBUG) \
 	-DFREQ_SYS=$(FREQ_SYS) \
-	-DWATCHDOG_ENABLE=1 \
+	-DWATCHDOG_ENABLE=$(WATHCDOG_ENABLE) \
 	-DUSB_VID=$(USB_VID) \
 	-DUSB_PID=$(USB_PID) \
 	-DSMK_VERSION=$(SMK_VERSION)
@@ -41,39 +42,55 @@ AFLAGS := -plosgff
 
 # TODO: this should be selected based on the target being built
 LAYOUT_SOURCES := $(wildcard $(SRCDIR)/keyboards/nuphy-air60/layouts/default/*.c)
+KEYBOARD_SOURCES := $(wildcard $(SRCDIR)/keyboards/nuphy-air60/*.c)
+
 # main.c has to be the first file
 MAIN_SOURCES := $(SRCDIR)/main.c \
 	$(filter-out $(SRCDIR)/main.c, $(wildcard $(SRCDIR)/*.c)) \
+	$(wildcard $(SRCDIR)/smk/*.c) \
+	$(KEYBOARD_SOURCES) \
 	$(LAYOUT_SOURCES)
 MAIN_OBJECTS := $(MAIN_SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.rel)
 
-LIB_SOURCES := $(wildcard $(SRCDIR)/lib/*.c)
-LIB_OBJECTS := $(LIB_SOURCES:$(SRCDIR)/lib/%.c=$(OBJDIR)/lib/%.rel)
+PLATFORM_SOURCES := $(wildcard $(SRCDIR)/platform/sh68f90a/*.c)
+PLATFORM_OBJECTS := $(PLATFORM_SOURCES:$(SRCDIR)/platform/sh68f90a/%.c=$(OBJDIR)/platform/sh68f90a/%.rel)
+PLATFORM_LIB := platform
 
-.PHONY: all clean flash
+USER_SOURCES := $(wildcard $(SRCDIR)/user/*.c)
+USER_OBJECTS := $(USER_SOURCES:$(SRCDIR)/user/%.c=$(OBJDIR)/user/%.rel)
+USER_LIB := user
 
-all: $(BINDIR)/main.hex
+KEYBOARDS_LAYOUTS = nuphy-air60_default
 
+.PHONY: all
+all: $(KEYBOARDS_LAYOUTS:%=$(BINDIR)/%.hex)
+
+.PHONY: clean
 clean:
 	rm -rf $(BINDIR) $(OBJDIR)
 
-flash: $(BINDIR)/main.hex
-	$(FLASHER) $(BINDIR)/main.hex
+.PHONY: %_flash
+%_flash: $(BINDIR)/%.hex
+	$(FLASHER) $(BINDIR)/%.hex
 
 $(OBJDIR)/%.rel: $(SRCDIR)/%.c
 	@mkdir -p $(@D)
 	$(CC) -m$(FAMILY) -l$(PROC) $(CFLAGS) -c $< -o $@
 
-$(BINDIR)/main.lib: $(LIB_OBJECTS)
+$(BINDIR)/user.lib: $(USER_OBJECTS)
 	@mkdir -p $(@D)
 	$(SDAR) $@ $^
 
-$(BINDIR)/main.ihx: $(MAIN_OBJECTS) $(BINDIR)/main.lib
+$(BINDIR)/platform.lib: $(PLATFORM_OBJECTS)
 	@mkdir -p $(@D)
-	$(CC) -m$(FAMILY) -l$(PROC) $(LFLAGS) -o $@ $^
+	$(SDAR) $@ $^
+
+$(BINDIR)/%.ihx: $(MAIN_OBJECTS) $(BINDIR)/$(PLATFORM_LIB).lib $(BINDIR)/$(USER_LIB).lib
+	@mkdir -p $(@D)
+	$(CC) -m$(FAMILY) -l$(PROC) $(LFLAGS) -o $@ $(MAIN_OBJECTS) -L$(BINDIR) -l$(USER_LIB) -l$(PLATFORM_LIB)
 
 $(BINDIR)/%.hex: $(BINDIR)/%.ihx
 	${PACKIHX} < $< > $@
 
-$(BINDIR)/%.bin: $(BINDIR)/%.ihx
+$(BINDIR)/%.bin: $(BINDIR)/%.hex
 	$(OBJCOPY) -I ihex -O binary $< $@
