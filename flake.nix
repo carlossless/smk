@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/master"; # sdcc 4.4.0
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable"; # sdcc 4.4.0
     utils.url = "github:numtide/flake-utils";
     sinowealth-kb-tool.url = "github:carlossless/sinowealth-kb-tool";
   };
