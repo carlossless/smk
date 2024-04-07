@@ -7,6 +7,7 @@
 #include "../../smk/utils.h"
 #include "../../smk/usbhidreport.h"
 #include "../../smk/keyboard.h"
+#include "../../platform/sh68f90a/delay.h"
 #include <stdint.h>
 #include <string.h>
 
@@ -354,6 +355,9 @@ void usb_send_report(report_keyboard_t *report)
 
     SET_EP1_CNT(8);
     SET_EP1_IN_RDY;
+
+    // TODO: this function should be blocking until transaction is finished, instead of a delay
+    delay_ms(10);
 }
 
 static void usb_setup_irq()
