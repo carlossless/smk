@@ -48,6 +48,10 @@ inline void process_key_state(uint8_t row, uint8_t col, bool pressed)
 {
     uint16_t qcode = keymaps[0][row][col];
 
+    // TODO: replace this with an actual delay so that each key change can be queued
+    // otherwise this cause key registration issues
+    dprintf("WAIT WAIT WAIT");
+
     if (IS_QK_MOMENTARY(qcode)) {
         if (pressed) {
             action_layer = QK_MOMENTARY_GET_LAYER(qcode);
