@@ -7,6 +7,7 @@ static uint8_t real_mods = 0;
 static uint8_t weak_mods = 0;
 
 __xdata report_keyboard_t keyboard_report;
+__xdata report_keyboard_t last_report;
 
 /** \brief Send keyboard report
  *
@@ -15,8 +16,6 @@ void send_keyboard_report()
 {
     keyboard_report.mods = real_mods;
     keyboard_report.mods |= weak_mods;
-
-    static report_keyboard_t last_report;
 
     /* Only send the report if there are changes to propagate to the host. */
     if (memcmp(&keyboard_report, &last_report, sizeof(report_keyboard_t)) != 0) {

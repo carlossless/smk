@@ -44,7 +44,7 @@ inline matrix_col_t matrix_can_read()
     return matrix_updated;
 }
 
-void process_key_state(uint8_t row, uint8_t col, bool pressed)
+inline void process_key_state(uint8_t row, uint8_t col, bool pressed)
 {
     uint16_t qcode = keymaps[0][row][col];
 
@@ -97,7 +97,7 @@ void process_key_state(uint8_t row, uint8_t col, bool pressed)
     dprintf("UNRECOGNIZED KEY: 0x%04x\r\n", qcode);
 }
 
-uint8_t matrix_task()
+inline uint8_t matrix_task()
 {
     if (!matrix_can_read()) {
         return false;
@@ -148,7 +148,7 @@ inline void matrix_scan_step()
     if (!matrix_updated) {
         matrix_pre_scan(current_step);
 
-        uint8_t column_state = matrix_get_col(current_step);
+        uint8_t column_state = matrix_scan_col(current_step);
 
         matrix_post_scan();
 

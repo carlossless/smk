@@ -44,8 +44,14 @@ void main()
     dprintf("DEVICE vId:" TOSTRING(USB_VID) " pId:" TOSTRING(USB_PID) "\n\r");
     dprintf("OS: 0x%x, CONN: 0x%x\n\r", keyboard_state.os_mode, keyboard_state.conn_mode);
 
+    if (keyboard_state.os_mode == KEYBOARD_OS_MODE_WIN) {
+        isp_jump();
+    }
+
     // enable pwm and interrupt (driving matrix scan)
     pwm_enable();
+
+    delay_ms(1000);
 
     while (1) {
         CLR_WDT();

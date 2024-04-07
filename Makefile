@@ -30,6 +30,7 @@ CFLAGS := -V -mmcs51 --model-small \
 	--xram-size $(XRAM_SIZE) --xram-loc $(XRAM_LOC) \
 	--code-size $(CODE_SIZE) \
 	--std-c2x \
+	--opt-code-speed \
 	-I$(ROOT_DIR)../include \
 	-DDEBUG=$(DEBUG) \
 	-DFREQ_SYS=$(FREQ_SYS) \
@@ -69,9 +70,9 @@ all: $(KEYBOARDS_LAYOUTS:%=$(BINDIR)/%.hex)
 clean:
 	rm -rf $(BINDIR) $(OBJDIR)
 
-.PHONY: %_flash
-%_flash: $(BINDIR)/%.hex
-	$(FLASHER) $(BINDIR)/%.hex
+.PHONY: flash
+flash: $(BINDIR)/nuphy-air60_default.hex
+	$(FLASHER) $<
 
 $(OBJDIR)/%.rel: $(SRCDIR)/%.c
 	@mkdir -p $(@D)
@@ -85,6 +86,7 @@ $(BINDIR)/platform.lib: $(PLATFORM_OBJECTS)
 	@mkdir -p $(@D)
 	$(SDAR) $@ $^
 
+.PRECIOUS: $(BINDIR)/%.ihx
 $(BINDIR)/%.ihx: $(MAIN_OBJECTS) $(BINDIR)/$(PLATFORM_LIB).lib $(BINDIR)/$(USER_LIB).lib
 	@mkdir -p $(@D)
 	$(CC) -m$(FAMILY) -l$(PROC) $(LFLAGS) -o $@ $(MAIN_OBJECTS) -L$(BINDIR) -l$(USER_LIB) -l$(PLATFORM_LIB)
