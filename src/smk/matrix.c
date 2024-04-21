@@ -48,6 +48,8 @@ inline void process_key_state(uint8_t row, uint8_t col, bool pressed)
 {
     uint16_t qcode = keymaps[0][row][col];
 
+    dprintf("KEY: 0x%04x %s\r\n", qcode, pressed ? "UP" : "DOWN");
+
     if (IS_QK_MOMENTARY(qcode)) {
         if (pressed) {
             action_layer = QK_MOMENTARY_GET_LAYER(qcode);
