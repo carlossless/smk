@@ -78,6 +78,7 @@ void matrix_pre_scan(uint8_t col)
 
 uint8_t matrix_scan_col(uint8_t col)
 {
+    col;
     // grab key for the column state
     // P7_1 - R0
     // P7_2 - R1
