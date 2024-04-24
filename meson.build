@@ -91,29 +91,17 @@ lib_user = custom_target('user.lib',
     command : [sdar, sdar_args, '@OUTPUT@', '@INPUT@'],
 )
 
-rel_platform_sh68f90a = compiler.process(src_platform_sh68f90a)
-lib_platform_sh68f90a = custom_target('platform_sh68f90a.lib',
-    input : rel_platform_sh68f90a,
-    output : 'platform_sh68f90a.lib',
-    command : [sdar, sdar_args, '@OUTPUT@', '@INPUT@'],
-)
-
 foreach part : parts
     keyboard = part[0]
     platform = part[1]
     foreach layout : part[2]
-        if platform == 'sh68f90a'
-            lib_platform = lib_platform_sh68f90a
-        else
-            error('unsupported platform: ' + platform)
-        endif
-
         if keyboard == 'nuphy-air60'
             src_main += [
                 'src/keyboards/nuphy-air60/smatrix.c',
                 'src/keyboards/nuphy-air60/layouts/default/indicators.c',
                 'src/keyboards/nuphy-air60/layouts/default/layout.c',
             ]
+            src_main += src_platform_sh68f90a
             inc_dirs += [
                 'src/keyboards/nuphy-air60',
             ]
@@ -127,8 +115,8 @@ foreach part : parts
         ihx_smk = custom_target(prefix + 'smk.ihx',
             input : rel_main,
             output : prefix + 'smk.ihx',
-            depends: [lib_platform, lib_user],
-            command : [cc, cc_args, '-o', '@OUTPUT@', '@INPUT@', '-l' + lib_platform.full_path(), '-l' + lib_user.full_path()],
+            depends: [lib_user],
+            command : [cc, cc_args, '-o', '@OUTPUT@', '@INPUT@', '-l' + lib_user.full_path()],
         )
 
         hex_smk = custom_target(prefix + 'smk.hex',

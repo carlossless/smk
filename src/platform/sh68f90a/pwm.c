@@ -1,6 +1,7 @@
 #include "pwm.h"
 #include <stdint.h>
 #include <stdio.h>
+#include "matrix.h"
 
 /*
 # Columns

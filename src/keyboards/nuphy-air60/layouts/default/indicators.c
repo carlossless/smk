@@ -34,10 +34,10 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
     if (current_cycle < 1024) {
         blue_intensity = 1024 - (uint16_t)abs((int16_t)((current_cycle + 1024) % 2048) - 1024);
         red_intensity  = 1024 - (uint16_t)abs((int16_t)((current_cycle) % 2048) - 1024);
-    } else if (current_cycle >= 1024 && current_cycle < 2048) {
+    } else if (current_cycle < 2048) {
         red_intensity   = 1024 - (uint16_t)abs((int16_t)((current_cycle) % 2048) - 1024);
         green_intensity = 1024 - (uint16_t)abs((int16_t)((current_cycle + 1024) % 2048) - 1024);
-    } else if (current_cycle >= 2048) {
+    } else {
         green_intensity = 1024 - (uint16_t)abs((int16_t)((current_cycle + 1024) % 2048) - 1024);
         blue_intensity  = 1024 - (uint16_t)abs((int16_t)((current_cycle) % 2048) - 1024);
     }

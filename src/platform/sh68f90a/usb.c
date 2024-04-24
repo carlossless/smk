@@ -802,7 +802,7 @@ static void usb_get_endpoint_status_handler(__xdata struct usb_req_setup *req)
 
 static void usb_get_descriptor_handler(__xdata struct usb_req_setup *req)
 {
-    uint8_t *__xdata addr;
+    uint8_t *__xdata addr = NULL;
     uint16_t __xdata length;
 
     __xdata uint8_t      *buf   = scratch;
@@ -976,7 +976,7 @@ static void usb_hid_set_protocol_handler(__xdata struct usb_req_setup *req)
     if (req->wIndex == 0) {
         interface0_protocol = req->wValue & 0xff;
     } else if (req->wIndex == 1) {
-        interface1_protocol = req->wValue && 0xff;
+        interface1_protocol = req->wValue & 0xff;
     }
 
     CLEAR_EP0_CNT;
