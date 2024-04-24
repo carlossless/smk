@@ -4,6 +4,10 @@ project(
     version: 'alpha'
 )
 
+parts = [
+    ['nuphy-air60', 'sh68f90a', ['default']]
+]
+
 cc_args = [
     # '--Werror', # TODO: reeneable
     '--std-c2x',
@@ -16,13 +20,16 @@ cc_args = [
     '--opt-code-speed',
     '--out-fmt-ihx',
 
-    '-DDEBUG=1',
     '-DFREQ_SYS=24000000',
     '-DWATCHDOG_ENABLE=1',
     '-DUSB_VID=0x05ac',
     '-DUSB_PID=0x024f',
     '-DSMK_VERSION=@0@'.format(meson.project_version()),
 ]
+
+if get_option('buildtype') == 'debug'
+    cc_args += '-DDEBUG=1'
+endif
 
 sdar_args = ['-rc']
 
@@ -34,9 +41,6 @@ inc_dirs = [
     'src/plaform/sh68f90a', # TODO: move to a conditional
     'src/user',
     'src/keyboards',
-
-    # TODO: should be based on keyboard + layout selection
-    'src/keyboards/nuphy-air60',
 ]
 
 src_main = [
@@ -44,14 +48,9 @@ src_main = [
     'src/smk/host.c',
     'src/smk/matrix.c',
     'src/smk/report.c',
-
-    # TODO: should be based on keyboard + layput seleciton
-    'src/keyboards/nuphy-air60/smatrix.c', # TODO: rename properly
-    'src/keyboards/nuphy-air60/layouts/default/indicators.c',
-    'src/keyboards/nuphy-air60/layouts/default/layout.c',
 ]
 
-src_platform = [ # TODO: should be based on platform selection
+src_platform_sh68f90a = [
     'src/platform/sh68f90a/clock.c',
     'src/platform/sh68f90a/delay.c',
     'src/platform/sh68f90a/gpio.c',
@@ -85,39 +84,67 @@ compiler = generator(cc,
     arguments : cc_args + cc_incs + ['-c', '@INPUT@', '-o', '@OUTPUT@']
 )
 
-rel_platform = compiler.process(src_platform)
 rel_user = compiler.process(src_user)
-rel_main = compiler.process(src_main)
-
-lib_platform = custom_target('platform.lib',
-    input : rel_platform,
-    output : 'platform.lib',
-    command : [sdar, sdar_args, '@OUTPUT@', '@INPUT@'],
-)
-
 lib_user = custom_target('user.lib',
     input : rel_user,
     output : 'user.lib',
     command : [sdar, sdar_args, '@OUTPUT@', '@INPUT@'],
 )
 
-ihx_smk = custom_target('smk.ihx', # should be keyboard/layout specific
-    input : rel_main,
-    output : 'smk.ihx',
-    depends: [lib_platform, lib_user],
-    command : [cc, cc_args, '-o', '@OUTPUT@', '@INPUT@', '-l' + lib_platform.full_path(), '-l' + lib_user.full_path()],
+rel_platform_sh68f90a = compiler.process(src_platform_sh68f90a)
+lib_platform_sh68f90a = custom_target('platform_sh68f90a.lib',
+    input : rel_platform_sh68f90a,
+    output : 'platform_sh68f90a.lib',
+    command : [sdar, sdar_args, '@OUTPUT@', '@INPUT@'],
 )
 
-hex_smk = custom_target('smk.hex', # should be keyboard/layout specific
-    input : ihx_smk,
-    output : 'smk.hex',
-    capture: true,
-    install : true,
-    install_dir : 'firmware',
-    command : [packihx, '@INPUT@'],
-)
+foreach part : parts
+    keyboard = part[0]
+    platform = part[1]
+    foreach layout : part[2]
+        if platform == 'sh68f90a'
+            lib_platform = lib_platform_sh68f90a
+        else
+            error('unsupported platform: ' + platform)
+        endif
 
-flash = run_target('flash',
-    command : [skbt, 'write', '-p', 'nuphy-air60', hex_smk.full_path()],
-    depends : hex_smk,
-)
+        if keyboard == 'nuphy-air60'
+            src_main += [
+                'src/keyboards/nuphy-air60/smatrix.c',
+                'src/keyboards/nuphy-air60/layouts/default/indicators.c',
+                'src/keyboards/nuphy-air60/layouts/default/layout.c',
+            ]
+            inc_dirs += [
+                'src/keyboards/nuphy-air60',
+            ]
+        else
+            error('unsupported keyboard: ' + keyboard)
+        endif
+
+        prefix = keyboard + '_' + layout + '_'
+
+        rel_main = compiler.process(src_main)
+        ihx_smk = custom_target(prefix + 'smk.ihx',
+            input : rel_main,
+            output : prefix + 'smk.ihx',
+            depends: [lib_platform, lib_user],
+            command : [cc, cc_args, '-o', '@OUTPUT@', '@INPUT@', '-l' + lib_platform.full_path(), '-l' + lib_user.full_path()],
+        )
+
+        hex_smk = custom_target(prefix + 'smk.hex',
+            input : ihx_smk,
+            output : prefix + 'smk.hex',
+            capture: true,
+            install : true,
+            install_dir : 'firmware',
+            command : [packihx, '@INPUT@'],
+        )
+
+        flash = run_target(prefix + 'flash',
+            command : [skbt, 'write', '-p', 'nuphy-air60', hex_smk.full_path()],
+            depends : hex_smk,
+        )
+
+        message(prefix + 'flash')
+    endforeach
+endforeach
