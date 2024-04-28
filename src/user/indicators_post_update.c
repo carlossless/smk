@@ -1,5 +1,3 @@
 #include "indicators.h"
 
-void indicators_post_update()
-{
-}
+void indicators_post_update() {}

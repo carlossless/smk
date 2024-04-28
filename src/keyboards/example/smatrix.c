@@ -11,6 +11,4 @@ uint8_t matrix_scan_col(uint8_t col)
     return 0;
 }
 
-void matrix_post_scan()
-{
-}
+void matrix_post_scan() {}
