@@ -866,9 +866,11 @@ static void usb_get_descriptor_handler(__xdata struct usb_req_setup *req)
         if (iface_index == 0) {
             length = sizeof(hid_report_desc_keyboard);
             APPEND(&hid_report_desc_keyboard, length);
+            addr   = scratch;
         } else if (iface_index == 1) {
             length = sizeof(hid_report_desc_extra);
             APPEND(&hid_report_desc_extra, length);
+            addr   = scratch;
         } else {
             STALL_EP0();
             return;

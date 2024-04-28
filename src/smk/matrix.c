@@ -70,7 +70,7 @@ inline void process_key_state(uint8_t row, uint8_t col, bool pressed)
         }
     }
 
-    if (!process_record_user(qcode, pressed)) {
+    if (!layout_process_record(qcode, pressed)) {
         return;
     }
 

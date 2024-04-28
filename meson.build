@@ -4,12 +4,16 @@ project(
     version: 'alpha'
 )
 
+env = environment()
+env.set('DEBUG', '1') # TODO remove
+
 parts = [
-    ['nuphy-air60', 'sh68f90a', ['default']]
+    ['nuphy-air60', 'sh68f90a', ['default']],
+    ['example', 'sh68f90a', ['default']],
 ]
 
 cc_args = [
-    # '--Werror', # TODO: reeneable
+    '--Werror',
     '--std-c2x',
 
     '-mmcs51',
@@ -33,21 +37,37 @@ endif
 
 sdar_args = ['-rc']
 
-inc_dirs = [
+# SMK
+
+inc_base_dirs = [
     '.',
     'src',
     'src/smk',
     'src/plaform',
-    'src/plaform/sh68f90a', # TODO: move to a conditional
     'src/user',
     'src/keyboards',
 ]
 
-src_main = [
+src_smk = [
     'src/main.c',
     'src/smk/host.c',
     'src/smk/matrix.c',
     'src/smk/report.c',
+]
+
+# USER DEFAULTS
+
+src_user = [
+    'src/user/layout_process_record.c',
+    'src/user/indicators_pre_update.c',
+    'src/user/indicators_update_step.c',
+    'src/user/indicators_post_update.c',
+]
+
+# PLATFORM
+
+inc_platform_sh68f90a = [
+    'src/plaform/sh68f90a',
 ]
 
 src_platform_sh68f90a = [
@@ -62,9 +82,33 @@ src_platform_sh68f90a = [
     'src/platform/sh68f90a/keyboard.c',
 ]
 
-src_user = [
-    'src/user/indicators.c',
-    'src/user/layout.c',
+# USER KEYBOARDS
+
+inc_user_example = [
+    'src/keyboards/example',
+]
+
+src_user_example = [
+    'src/keyboards/example/smatrix.c',
+]
+
+inc_user_nuphy_air60 = [
+    'src/keyboards/nuphy-air60',
+]
+
+src_user_nuphy_air60 = [
+    'src/keyboards/nuphy-air60/smatrix.c',
+]
+
+# USER LAYOUTS
+
+src_user_example_default = [
+    'src/keyboards/example/layouts/default/layout.c',
+]
+
+src_user_nuphy_air60_default = [
+    'src/keyboards/nuphy-air60/layouts/default/indicators.c',
+    'src/keyboards/nuphy-air60/layouts/default/layout.c',
 ]
 
 cc = find_program('sdcc', required : true)
@@ -73,9 +117,9 @@ packihx = find_program('packihx', required : true)
 skbt = find_program('sinowealth-kb-tool', required : true)
 
 dir_base = meson.current_source_dir()
-cc_incs = []
 
-foreach dir : inc_dirs
+cc_incs = []
+foreach dir : inc_base_dirs
     cc_incs += '-I' + join_paths(dir_base, dir)
 endforeach
 
@@ -95,21 +139,41 @@ foreach part : parts
     keyboard = part[0]
     platform = part[1]
     foreach layout : part[2]
-        if keyboard == 'nuphy-air60'
-            src_main += [
-                'src/keyboards/nuphy-air60/smatrix.c',
-                'src/keyboards/nuphy-air60/layouts/default/indicators.c',
-                'src/keyboards/nuphy-air60/layouts/default/layout.c',
-            ]
+        src_main = src_smk
+        inc_dirs = inc_base_dirs
+        if platform == 'sh68f90a'
             src_main += src_platform_sh68f90a
-            inc_dirs += [
-                'src/keyboards/nuphy-air60',
-            ]
+            inc_dirs += inc_platform_sh68f90a
+        endif
+
+        if keyboard == 'nuphy-air60'
+            src_main += src_user_nuphy_air60
+            inc_dirs += inc_user_nuphy_air60
+
+            if layout == 'default'
+                src_main += src_user_nuphy_air60_default
+            endif
+        elif keyboard == 'example'
+            src_main += src_user_example
+            inc_dirs += inc_user_example
+
+            if layout == 'default'
+                src_main += src_user_example_default
+            endif
         else
             error('unsupported keyboard: ' + keyboard)
         endif
 
         prefix = keyboard + '_' + layout + '_'
+
+        cc_incs = []
+        foreach dir : inc_dirs
+            cc_incs += '-I' + join_paths(dir_base, dir)
+        endforeach
+        compiler = generator(cc,
+            output : '@BASENAME@.rel',
+            arguments : cc_args + cc_incs + ['-c', '@INPUT@', '-o', '@OUTPUT@'],
+        )
 
         rel_main = compiler.process(src_main)
         ihx_smk = custom_target(prefix + 'smk.ihx',
@@ -129,10 +193,10 @@ foreach part : parts
         )
 
         flash = run_target(prefix + 'flash',
-            command : [skbt, 'write', '-p', 'nuphy-air60', hex_smk.full_path()],
+            command : [skbt, 'write', '-p', keyboard, hex_smk.full_path()],
             depends : hex_smk,
         )
 
-        message(prefix + 'flash')
+        message(prefix, cc_incs)
     endforeach
 endforeach
