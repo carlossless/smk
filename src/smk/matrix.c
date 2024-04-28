@@ -45,6 +45,8 @@ inline void process_key_state(uint8_t row, uint8_t col, bool pressed)
 {
     uint16_t qcode = keymaps[0][row][col];
 
+    // FIXME: this debug statement causes a delay which has a sideffect of fixing
+    // a sticky-key problem for the last row of keys (report is unsent on key-up)
     dprintf("KEY: 0x%04x %s\r\n", qcode, pressed ? "UP" : "DOWN");
 
     if (IS_QK_MOMENTARY(qcode)) {
@@ -108,7 +110,7 @@ inline uint8_t matrix_task()
         matrix_changed |= matrix_previous[col] ^ matrix_get_col(col);
     }
 
-    // Short-circuit the complete matrix processing if it is not necessary
+    // short-circuit the complete matrix processing if it is not necessary
     if (!matrix_changed) {
         matrix_updated = false;
         return matrix_changed;
