@@ -5,37 +5,19 @@ project(
 )
 
 env = environment()
-env.set('DEBUG', '1') # TODO remove
+env.set('DEBUG', '1')
+
+default_options = {
+    'freq_sys': '24000000', # 24Mhz
+    'watchdog_enable': '1',
+    'vendor_id': '0x258a',
+    'product_id': '0xdead',
+}
 
 parts = [
-    ['nuphy-air60', 'sh68f90a', ['default']],
-    ['example', 'sh68f90a', ['default']],
+    ['example', 'sh68f90a', ['default'], {}],
+    ['nuphy-air60', 'sh68f90a', ['default'], { 'vendor_id': '0x05ac', 'product_id': '0x024f' }],
 ]
-
-cc_args = [
-    '--Werror',
-    '--std-c2x',
-
-    '-mmcs51',
-    '--model-small',
-	'--xram-size', '0x1000',
-    '--xram-loc', '0x0000',
-	'--code-size', '0xf000',
-    '--opt-code-speed',
-    '--out-fmt-ihx',
-
-    '-DFREQ_SYS=24000000',
-    '-DWATCHDOG_ENABLE=1',
-    '-DUSB_VID=0x05ac',
-    '-DUSB_PID=0x024f',
-    '-DSMK_VERSION=@0@'.format(meson.project_version()),
-]
-
-if get_option('buildtype') == 'debug'
-    cc_args += '-DDEBUG=1'
-endif
-
-sdar_args = ['-rc']
 
 # SMK
 
@@ -111,6 +93,27 @@ src_user_nuphy_air60_default = [
     'src/keyboards/nuphy-air60/layouts/default/layout.c',
 ]
 
+cc_base_args = [
+    '--Werror',
+    '--std-c2x',
+
+    '-mmcs51',
+    '--model-small',
+	'--xram-size', '0x1000',
+    '--xram-loc', '0x0000',
+	'--code-size', '0xf000',
+    '--opt-code-speed',
+    '--out-fmt-ihx',
+
+    '-DSMK_VERSION=@0@'.format(meson.project_version()),
+]
+
+if get_option('buildtype') == 'debug'
+    cc_base_args += '-DDEBUG=1'
+endif
+
+sdar_args = ['-rc']
+
 cc = find_program('sdcc', required : true)
 sdar = find_program('sdar', required : true)
 packihx = find_program('packihx', required : true)
@@ -125,7 +128,7 @@ endforeach
 
 compiler = generator(cc,
     output : '@BASENAME@.rel',
-    arguments : cc_args + cc_incs + ['-c', '@INPUT@', '-o', '@OUTPUT@']
+    arguments : cc_base_args + cc_incs + ['-c', '@INPUT@', '-o', '@OUTPUT@']
 )
 
 rel_user = compiler.process(src_user)
@@ -138,7 +141,10 @@ lib_user = custom_target('user.lib',
 foreach part : parts
     keyboard = part[0]
     platform = part[1]
-    foreach layout : part[2]
+    layouts = part[2]
+    options = default_options + part[3]
+
+    foreach layout : layouts
         src_main = src_smk
         inc_dirs = inc_base_dirs
         if platform == 'sh68f90a'
@@ -166,10 +172,18 @@ foreach part : parts
 
         prefix = keyboard + '_' + layout + '_'
 
+        cc_args = cc_base_args + [
+            '-DFREQ_SYS=@0@'.format(options['freq_sys']),
+            '-DWATCHDOG_ENABLE=@0@'.format(options['watchdog_enable']),
+            '-DUSB_VID=@0@'.format(options['vendor_id']),
+            '-DUSB_PID=@0@'.format(options['product_id']),
+        ]
+
         cc_incs = []
         foreach dir : inc_dirs
             cc_incs += '-I' + join_paths(dir_base, dir)
         endforeach
+
         compiler = generator(cc,
             output : '@BASENAME@.rel',
             arguments : cc_args + cc_incs + ['-c', '@INPUT@', '-o', '@OUTPUT@'],
@@ -196,7 +210,5 @@ foreach part : parts
             command : [skbt, 'write', '-p', keyboard, hex_smk.full_path()],
             depends : hex_smk,
         )
-
-        message(prefix, cc_incs)
     endforeach
 endforeach
