@@ -1,12 +1,9 @@
 #include "matrix.h"
 #include "report.h"
 #include "debug.h"
-#include "../platform/sh68f90a/sh68f90a.h"
-#include "../platform/sh68f90a/pwm.h"
-#include "../platform/sh68f90a/delay.h"
-#include "../user/layout.h"
-#include "../user/indicators.h"
-#include "../user/matrix.h"
+#include "layout.h"
+#include "indicators.h"
+#include "user_matrix.h"
 #include <stdlib.h>
 #include <stdbool.h>
 
@@ -148,11 +145,11 @@ inline void matrix_scan_step()
 
     // ignore until updated matrix has been read/flushed
     if (!matrix_updated) {
-        matrix_pre_scan(current_step);
+        user_matrix_pre_scan(current_step);
 
-        uint8_t column_state = matrix_scan_col(current_step);
+        uint8_t column_state = user_matrix_scan_col(current_step);
 
-        matrix_post_scan();
+        user_matrix_post_scan();
 
         matrix[current_step] = ~column_state;
 

@@ -49,7 +49,7 @@ src_user = [
 # PLATFORM
 
 inc_platform_sh68f90a = [
-    'src/plaform/sh68f90a',
+    'src/platform/sh68f90a',
 ]
 
 src_platform_sh68f90a = [
@@ -71,7 +71,7 @@ inc_user_example = [
 ]
 
 src_user_example = [
-    'src/keyboards/example/smatrix.c',
+    'src/keyboards/example/user_matrix.c',
 ]
 
 inc_user_nuphy_air60 = [
@@ -79,7 +79,7 @@ inc_user_nuphy_air60 = [
 ]
 
 src_user_nuphy_air60 = [
-    'src/keyboards/nuphy-air60/smatrix.c',
+    'src/keyboards/nuphy-air60/user_matrix.c',
 ]
 
 # USER LAYOUTS
@@ -150,6 +150,8 @@ foreach part : parts
         if platform == 'sh68f90a'
             src_main += src_platform_sh68f90a
             inc_dirs += inc_platform_sh68f90a
+        else
+            error('unsupported platform: @0@'.format(platform))
         endif
 
         if keyboard == 'nuphy-air60'
@@ -167,10 +169,10 @@ foreach part : parts
                 src_main += src_user_example_default
             endif
         else
-            error('unsupported keyboard: ' + keyboard)
+            error('unsupported keyboard: @0@'.format(keyboard))
         endif
 
-        prefix = keyboard + '_' + layout + '_'
+        prefix = '@0@_@1@_'.format(keyboard, layout)
 
         cc_args = cc_base_args + [
             '-DFREQ_SYS=@0@'.format(options['freq_sys']),
@@ -190,23 +192,23 @@ foreach part : parts
         )
 
         rel_main = compiler.process(src_main)
-        ihx_smk = custom_target(prefix + 'smk.ihx',
+        ihx_smk = custom_target('@0@smk.ihx'.format(prefix),
             input : rel_main,
-            output : prefix + 'smk.ihx',
+            output : '@0@smk.ihx'.format(prefix),
             depends: [lib_user],
             command : [cc, cc_args, '-o', '@OUTPUT@', '@INPUT@', '-l' + lib_user.full_path()],
         )
 
-        hex_smk = custom_target(prefix + 'smk.hex',
+        hex_smk = custom_target('@0@smk.hex'.format(prefix),
             input : ihx_smk,
-            output : prefix + 'smk.hex',
+            output : '@0@smk.hex'.format(prefix),
             capture: true,
             install : true,
             install_dir : 'firmware',
             command : [packihx, '@INPUT@'],
         )
 
-        flash = run_target(prefix + 'flash',
+        flash = run_target('@0@flash'.format(prefix),
             command : [skbt, 'write', '-p', keyboard, hex_smk.full_path()],
             depends : hex_smk,
         )

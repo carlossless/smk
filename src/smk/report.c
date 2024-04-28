@@ -1,6 +1,6 @@
 #include "report.h"
 #include "host.h"
-#include "../user/layout.h"
+#include "layout.h"
 #include <string.h>
 
 static uint8_t real_mods = 0;

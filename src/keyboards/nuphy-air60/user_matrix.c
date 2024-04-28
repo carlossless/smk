@@ -1,6 +1,7 @@
 #include "kbdef.h"
+#include "user_matrix.h"
 
-void matrix_pre_scan(uint8_t col)
+void user_matrix_pre_scan(uint8_t col)
 {
     // set all columns to high
     P1 |= (uint8_t)(_P1_5);
@@ -76,7 +77,7 @@ void matrix_pre_scan(uint8_t col)
     }
 }
 
-uint8_t matrix_scan_col(uint8_t col)
+uint8_t user_matrix_scan_col(uint8_t col)
 {
     col;
     // grab key for the column state
@@ -88,7 +89,7 @@ uint8_t matrix_scan_col(uint8_t col)
     return (((P7 >> 1) & 0x07) | (P5 & 0x18)) | 0xe0;
 }
 
-void matrix_post_scan()
+void user_matrix_post_scan()
 {
     // set all columns down to low
     P1 &= (uint8_t) ~(_P1_5);

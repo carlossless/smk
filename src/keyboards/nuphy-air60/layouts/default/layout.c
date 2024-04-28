@@ -1,6 +1,6 @@
-#include "../../kbdef.h"
-#include "../../../../user/layout.h"
-#include "../../../../smk/report.h"
+#include "kbdef.h"
+#include "layout.h"
+#include "report.h"
 #include <stdint.h>
 
 // clang-format off

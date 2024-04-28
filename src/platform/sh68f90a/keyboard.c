@@ -1,6 +1,6 @@
 #include "sh68f90a.h"
-#include "../../smk/keyboard.h"
-#include "../../smk/debug.h"
+#include "keyboard.h"
+#include "debug.h"
 
 __xdata keyboard_state_t keyboard_state;
 

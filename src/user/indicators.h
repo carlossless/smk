@@ -1,7 +1,7 @@
 #ifndef INDICATORS_H
 #define INDICATORS_H
 
-#include "../smk/keyboard.h"
+#include "keyboard.h"
 #include <stdint.h>
 #include <stdbool.h>
 

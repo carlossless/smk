@@ -1,13 +1,13 @@
 #include "usb.h"
 #include "watchdog.h"
 #include "isp.h"
-#include "../../smk/usbdef.h"
+#include "usbdef.h"
 #include "usbregs.h"
-#include "../../smk/debug.h"
-#include "../../smk/utils.h"
-#include "../../smk/usbhidreport.h"
-#include "../../smk/keyboard.h"
-#include "../../platform/sh68f90a/delay.h"
+#include "debug.h"
+#include "utils.h"
+#include "usbhidreport.h"
+#include "keyboard.h"
+#include "delay.h"
 #include <stdint.h>
 #include <string.h>
 
