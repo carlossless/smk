@@ -99,9 +99,9 @@ cc_base_args = [
 
     '-mmcs51',
     '--model-small',
-	'--xram-size', '0x1000',
+    '--xram-size', '0x1000',
     '--xram-loc', '0x0000',
-	'--code-size', '0xf000',
+    '--code-size', '0xf000',
     '--opt-code-speed',
     '--out-fmt-ihx',
 
