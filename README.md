@@ -1,3 +1,7 @@
+<div style="text-align: center; padding-bottom: 20px">
+  <img src="https://github.com/carlossless/smk/assets/498906/30535a69-47a5-4229-8e08-fe2a840d8355" alt="SMK" />
+</div>
+
 # SMK - Small (device) Mechanical Keyboard Firmware
 
 This is a keyboard firmware similar to [QMK](https://github.com/qmk/qmk_firmware), but targeting 8051-based devices like the Sinowealth SH68F90A (labeled as BYK916). It's aimed to be at least partially compatible with QMK configurations.
