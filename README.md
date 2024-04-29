@@ -1,4 +1,4 @@
-<div style="text-align: center; padding-bottom: 20px">
+<div align="center">
   <img src="https://github.com/carlossless/smk/assets/498906/30535a69-47a5-4229-8e08-fe2a840d8355" alt="SMK" />
 </div>
 
