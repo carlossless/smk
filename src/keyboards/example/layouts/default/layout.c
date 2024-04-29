@@ -1,6 +1,5 @@
 #include "kbdef.h"
 #include "layout.h"
-#include "report.h"
 #include <stdint.h>
 
 // clang-format off
@@ -73,34 +72,3 @@ const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______, _______, _______,                            _______,                   _______, _______, _______, _______, _______
     ),
 };
-
-// clang-format on
-
-bool layout_process_record(uint16_t keycode, bool key_pressed)
-{
-    switch (keycode) {
-        case SFT_ESC:
-            if (key_pressed) {
-                if (get_mods() & MODS_SHIFT_MASK) {
-                    add_key(KC_GRV);
-                    send_keyboard_report();
-                } else {
-                    add_key(KC_ESC);
-                    send_keyboard_report();
-                }
-            } else {
-                if (get_mods() & MODS_SHIFT_MASK) {
-                    del_key(KC_GRV);
-                    send_keyboard_report();
-                } else {
-                    del_key(KC_ESC);
-                    send_keyboard_report();
-                }
-            }
-
-            return false;
-
-        default:
-            return true;
-    }
-}

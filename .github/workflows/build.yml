@@ -1,28 +1,49 @@
+on:
+  push: {}
+  pull_request:
+    types: [opened, reopened, synchronize]
 
-name: "Build"
-on: [pull_request, push]
+name: Build
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     - uses: cachix/install-nix-action@v22
       with:
         github_access_token: ${{ secrets.GITHUB_TOKEN }}
-    - name: Build release
-      run: nix develop --command make all
-    - name: Archive code coverage results
-      uses: actions/upload-artifact@v3
+    - uses: cachix/cachix-action@v14
       with:
-        name: firmware.hex
-        path: bin/main.hex
+        name: smk
+        authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+    - name: Setup
+      run: nix develop --command meson setup build
+    - name: Build
+      run: nix develop --command meson compile -C build
+    - name: Archive code coverage results
+      uses: actions/upload-artifact@v4
+      with:
+        name: firmware
+        path: build/*.hex
 
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     - uses: cachix/install-nix-action@v22
       with:
         github_access_token: ${{ secrets.GITHUB_TOKEN }}
-    - name: Build release
-      run: nix develop --command bash -c "! astyle --project -n --dry-run src/*.{h,c} | grep '^Formatted'"
+    - uses: cachix/cachix-action@v14
+      with:
+        name: smk
+        authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+    - name: Setup
+      run: nix develop --command meson setup build
+    - name: Lint
+      run: nix develop --command ninja -C build clang-format-check
+

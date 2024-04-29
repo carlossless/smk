@@ -2,5 +2,4 @@
 
 .direnv/
 
-bin/
-obj/
+build/
