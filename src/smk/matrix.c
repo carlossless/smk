@@ -2,6 +2,7 @@
 #include "report.h"
 #include "debug.h"
 #include "layout.h"
+#include "user_layout.h"
 #include "indicators.h"
 #include "user_matrix.h"
 #include "kbdef.h"

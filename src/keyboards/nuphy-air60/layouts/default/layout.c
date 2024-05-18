@@ -1,5 +1,6 @@
 #include "kbdef.h"
 #include "layout.h"
+#include "user_layout.h"
 #include "report.h"
 #include <stdint.h>
 

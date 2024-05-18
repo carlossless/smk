@@ -1,5 +1,6 @@
 #include "kbdef.h"
 #include "layout.h"
+#include "user_layout.h"
 #include <stdint.h>
 
 // clang-format off
