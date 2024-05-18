@@ -6,17 +6,17 @@
 #define MATRIX_ROWS 5
 #define MATRIX_COLS 16
 
-// Row Pins Bits
+// Row Pin Bits
 #define KB_R0_P7_1 _P7_1
 #define KB_R1_P7_2 _P7_2
 #define KB_R2_P7_3 _P7_3
-#define KB_R2_P5_3 _P5_3
-#define KB_R2_P5_4 _P5_4
+#define KB_R3_P5_3 _P5_3
+#define KB_R4_P5_4 _P5_4
 
 // Row Pins
 // TODO
 
-// Column Pins Bits
+// Column Pin Bits
 #define KB_C0_P5_0  _P5_0
 #define KB_C1_P5_1  _P5_1
 #define KB_C2_P5_2  _P5_2
@@ -52,7 +52,7 @@
 #define KB_C14 P2_0
 #define KB_C15 P1_5
 
-// RGB Row Pins
+// RGB Row Pin Bits
 #define RGB_R0R_P0_4 _P0_4
 #define RGB_R0G_P6_1 _P6_1
 #define RGB_R0B_P0_3 _P0_3

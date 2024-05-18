@@ -116,6 +116,11 @@ void pwm_init()
     PWM15DUTY2H = PWM_DUTY2H_INIT;
     PWM15DUTY2L = PWM_DUTY2L_INIT;
 
+    PWM24DUTY1H = PWM_DUTY1H_INIT;
+    PWM24DUTY1L = PWM_DUTY1L_INIT;
+    PWM24DUTY2H = PWM_DUTY2H_INIT;
+    PWM24DUTY2L = PWM_DUTY2L_INIT;
+
     PWM25DUTY1H = PWM_DUTY1H_INIT;
     PWM25DUTY1L = PWM_DUTY1L_INIT;
     PWM25DUTY2H = PWM_DUTY2H_INIT;
@@ -156,6 +161,7 @@ void pwm_enable()
     PWM15CON = PWM_SS_BIT;
 
     PWM20CON = (uint8_t)(PWM_MODE_ENABLE_BIT | PWM_SS_BIT | PWM_CLK_DIV);
+    PWM24CON = PWM_SS_BIT;
     PWM25CON = PWM_SS_BIT;
 
     PWM40CON = (uint8_t)(PWM_MODE_ENABLE_BIT | PWM_SS_BIT | PWM_CLK_DIV);
@@ -181,6 +187,7 @@ void pwm_disable()
     PWM15CON = 0;
 
     PWM20CON = (uint8_t)(PWM_CLK_DIV);
+    PWM24CON = 0;
     PWM25CON = 0;
 
     PWM40CON = (uint8_t)(PWM_CLK_DIV);
@@ -216,6 +223,8 @@ void pwm_set_all_columns(uint16_t intensity)
     PWM14DUTY2L = adjusted;
     PWM15DUTY2H = adjusted >> 8;
     PWM15DUTY2L = adjusted;
+    PWM24DUTY2H = adjusted >> 8;
+    PWM24DUTY2L = adjusted;
     PWM25DUTY2H = adjusted >> 8;
     PWM25DUTY2L = adjusted;
     PWM40DUTY2H = adjusted >> 8;

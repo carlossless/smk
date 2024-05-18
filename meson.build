@@ -17,6 +17,7 @@ default_options = {
 parts = [
     ['example', 'sh68f90a', ['default'], {}],
     ['nuphy-air60', 'sh68f90a', ['default'], { 'vendor_id': '0x05ac', 'product_id': '0x024f' }],
+    ['eyooso-z11', 'sh68f90a', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x002a' }],
 ]
 
 # SMK
@@ -82,6 +83,14 @@ src_user_nuphy_air60 = [
     'src/keyboards/nuphy-air60/user_matrix.c',
 ]
 
+inc_user_eyooso_z11 = [
+    'src/keyboards/eyooso-z11',
+]
+
+src_user_eyooso_z11 = [
+    'src/keyboards/eyooso-z11/user_matrix.c',
+]
+
 # USER LAYOUTS
 
 src_user_example_default = [
@@ -91,6 +100,11 @@ src_user_example_default = [
 src_user_nuphy_air60_default = [
     'src/keyboards/nuphy-air60/layouts/default/indicators.c',
     'src/keyboards/nuphy-air60/layouts/default/layout.c',
+]
+
+src_user_eyooso_z11_default = [
+    'src/keyboards/eyooso-z11/layouts/default/indicators.c',
+    'src/keyboards/eyooso-z11/layouts/default/layout.c',
 ]
 
 cc_base_args = [
@@ -154,19 +168,26 @@ foreach part : parts
             error('unsupported platform: @0@'.format(platform))
         endif
 
-        if keyboard == 'nuphy-air60'
+        if keyboard == 'example'
+            src_main += src_user_example
+            inc_dirs += inc_user_example
+
+            if layout == 'default'
+                src_main += src_user_example_default
+            endif
+        elif keyboard == 'nuphy-air60'
             src_main += src_user_nuphy_air60
             inc_dirs += inc_user_nuphy_air60
 
             if layout == 'default'
                 src_main += src_user_nuphy_air60_default
             endif
-        elif keyboard == 'example'
-            src_main += src_user_example
-            inc_dirs += inc_user_example
+        elif keyboard == 'eyooso-z11'
+            src_main += src_user_eyooso_z11
+            inc_dirs += inc_user_eyooso_z11
 
             if layout == 'default'
-                src_main += src_user_example_default
+                src_main += src_user_eyooso_z11_default
             endif
         else
             error('unsupported keyboard: @0@'.format(keyboard))

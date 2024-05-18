@@ -4,6 +4,7 @@
 #include "layout.h"
 #include "indicators.h"
 #include "user_matrix.h"
+#include "kbdef.h"
 #include <stdlib.h>
 #include <stdbool.h>
 
