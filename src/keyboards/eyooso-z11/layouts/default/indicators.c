@@ -28,24 +28,12 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
 
     intensity = 1024 - (uint16_t)abs((int16_t)((current_cycle + 1024) % 2048) - 1024);
 
-    if (keyboard->led_state & (1 << 0)) { // num_lock
-        intensity = 1024;
+    // caps_lock
+    if (!(keyboard->led_state & (1 << 1))) {
+        LED_CAPS = 1;
+    } else {
+        LED_CAPS = 0;
     }
-
-    if (keyboard->led_state & (1 << 1)) { // caps_lock
-        intensity = 1024;
-    }
-
-    if (keyboard->led_state & (1 << 2)) { // scroll_lock
-        intensity = 1024;
-    }
-
-    // probably not necessary
-    // LED_R0 = 1;
-    // LED_R1 = 1;
-    // LED_R2 = 1;
-    // LED_R3 = 1;
-    // LED_R4 = 1;
 
     // set pwm duty cycles to expected colors
     pwm_set_all_columns(intensity);

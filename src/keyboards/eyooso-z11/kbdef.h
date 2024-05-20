@@ -66,4 +66,7 @@
 #define LED_R3 P6_4
 #define LED_R4 P6_5
 
+// KC_CAPS LED Pin
+#define LED_CAPS P0_3
+
 #endif
