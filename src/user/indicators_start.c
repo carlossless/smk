@@ -1,4 +1,1 @@
-void indicators_start()
-{
-
-}
+void indicators_start() {}

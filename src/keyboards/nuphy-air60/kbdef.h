@@ -67,12 +67,12 @@
 #define LED_PWM_C7  PWM01
 #define LED_PWM_C8  PWM00
 #define LED_PWM_C9  PWM15
-#define LED_PWM_C10  PWM14
-#define LED_PWM_C11  PWM13
-#define LED_PWM_C12  PWM12
-#define LED_PWM_C13  PWM11
-#define LED_PWM_C14  PWM10
-#define LED_PWM_C15  PWM25
+#define LED_PWM_C10 PWM14
+#define LED_PWM_C11 PWM13
+#define LED_PWM_C12 PWM12
+#define LED_PWM_C13 PWM11
+#define LED_PWM_C14 PWM10
+#define LED_PWM_C15 PWM25
 
 // RGB Row Pins
 #define RGB_R0R P0_4
@@ -116,10 +116,10 @@
 
 // Config Switch Pins
 #define CONN_MODE_SWITCH P5_5 // 1 - USB, 0 - RF
-#define OS_MODE_SWITCH P5_6 // 1 - MAC, 0 - WIN
+#define OS_MODE_SWITCH   P5_6 // 1 - MAC, 0 - WIN
 
 // Config Switch Pin Bits
 #define CONN_MODE_SWITCH_P5_5 _P5_5 // 1 - USB, 0 - RF
-#define OS_MODE_SWITCH_P5_6 _P5_6 // 1 - MAC, 0 - WIN
+#define OS_MODE_SWITCH_P5_6   _P5_6 // 1 - MAC, 0 - WIN
 
 #endif

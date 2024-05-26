@@ -13,9 +13,9 @@
 #define KB_R0 P7_1
 
 // Column Pins Bits
-#define KB_C0_P5_0  _P5_0
+#define KB_C0_P5_0 _P5_0
 
 // Column Pins
-#define KB_C0  P5_0
+#define KB_C0 P5_0
 
 #endif
