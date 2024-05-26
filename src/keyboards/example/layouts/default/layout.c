@@ -7,9 +7,9 @@
 // clang-format off
 
 #define LAYOUT_60( \
-                   K00_0 \
+                   K00_0, K01_0 \
                  ) { \
-    { K00_0 } \
+    { K00_0, K01_0 } \
 }
 
 // Each layer gets a name for readability, which is then used in the keymap matrix below.
@@ -17,15 +17,14 @@
 // Layer names don't all need to be of the same length, obviously, and you can also skip them
 // entirely and just use numbers.
 #define _BL 0
-#define _FL 1
 
 const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     /* Keymap _BL: (Base Layer) Default Layer
-     * ,---.
-     * |Esc|
-     * `---'
+     * ,-------.
+     * |Esc|Ent|
+     * `-------'
      */
     [_BL] = LAYOUT_60(
-        KC_ESC
+        KC_ESC, KC_ENT
     )
 };
