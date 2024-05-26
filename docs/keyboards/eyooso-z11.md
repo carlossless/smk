@@ -1,35 +1,14 @@
-# NuPhy Air60 Support 
-
-## MCU
-
-- [x] 3.3V LDO
-- [x] CPU Clock (use 24Mhz as SYSCLK)
-- [x] GPIO
-- [x] UART
-    - [x] Transmit
-    - [ ] Receive
-- [x] PWM
-- [x] USB
-- [ ] SPI
+# E-YOOSO Z11 Support 
 
 ## Keyboard
 
 - [x] ISP (jump)
 - [x] Key Scan
-- [x] RGB Matrix
-    - [ ] Debouncing
-- [x] USB HID
-    - [x] USB Keyboard
-    - [ ] Status LEDs
-    - [ ] Extra Keys (System / Consumer)
-    - [ ] NKRO
-- [~] QMK Compatibility
-    - [~] Layouts
-- [ ] Wireless
+- [x] LED Matrix
 
 ## Code Options
 
-This firmware requires the following (stock) code options for SH68F90A
+This firmware requires the following (stock) code options that are programmed on the BYK901 (SH68F90A) in the E-YOOSO Z11
 
 ```
 Code Option String: A4E063C00F000088

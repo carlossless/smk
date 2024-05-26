@@ -18,8 +18,8 @@ You can very easily end up with a bricked device if the written firmware can't j
 
 | Keyboard | MCU | ISP | USB | Wireless | Details |
 | -------- | --- | --- | --- | -------- | ------- |
-| [NuPhy Air60 v1](https://nuphy.com/products/air60) | SH68F90A / BYK916 | ✅ | ✅ | TBD | [Details](docs/nuphy-air60.md) |
-| E-YOOSO Z11 | SH68F90A / BYK901 | ✅ | ✅ | N/A | TBD |
+| [NuPhy Air60 v1](https://nuphy.com/products/air60) | SH68F90A / BYK916 | ✅ | ✅ | TBD | [Details](docs/keyboards/nuphy-air60.md) |
+| E-YOOSO Z11 | SH68F90A / BYK901 | ✅ | ✅ | N/A | [Details](docs/keyboards/nuphy-air60.md) |
 
 ## Acknowledgements
 
