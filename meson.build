@@ -17,6 +17,7 @@ default_options = {
 parts = [
     ['example', 'sh68f90a', ['default'], {}],
     ['nuphy-air60', 'sh68f90a', ['default'], { 'vendor_id': '0x05ac', 'product_id': '0x024f' }],
+    ['eyooso-z11', 'sh68f90a', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x002a' }],
 ]
 
 # SMK
@@ -35,12 +36,15 @@ src_smk = [
     'src/smk/host.c',
     'src/smk/matrix.c',
     'src/smk/report.c',
+    'src/smk/keyboard.c',
 ]
 
 # USER DEFAULTS
 
 src_user = [
+    'src/user/user_init.c',
     'src/user/layout_process_record.c',
+    'src/user/indicators_start.c',
     'src/user/indicators_pre_update.c',
     'src/user/indicators_update_step.c',
     'src/user/indicators_post_update.c',
@@ -55,13 +59,11 @@ inc_platform_sh68f90a = [
 src_platform_sh68f90a = [
     'src/platform/sh68f90a/clock.c',
     'src/platform/sh68f90a/delay.c',
-    'src/platform/sh68f90a/gpio.c',
     'src/platform/sh68f90a/isp.c',
     'src/platform/sh68f90a/ldo.c',
     'src/platform/sh68f90a/pwm.c',
     'src/platform/sh68f90a/uart.c',
     'src/platform/sh68f90a/usb.c',
-    'src/platform/sh68f90a/keyboard.c',
 ]
 
 # USER KEYBOARDS
@@ -79,7 +81,18 @@ inc_user_nuphy_air60 = [
 ]
 
 src_user_nuphy_air60 = [
+    'src/keyboards/nuphy-air60/user_init.c',
     'src/keyboards/nuphy-air60/user_matrix.c',
+    'src/keyboards/nuphy-air60/user_keyboard.c',
+]
+
+inc_user_eyooso_z11 = [
+    'src/keyboards/eyooso-z11',
+]
+
+src_user_eyooso_z11 = [
+    'src/keyboards/eyooso-z11/user_init.c',
+    'src/keyboards/eyooso-z11/user_matrix.c',
 ]
 
 # USER LAYOUTS
@@ -91,6 +104,11 @@ src_user_example_default = [
 src_user_nuphy_air60_default = [
     'src/keyboards/nuphy-air60/layouts/default/indicators.c',
     'src/keyboards/nuphy-air60/layouts/default/layout.c',
+]
+
+src_user_eyooso_z11_default = [
+    'src/keyboards/eyooso-z11/layouts/default/indicators.c',
+    'src/keyboards/eyooso-z11/layouts/default/layout.c',
 ]
 
 cc_base_args = [
@@ -154,19 +172,26 @@ foreach part : parts
             error('unsupported platform: @0@'.format(platform))
         endif
 
-        if keyboard == 'nuphy-air60'
+        if keyboard == 'example'
+            src_main += src_user_example
+            inc_dirs += inc_user_example
+
+            if layout == 'default'
+                src_main += src_user_example_default
+            endif
+        elif keyboard == 'nuphy-air60'
             src_main += src_user_nuphy_air60
             inc_dirs += inc_user_nuphy_air60
 
             if layout == 'default'
                 src_main += src_user_nuphy_air60_default
             endif
-        elif keyboard == 'example'
-            src_main += src_user_example
-            inc_dirs += inc_user_example
+        elif keyboard == 'eyooso-z11'
+            src_main += src_user_eyooso_z11
+            inc_dirs += inc_user_eyooso_z11
 
             if layout == 'default'
-                src_main += src_user_example_default
+                src_main += src_user_eyooso_z11_default
             endif
         else
             error('unsupported keyboard: @0@'.format(keyboard))

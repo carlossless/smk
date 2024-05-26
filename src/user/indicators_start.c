@@ -1,0 +1,1 @@
+void indicators_start() {}

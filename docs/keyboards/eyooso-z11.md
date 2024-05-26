@@ -1,35 +1,26 @@
-# NuPhy Air60 Support 
+# E-YOOSO Z11 
 
-## MCU
+## Specs
 
-- [x] 3.3V LDO
-- [x] CPU Clock (use 24Mhz as SYSCLK)
-- [x] GPIO
-- [x] UART
-    - [x] Transmit
-    - [ ] Receive
-- [x] PWM
-- [x] USB
-- [ ] SPI
+- MCU: BYK901(-0997A) (SH68F90A)
+- Backlight: Single Color LEDs (Yellow)
+- Indicators: Single CAPS_LOCK LED
+- Wireless: None
 
-## Keyboard
+## Pictures
 
-- [x] ISP (jump)
+| PCB | MCU | JTAG Setup |
+| --- | --- | ---------- |
+| ![e-yooso-z11-pcb](https://github.com/carlossless/smk/assets/498906/8335b453-d8ef-45ce-ae17-d5c9ffe432c1) | ![e-yooso-z11-mcu](https://github.com/carlossless/smk/assets/498906/ce7b8f84-7359-4c8d-a012-b90a1927bc6a) | ![e-yooso-z11-jtag](https://github.com/carlossless/smk/assets/498906/a872b662-24c5-47f8-98af-09b74ef02885) |
+
+## SMK Supported Features
+
 - [x] Key Scan
-- [x] RGB Matrix
-    - [ ] Debouncing
-- [x] USB HID
-    - [x] USB Keyboard
-    - [ ] Status LEDs
-    - [ ] Extra Keys (System / Consumer)
-    - [ ] NKRO
-- [~] QMK Compatibility
-    - [~] Layouts
-- [ ] Wireless
+- [x] LED Matrix
 
 ## Code Options
 
-This firmware requires the following (stock) code options for SH68F90A
+This firmware requires the following (stock) code options that are programmed on the BYK901 (SH68F90A) in the E-YOOSO Z11
 
 ```
 Code Option String: A4E063C00F000088

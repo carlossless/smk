@@ -1,6 +1,7 @@
 #include "report.h"
 #include "host.h"
 #include "layout.h"
+#include "keycodes.h"
 #include <string.h>
 
 static uint8_t real_mods = 0;

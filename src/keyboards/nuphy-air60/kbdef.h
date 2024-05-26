@@ -6,17 +6,21 @@
 #define MATRIX_ROWS 5
 #define MATRIX_COLS 16
 
-// Row Pins Bits
+// Row Pin Bits
 #define KB_R0_P7_1 _P7_1
 #define KB_R1_P7_2 _P7_2
 #define KB_R2_P7_3 _P7_3
-#define KB_R2_P5_3 _P5_3
-#define KB_R2_P5_4 _P5_4
+#define KB_R3_P5_3 _P5_3
+#define KB_R4_P5_4 _P5_4
 
 // Row Pins
-// TODO
+#define KB_R0 P7_1
+#define KB_R1 P7_2
+#define KB_R2 P7_3
+#define KB_R3 P5_3
+#define KB_R4 P5_4
 
-// Column Pins Bits
+// Column Pin Bits
 #define KB_C0_P5_0  _P5_0
 #define KB_C1_P5_1  _P5_1
 #define KB_C2_P5_2  _P5_2
@@ -52,7 +56,45 @@
 #define KB_C14 P2_0
 #define KB_C15 P1_5
 
+// LED PWM Registers
+#define LED_PWM_C0  PWM40
+#define LED_PWM_C1  PWM41
+#define LED_PWM_C2  PWM42
+#define LED_PWM_C3  PWM05
+#define LED_PWM_C4  PWM04
+#define LED_PWM_C5  PWM03
+#define LED_PWM_C6  PWM02
+#define LED_PWM_C7  PWM01
+#define LED_PWM_C8  PWM00
+#define LED_PWM_C9  PWM15
+#define LED_PWM_C10 PWM14
+#define LED_PWM_C11 PWM13
+#define LED_PWM_C12 PWM12
+#define LED_PWM_C13 PWM11
+#define LED_PWM_C14 PWM10
+#define LED_PWM_C15 PWM25
+
 // RGB Row Pins
+#define RGB_R0R P0_4
+#define RGB_R0G P6_1
+#define RGB_R0B P0_3
+#define RGB_R1R P6_7
+#define RGB_R1G P6_2
+#define RGB_R1B P6_6
+#define RGB_R2R P0_2
+#define RGB_R2G P6_3
+#define RGB_R2B P5_7
+#define RGB_R3R P4_5
+#define RGB_R3G P6_4
+#define RGB_R3B P4_6
+#define RGB_R4R P4_4
+#define RGB_R4G P6_5
+#define RGB_R4B P4_3
+#define RGB_ULR P1_1
+#define RGB_ULG P1_2
+#define RGB_ULB P1_3
+
+// RGB Row Pin Bits
 #define RGB_R0R_P0_4 _P0_4
 #define RGB_R0G_P6_1 _P6_1
 #define RGB_R0B_P0_3 _P0_3
@@ -71,5 +113,13 @@
 #define RGB_ULR_P1_1 _P1_1
 #define RGB_ULG_P1_2 _P1_2
 #define RGB_ULB_P1_3 _P1_3
+
+// Config Switch Pins
+#define CONN_MODE_SWITCH P5_5 // 1 - USB, 0 - RF
+#define OS_MODE_SWITCH   P5_6 // 1 - MAC, 0 - WIN
+
+// Config Switch Pin Bits
+#define CONN_MODE_SWITCH_P5_5 _P5_5 // 1 - USB, 0 - RF
+#define OS_MODE_SWITCH_P5_6   _P5_6 // 1 - MAC, 0 - WIN
 
 #endif
