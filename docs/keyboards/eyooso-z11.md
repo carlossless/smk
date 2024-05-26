@@ -1,8 +1,20 @@
-# E-YOOSO Z11 Support 
+# E-YOOSO Z11 
 
-## Keyboard
+## Specs
 
-- [x] ISP (jump)
+- MCU: BYK901(-0997A) (SH68F90A)
+- Backlight: Single Color LEDs (Yellow)
+- Indicators: Single CAPS_LOCK LED
+- Wireless: None
+
+## Pictures
+
+| PCB | MCU | JTAG Setup |
+| --- | --- | ---------- |
+| ![e-yooso-z11-pcb](https://github.com/carlossless/smk/assets/498906/8335b453-d8ef-45ce-ae17-d5c9ffe432c1) | ![e-yooso-z11-mcu](https://github.com/carlossless/smk/assets/498906/ce7b8f84-7359-4c8d-a012-b90a1927bc6a) | ![e-yooso-z11-jtag](https://github.com/carlossless/smk/assets/498906/a872b662-24c5-47f8-98af-09b74ef02885) |
+
+## SMK Supported Features
+
 - [x] Key Scan
 - [x] LED Matrix
 

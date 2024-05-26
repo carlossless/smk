@@ -1,11 +1,11 @@
 # SMK Supported Features
 
-- [x] ISP (jump)
 - [x] Debug printf (via UART)
 - [x] Key Scan
     - [ ] Debouncing
 - [x] Indicators (Backlight)
 - [x] USB HID
+    - [x] ISP Command
     - [x] USB Keyboard
     - [x] Status LEDs
     - [ ] Extra Keys (System / Consumer)

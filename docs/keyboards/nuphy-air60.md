@@ -1,8 +1,23 @@
-# NuPhy Air60 Support 
+# NuPhy Air60 
 
-## Keyboard
+## Specs
 
-- [x] ISP (jump)
+- MCU: BYK916 (SH68F90A)
+- Backlight: RGB LEDs
+- Indicators: 2x5 RGB LEDs (on each side, part of the RGB backlight matrix)
+- Switches:
+    - 2-state switch to control OS mode (win/mac)
+    - 3-state switch to control power and usb/wireless mode (off/usb/wireless)
+- Wireless: BK3632 (supports BT and 2.4G)
+
+## Pictures
+
+| PCB | MCU | Wireless IC | JTAG Setup |
+| --- | --- | ----------- | ---------- |
+| ![top](https://github.com/carlossless/smk/assets/498906/43ad50b2-6666-424d-94f8-ca8e9207eb7b) | ![mcu](https://github.com/carlossless/smk/assets/498906/295a8904-d131-45e1-a5dd-d2938b1a116b) | ![wireless-ic](https://github.com/carlossless/smk/assets/498906/ab980bf1-6123-4947-b05b-c006d6e41ef0) |
+
+## SMK Supported Features
+
 - [x] Key Scan
 - [x] RGB Matrix
 - [ ] Wireless
