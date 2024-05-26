@@ -3,8 +3,8 @@
 
 #include <stdint.h>
 
-inline void    matrix_init();
-inline uint8_t matrix_task();
-inline void    matrix_scan_step();
+void    matrix_init();
+uint8_t matrix_task();
+void    matrix_scan_step();
 
 #endif

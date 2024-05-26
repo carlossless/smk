@@ -36,12 +36,15 @@ src_smk = [
     'src/smk/host.c',
     'src/smk/matrix.c',
     'src/smk/report.c',
+    'src/smk/keyboard.c',
 ]
 
 # USER DEFAULTS
 
 src_user = [
+    'src/user/user_init.c',
     'src/user/layout_process_record.c',
+    'src/user/indicators_start.c',
     'src/user/indicators_pre_update.c',
     'src/user/indicators_update_step.c',
     'src/user/indicators_post_update.c',
@@ -56,13 +59,11 @@ inc_platform_sh68f90a = [
 src_platform_sh68f90a = [
     'src/platform/sh68f90a/clock.c',
     'src/platform/sh68f90a/delay.c',
-    'src/platform/sh68f90a/gpio.c',
     'src/platform/sh68f90a/isp.c',
     'src/platform/sh68f90a/ldo.c',
     'src/platform/sh68f90a/pwm.c',
     'src/platform/sh68f90a/uart.c',
     'src/platform/sh68f90a/usb.c',
-    'src/platform/sh68f90a/keyboard.c',
 ]
 
 # USER KEYBOARDS
@@ -80,7 +81,9 @@ inc_user_nuphy_air60 = [
 ]
 
 src_user_nuphy_air60 = [
+    'src/keyboards/nuphy-air60/user_init.c',
     'src/keyboards/nuphy-air60/user_matrix.c',
+    'src/keyboards/nuphy-air60/user_keyboard.c',
 ]
 
 inc_user_eyooso_z11 = [
@@ -88,6 +91,7 @@ inc_user_eyooso_z11 = [
 ]
 
 src_user_eyooso_z11 = [
+    'src/keyboards/eyooso-z11/user_init.c',
     'src/keyboards/eyooso-z11/user_matrix.c',
 ]
 

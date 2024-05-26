@@ -52,6 +52,22 @@
 #define KB_C12  P3_4
 #define KB_C13  P3_5
 
+// LED PWM Registers
+#define LED_PWM_C0  PWM24
+#define LED_PWM_C1  PWM25
+#define LED_PWM_C2  PWM10
+#define LED_PWM_C3  PWM11
+#define LED_PWM_C4  PWM12
+#define LED_PWM_C5  PWM13
+#define LED_PWM_C6  PWM14
+#define LED_PWM_C7  PWM15
+#define LED_PWM_C8  PWM00
+#define LED_PWM_C9  PWM01
+#define LED_PWM_C10  PWM02
+#define LED_PWM_C11  PWM03
+#define LED_PWM_C12  PWM04
+#define LED_PWM_C13  PWM05
+
 // LED Row Pin Bits
 #define LED_R0_P6_1 _P6_1
 #define LED_R1_P6_2 _P6_2
@@ -68,5 +84,8 @@
 
 // KC_CAPS LED Pin
 #define LED_CAPS P0_3
+
+// KC_CAPS LED Pin Bit
+#define LED_CAPS_P0_3 _P0_3
 
 #endif

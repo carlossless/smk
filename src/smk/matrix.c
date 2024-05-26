@@ -33,17 +33,17 @@ void matrix_init()
     }
 }
 
-inline matrix_col_t matrix_get_col(uint8_t col)
+matrix_col_t matrix_get_col(uint8_t col)
 {
     return matrix[col];
 }
 
-inline matrix_col_t matrix_can_read()
+matrix_col_t matrix_can_read()
 {
     return matrix_updated;
 }
 
-inline void process_key_state(uint8_t row, uint8_t col, bool pressed)
+void process_key_state(uint8_t row, uint8_t col, bool pressed)
 {
     uint16_t qcode = keymaps[0][row][col];
 
@@ -100,7 +100,7 @@ inline void process_key_state(uint8_t row, uint8_t col, bool pressed)
     dprintf("UNRECOGNIZED KEY: 0x%04x\r\n", qcode);
 }
 
-inline uint8_t matrix_task()
+uint8_t matrix_task()
 {
     if (!matrix_can_read()) {
         return false;
@@ -143,7 +143,7 @@ inline uint8_t matrix_task()
     return matrix_changed;
 }
 
-inline void matrix_scan_step()
+void matrix_scan_step()
 {
     indicators_pre_update();
 
@@ -157,7 +157,7 @@ inline void matrix_scan_step()
 
         matrix[current_step] = ~column_state;
 
-        keyboard_update_switches();
+        // keyboard_update_switches();
     }
 
     // rgb led matrix animation
