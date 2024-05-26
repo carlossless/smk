@@ -12,8 +12,8 @@
 
 ## Pictures
 
-| PCB | MCU | Wireless IC | JTAG Setup |
-| --- | --- | ----------- | ---------- |
+| PCB | MCU | Wireless IC |
+| --- | --- | ----------- |
 | ![top](https://github.com/carlossless/smk/assets/498906/43ad50b2-6666-424d-94f8-ca8e9207eb7b) | ![mcu](https://github.com/carlossless/smk/assets/498906/295a8904-d131-45e1-a5dd-d2938b1a116b) | ![wireless-ic](https://github.com/carlossless/smk/assets/498906/ab980bf1-6123-4947-b05b-c006d6e41ef0) |
 
 ## SMK Supported Features
