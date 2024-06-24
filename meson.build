@@ -4,6 +4,8 @@ project(
     version: 'alpha'
 )
 
+fs = import('fs')
+
 env = environment()
 env.set('DEBUG', '1')
 
@@ -15,6 +17,7 @@ default_options = {
 }
 
 parts = [
+    # keyboard, platform, layouts, options
     ['example', 'sh68f90a', ['default'], {}],
     ['nuphy-air60', 'sh68f90a', ['default'], { 'vendor_id': '0x05ac', 'product_id': '0x024f' }],
     ['eyooso-z11', 'sh68f90a', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x002a' }],
@@ -66,49 +69,15 @@ src_platform_sh68f90a = [
     'src/platform/sh68f90a/usb.c',
 ]
 
-# USER KEYBOARDS
-
-inc_user_example = [
-    'src/keyboards/example',
+possible_src_keyboard = [
+    'user_matrix.c',
+    'user_init.c',
+    'user_keyboard.c',
 ]
 
-src_user_example = [
-    'src/keyboards/example/user_matrix.c',
-]
-
-inc_user_nuphy_air60 = [
-    'src/keyboards/nuphy-air60',
-]
-
-src_user_nuphy_air60 = [
-    'src/keyboards/nuphy-air60/user_init.c',
-    'src/keyboards/nuphy-air60/user_matrix.c',
-    'src/keyboards/nuphy-air60/user_keyboard.c',
-]
-
-inc_user_eyooso_z11 = [
-    'src/keyboards/eyooso-z11',
-]
-
-src_user_eyooso_z11 = [
-    'src/keyboards/eyooso-z11/user_init.c',
-    'src/keyboards/eyooso-z11/user_matrix.c',
-]
-
-# USER LAYOUTS
-
-src_user_example_default = [
-    'src/keyboards/example/layouts/default/layout.c',
-]
-
-src_user_nuphy_air60_default = [
-    'src/keyboards/nuphy-air60/layouts/default/indicators.c',
-    'src/keyboards/nuphy-air60/layouts/default/layout.c',
-]
-
-src_user_eyooso_z11_default = [
-    'src/keyboards/eyooso-z11/layouts/default/indicators.c',
-    'src/keyboards/eyooso-z11/layouts/default/layout.c',
+possible_src_layout = [
+    'indicators.c',
+    'layout.c',
 ]
 
 cc_base_args = [
@@ -172,30 +141,31 @@ foreach part : parts
             error('unsupported platform: @0@'.format(platform))
         endif
 
-        if keyboard == 'example'
-            src_main += src_user_example
-            inc_dirs += inc_user_example
-
-            if layout == 'default'
-                src_main += src_user_example_default
-            endif
-        elif keyboard == 'nuphy-air60'
-            src_main += src_user_nuphy_air60
-            inc_dirs += inc_user_nuphy_air60
-
-            if layout == 'default'
-                src_main += src_user_nuphy_air60_default
-            endif
-        elif keyboard == 'eyooso-z11'
-            src_main += src_user_eyooso_z11
-            inc_dirs += inc_user_eyooso_z11
-
-            if layout == 'default'
-                src_main += src_user_eyooso_z11_default
-            endif
+        kb_inc_dir = 'src/keyboards/@0@'.format(keyboard)
+        if fs.is_dir(kb_inc_dir)
+            inc_dirs += kb_inc_dir
         else
-            error('unsupported keyboard: @0@'.format(keyboard))
+            error('keyboard dir does not exist: @0@'.format(kb_inc_dir))
         endif
+
+        foreach src : possible_src_keyboard
+            if fs.is_file('src/keyboards/@0@/@1@'.format(keyboard, src))
+                src_main += 'src/keyboards/@0@/@1@'.format(keyboard, src)
+            endif
+        endforeach
+
+        layout_inc_dir = 'src/keyboards/@0@/layouts/@1@'.format(keyboard, layout)
+        if fs.is_dir(layout_inc_dir)
+            inc_dirs += layout_inc_dir
+        else
+            error('layout dir does not exist: @0@'.format(layout_inc_dir))
+        endif
+
+        foreach src : possible_src_layout
+            if fs.is_file('src/keyboards/@0@/layouts/@1@/@2@'.format(keyboard, layout, src))
+                src_main += 'src/keyboards/@0@/layouts/@1@/@2@'.format(keyboard, layout, src)
+            endif
+        endforeach
 
         prefix = '@0@_@1@_'.format(keyboard, layout)
 
@@ -217,25 +187,31 @@ foreach part : parts
         )
 
         rel_main = compiler.process(src_main)
-        ihx_smk = custom_target('@0@smk.ihx'.format(prefix),
+
+        ihx_smk_target_name = '@0@smk.ihx'.format(prefix)
+        ihx_smk = custom_target(ihx_smk_target_name,
             input : rel_main,
-            output : '@0@smk.ihx'.format(prefix),
+            output : ihx_smk_target_name,
             depends: [lib_user],
             command : [cc, cc_args, '-o', '@OUTPUT@', '@INPUT@', '-l' + lib_user.full_path()],
         )
 
-        hex_smk = custom_target('@0@smk.hex'.format(prefix),
+        hex_smk_target_name = '@0@smk.hex'.format(prefix)
+        hex_smk = custom_target(hex_smk_target_name,
             input : ihx_smk,
-            output : '@0@smk.hex'.format(prefix),
+            output : hex_smk_target_name,
             capture: true,
             install : true,
             install_dir : 'firmware',
             command : [packihx, '@INPUT@'],
         )
 
-        flash = run_target('@0@flash'.format(prefix),
+        flash_target_name = '@0@flash'.format(prefix)
+        flash = run_target(flash_target_name,
             command : [skbt, 'write', '-p', keyboard, hex_smk.full_path()],
             depends : hex_smk,
         )
+
+        message('target available: @0@, flash: @1@'.format(hex_smk_target_name, flash_target_name))
     endforeach
 endforeach
