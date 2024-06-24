@@ -1,7 +1,8 @@
 project(
     'smk',
     'c',
-    version: 'alpha'
+    version: 'alpha',
+    meson_version: '>=0.53.0'
 )
 
 fs = import('fs')
