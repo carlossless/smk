@@ -4,14 +4,7 @@
 #include "sh68f90a.h"
 
 #define MATRIX_ROWS 5
-#define MATRIX_COLS 16
-
-// Row Pin Bits
-#define KB_R0_P7_1 _P7_1
-#define KB_R1_P7_2 _P7_2
-#define KB_R2_P7_3 _P7_3
-#define KB_R3_P5_3 _P5_3
-#define KB_R4_P5_4 _P5_4
+#define MATRIX_COLS 14
 
 // Row Pins
 #define KB_R0 P7_1
@@ -20,41 +13,24 @@
 #define KB_R3 P5_3
 #define KB_R4 P5_4
 
-// Column Pin Bits
-#define KB_C0_P5_0  _P5_0
-#define KB_C1_P5_1  _P5_1
-#define KB_C2_P5_2  _P5_2
-#define KB_C3_P3_5  _P3_5
-#define KB_C4_P3_4  _P3_4
-#define KB_C5_P3_3  _P3_3
-#define KB_C6_P3_2  _P3_2
-#define KB_C7_P3_1  _P3_1
-#define KB_C8_P3_0  _P3_0
-#define KB_C9_P2_5  _P2_5
-#define KB_C10_P2_4 _P2_4
-#define KB_C11_P2_3 _P2_3
-#define KB_C12_P2_2 _P2_2
-#define KB_C13_P2_1 _P2_1
-#define KB_C14_P2_0 _P2_0
-#define KB_C15_P1_5 _P1_5
-
 // Column Pins
-#define KB_C0  P5_0
-#define KB_C1  P5_1
-#define KB_C2  P5_2
-#define KB_C3  P3_5
-#define KB_C4  P3_4
-#define KB_C5  P3_3
-#define KB_C6  P3_2
-#define KB_C7  P3_1
-#define KB_C8  P3_0
-#define KB_C9  P2_5
-#define KB_C10 P2_4
-#define KB_C11 P2_3
-#define KB_C12 P2_2
-#define KB_C13 P2_1
-#define KB_C14 P2_0
-#define KB_C15 P1_5
+#define KB_C0 P6_0
+#define KB_C1 P6_1
+#define KB_C2 P6_2
+#define KB_C3 P6_3
+#define KB_C4 P6_4
+#define KB_C5 P6_5
+#define KB_C6 P6_6
+#define KB_C7 P6_7
+#define KB_C8 P5_0
+#define KB_C9 P5_1
+#define KB_C10 P5_2
+#define KB_C11 P5_7
+#define KB_C12 P4_0
+#define KB_C13 P4_2
+
+// ATTENTION: LED pins have not been traced.
+// All code related to led handling doesn't do harm and serve as reference for future work on making the leds work.
 
 // LED PWM Registers
 #define LED_PWM_C0  PWM40
@@ -113,13 +89,5 @@
 #define RGB_ULR_P1_1 _P1_1
 #define RGB_ULG_P1_2 _P1_2
 #define RGB_ULB_P1_3 _P1_3
-
-// Config Switch Pins
-#define CONN_MODE_SWITCH P5_5 // 1 - USB, 0 - RF
-#define OS_MODE_SWITCH   P5_6 // 1 - MAC, 0 - WIN
-
-// Config Switch Pin Bits
-#define CONN_MODE_SWITCH_P5_5 _P5_5 // 1 - USB, 0 - RF
-#define OS_MODE_SWITCH_P5_6   _P5_6 // 1 - MAC, 0 - WIN
 
 #endif

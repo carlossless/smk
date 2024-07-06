@@ -33,6 +33,11 @@ void indicators_pre_update()
 
 bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
 {
+
+    keyboard; current_step;
+    indicators_pwm_set_all_columns(0);
+
+    /*
     static uint16_t current_cycle = 0;
 
     if (current_step == 0) {
@@ -114,6 +119,7 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
 
     // set pwm duty cycles to expected colors
     indicators_pwm_set_all_columns(color_intensity);
+    */
 
     return false;
 }

@@ -39,16 +39,21 @@ void user_gpio_init()
 
     DRVCON = 0;
 
-    P0CR = (uint8_t)(RGB_R2R_P0_2 | RGB_R0B_P0_3 | RGB_R0R_P0_4);
-    P1CR = (uint8_t)(RGB_ULR_P1_1 | RGB_ULG_P1_2 | RGB_ULB_P1_3 | KB_C15_P1_5);
-    P2CR = (uint8_t)(KB_C14_P2_0 | KB_C13_P2_1 | KB_C12_P2_2 | KB_C11_P2_3 | KB_C10_P2_4 | KB_C9_P2_5);
-    P3CR = (uint8_t)(KB_C8_P3_0 | KB_C7_P3_1 | KB_C6_P3_2 | KB_C5_P3_3 | KB_C4_P3_4 | KB_C3_P3_5);
-    P4CR = (uint8_t)(RGB_R4B_P4_3 | RGB_R4R_P4_4 | RGB_R3R_P4_5 | RGB_R3B_P4_6);
-    P5CR = (uint8_t)(KB_C0_P5_0 | KB_C1_P5_1 | KB_C2_P5_2 | RGB_R2B_P5_7);
-    P6CR = (uint8_t)(RGB_R0G_P6_1 | RGB_R1G_P6_2 | RGB_R2G_P6_3 | RGB_R3G_P6_4 | RGB_R4G_P6_5 | RGB_R1B_P6_6 | RGB_R1R_P6_7);
 
-    P5PCR = (uint8_t)(KB_R3_P5_3 | KB_R4_P5_4 | CONN_MODE_SWITCH_P5_5 | OS_MODE_SWITCH_P5_6);
-    P7PCR = (uint8_t)(KB_R0_P7_1 | KB_R1_P7_2 | KB_R2_P7_3);
+    // I set this up by following the same pattern done in the original setup (nuphy-air60) and it works, I don't really understand the meaning of this "registers" :D... 
+    P5 = (uint8_t)(_P5_0 | _P5_1 | _P5_2 | _P5_7);
+    P5CR = (uint8_t)(_P5_0 | _P5_1 | _P5_2 | _P5_7);
+    P5PCR = (uint8_t)(_P5_0 | _P5_1 | _P5_2 | _P5_3 | _P5_4 | _P5_7);
+
+    P7PCR = (uint8_t)(_P7_1 | _P7_2 | _P7_3);
+
+    P6 = (uint8_t)(_P6_0 | _P6_1 | _P6_2 | _P6_3 | _P6_4 | _P6_5 | _P6_6 | _P6_7);
+    P6CR = (uint8_t)(_P6_0 | _P6_1 | _P6_2 | _P6_3 | _P6_4 | _P6_5 | _P6_6 | _P6_7);
+    P6PCR = (uint8_t)(_P6_0 | _P6_1 | _P6_2 | _P6_3 | _P6_4 | _P6_5 | _P6_6 | _P6_7);
+
+    P4 = (uint8_t)(_P4_0 | _P4_2);
+    P4CR = (uint8_t)(_P4_0 | _P4_2);
+    P4PCR = (uint8_t)(_P4_0 | _P4_2);
 }
 
 void user_pwm_init()
