@@ -39,20 +39,19 @@ void user_gpio_init()
 
     DRVCON = 0;
 
-
-    // I set this up by following the same pattern done in the original setup (nuphy-air60) and it works, I don't really understand the meaning of this "registers" :D... 
-    P5 = (uint8_t)(_P5_0 | _P5_1 | _P5_2 | _P5_7);
-    P5CR = (uint8_t)(_P5_0 | _P5_1 | _P5_2 | _P5_7);
+    // I set this up by following the same pattern done in the original setup (nuphy-air60) and it works, I don't really understand the meaning of this "registers" :D...
+    P5    = (uint8_t)(_P5_0 | _P5_1 | _P5_2 | _P5_7);
+    P5CR  = (uint8_t)(_P5_0 | _P5_1 | _P5_2 | _P5_7);
     P5PCR = (uint8_t)(_P5_0 | _P5_1 | _P5_2 | _P5_3 | _P5_4 | _P5_7);
 
     P7PCR = (uint8_t)(_P7_1 | _P7_2 | _P7_3);
 
-    P6 = (uint8_t)(_P6_0 | _P6_1 | _P6_2 | _P6_3 | _P6_4 | _P6_5 | _P6_6 | _P6_7);
-    P6CR = (uint8_t)(_P6_0 | _P6_1 | _P6_2 | _P6_3 | _P6_4 | _P6_5 | _P6_6 | _P6_7);
+    P6    = (uint8_t)(_P6_0 | _P6_1 | _P6_2 | _P6_3 | _P6_4 | _P6_5 | _P6_6 | _P6_7);
+    P6CR  = (uint8_t)(_P6_0 | _P6_1 | _P6_2 | _P6_3 | _P6_4 | _P6_5 | _P6_6 | _P6_7);
     P6PCR = (uint8_t)(_P6_0 | _P6_1 | _P6_2 | _P6_3 | _P6_4 | _P6_5 | _P6_6 | _P6_7);
 
-    P4 = (uint8_t)(_P4_0 | _P4_2);
-    P4CR = (uint8_t)(_P4_0 | _P4_2);
+    P4    = (uint8_t)(_P4_0 | _P4_2);
+    P4CR  = (uint8_t)(_P4_0 | _P4_2);
     P4PCR = (uint8_t)(_P4_0 | _P4_2);
 }
 

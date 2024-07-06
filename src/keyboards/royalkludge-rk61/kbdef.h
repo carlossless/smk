@@ -14,16 +14,16 @@
 #define KB_R4 P5_4
 
 // Column Pins
-#define KB_C0 P6_0
-#define KB_C1 P6_1
-#define KB_C2 P6_2
-#define KB_C3 P6_3
-#define KB_C4 P6_4
-#define KB_C5 P6_5
-#define KB_C6 P6_6
-#define KB_C7 P6_7
-#define KB_C8 P5_0
-#define KB_C9 P5_1
+#define KB_C0  P6_0
+#define KB_C1  P6_1
+#define KB_C2  P6_2
+#define KB_C3  P6_3
+#define KB_C4  P6_4
+#define KB_C5  P6_5
+#define KB_C6  P6_6
+#define KB_C7  P6_7
+#define KB_C8  P5_0
+#define KB_C9  P5_1
 #define KB_C10 P5_2
 #define KB_C11 P5_7
 #define KB_C12 P4_0

@@ -33,8 +33,8 @@ void indicators_pre_update()
 
 bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
 {
-
-    keyboard; current_step;
+    keyboard;
+    current_step;
     indicators_pwm_set_all_columns(0);
 
     /*

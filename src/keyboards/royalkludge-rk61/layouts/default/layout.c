@@ -78,7 +78,8 @@ const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 // clang-format on
 
-void key_action(uint16_t keycode){
+void key_action(uint16_t keycode)
+{
     delay_ms(5);
     add_key(keycode);
     send_keyboard_report();
@@ -90,24 +91,24 @@ void key_action(uint16_t keycode){
 
 bool layout_process_record(uint16_t keycode, bool key_pressed)
 {
-    static bool RGUI_ESC_SINGLE_ACTION=false;
+    static bool RGUI_ESC_SINGLE_ACTION = false;
     switch (keycode) {
-    case RGUI_ESC:
-        if (key_pressed) {
-            add_mods((uint8_t)MOD_BIT(KC_RGUI));
-            RGUI_ESC_SINGLE_ACTION=true;            
-            send_keyboard_report();
-        } else {
-            del_mods((uint8_t)MOD_BIT(KC_RGUI));
-            send_keyboard_report();
-            if(RGUI_ESC_SINGLE_ACTION){
-                key_action(KC_ESC);
-                RGUI_ESC_SINGLE_ACTION=false;
+        case RGUI_ESC:
+            if (key_pressed) {
+                add_mods((uint8_t)MOD_BIT(KC_RGUI));
+                RGUI_ESC_SINGLE_ACTION = true;
+                send_keyboard_report();
+            } else {
+                del_mods((uint8_t)MOD_BIT(KC_RGUI));
+                send_keyboard_report();
+                if (RGUI_ESC_SINGLE_ACTION) {
+                    key_action(KC_ESC);
+                    RGUI_ESC_SINGLE_ACTION = false;
+                }
             }
-        }
-        return false;
-    default:
-        RGUI_ESC_SINGLE_ACTION=false;
-        return true;
+            return false;
+        default:
+            RGUI_ESC_SINGLE_ACTION = false;
+            return true;
     }
 }
