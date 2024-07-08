@@ -1,6 +1,6 @@
 # Royal Kludge RK61
 
-**Warning:** There are many versions of the RK61 with different internals. This SMK firmware has been tested on a wired version from 2022 (board stamped 2022/08/16). If you are going to try this firmware, first make a backup of the original using the [sinowealth-kb-tool](https://github.com/carlossless/sinowealth-kb-tool). You must know how to reflash the original firmware using the sinowealth-kb-tool in case the SMK firmware does not function properly. We take no responsibility for any damage caused by trying this firmware or using the sinowealth-kb-tool.
+**Warning:** Be aware that there are several versions of the RK61 keyboard, each containing distinct internal components. This SMK firmware has been successfully tested on a wired 2022 model (with the date stamped on the board: 2022/08/16) and is likely to not function correctly on other variations. If you opt to install this firmware on your RK61, it is highly recommended to create a backup of your original firmware using the sinowealth-kb-tool [available here](https://github.com/carlossless/sinowealth-kb-tool) first. Keep in mind that you should know how to revert to the original firmware using sinowealth-kb-tool in case the SMK firmware does not work as intended. We disclaim any responsibility for any damage caused while trying this firmware or using the sinowealth-kb-tool.
 
 ## Keyboard Specs
 
