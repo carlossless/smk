@@ -8,13 +8,10 @@
 - Backlight: RGB LEDs
 - Indicators: none
 - Switches: none
-<<<<<<< Updated upstream
 - Wireless: wired only version
-=======
 - Wireless: none, wired only version
->>>>>>> Stashed changes
 
 ## SMK Supported Features
 
 - [x] Key Scan
-- [] RGB Matrix
+- [ ] RGB Matrix
