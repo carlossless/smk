@@ -29,7 +29,7 @@
 #define _FL 1
 
 enum custom_keycodes {
-    // Acts as KB_RGUI modifier when used with other keys, but if no other keys are pressed during the modifier's active state, sends an extra KB_ESC or Add/Del key on release. See layout_process_record for details.
+    // Acts as KB_RGUI modifier when used with other keys, but if no other keys are pressed during the modifier's active state, sends an extra KB_ESC (add/del_key) on release. See layout_process_record for details.
     RGUI_ESC = SAFE_RANGE
 };
 
