@@ -20,7 +20,7 @@ default_options = {
 parts = [
     # keyboard, platform, layouts, options
     ['example', 'sh68f90a', ['default'], {}],
-    ['nuphy-air60', 'sh68f90a', ['default'], { 'vendor_id': '0x05ac', 'product_id': '0x024f' }],
+    ['nuphy-air60', 'sh68f90a', ['default'], { 'vendor_id': '0x05ac', 'product_id': '0x024f', 'wireless': 'bk3632' }],
     ['eyooso-z11', 'sh68f90a', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x002a' }],
 ]
 
@@ -31,6 +31,7 @@ inc_base_dirs = [
     'src',
     'src/smk',
     'src/plaform',
+    'src/kb',
     'src/user',
     'src/keyboards',
 ]
@@ -52,6 +53,11 @@ src_user = [
     'src/user/indicators_pre_update.c',
     'src/user/indicators_update_step.c',
     'src/user/indicators_post_update.c',
+
+    'src/kb/kb_init.c',
+    'src/kb/kb_process_record.c',
+    'src/kb/kb_update_switches.c',
+    'src/kb/kb_update.c',
 ]
 
 # PLATFORM
@@ -70,10 +76,21 @@ src_platform_sh68f90a = [
     'src/platform/sh68f90a/usb.c',
 ]
 
+inc_platform_bk3632 = [
+    'src/platform/bk3632',
+    'src/platform', # for bb_spi
+]
+
+src_platform_bk3632 = [
+    'src/platform/bb_spi.c',
+    'src/platform/bk3632/rf_controller.c',
+]
+
 possible_src_keyboard = [
     'user_matrix.c',
     'user_init.c',
-    'user_keyboard.c',
+    # 'user_keyboard.c',
+    'kb.c'
 ]
 
 possible_src_layout = [
@@ -83,7 +100,7 @@ possible_src_layout = [
 
 cc_base_args = [
     '--Werror',
-    '--std-c2x',
+    '--std-c23',
 
     '-mmcs51',
     '--model-small',
@@ -142,6 +159,22 @@ foreach part : parts
             error('unsupported platform: @0@'.format(platform))
         endif
 
+        cc_args = cc_base_args + [
+            '-DFREQ_SYS=@0@'.format(options['freq_sys']),
+            '-DWATCHDOG_ENABLE=@0@'.format(options['watchdog_enable']),
+            '-DUSB_VID=@0@'.format(options['vendor_id']),
+            '-DUSB_PID=@0@'.format(options['product_id']),
+        ]
+
+        wireless = options.get('wireless', '')
+        if wireless == 'bk3632'
+            src_main += src_platform_bk3632
+            inc_dirs += inc_platform_bk3632
+            cc_args += '-DRF_ENABLED=1'
+        elif wireless != ''
+            error('unsupported platform: @0@'.format(platform))
+        endif
+
         kb_inc_dir = 'src/keyboards/@0@'.format(keyboard)
         if fs.is_dir(kb_inc_dir)
             inc_dirs += kb_inc_dir
@@ -169,13 +202,6 @@ foreach part : parts
         endforeach
 
         prefix = '@0@_@1@_'.format(keyboard, layout)
-
-        cc_args = cc_base_args + [
-            '-DFREQ_SYS=@0@'.format(options['freq_sys']),
-            '-DWATCHDOG_ENABLE=@0@'.format(options['watchdog_enable']),
-            '-DUSB_VID=@0@'.format(options['vendor_id']),
-            '-DUSB_PID=@0@'.format(options['product_id']),
-        ]
 
         cc_incs = []
         foreach dir : inc_dirs
@@ -208,7 +234,7 @@ foreach part : parts
         )
 
         flash_target_name = '@0@flash'.format(prefix)
-        flash = run_target(flash_target_name,
+        run_target(flash_target_name,
             command : [skbt, 'write', '-p', keyboard, hex_smk.full_path()],
             depends : hex_smk,
         )

@@ -4,7 +4,7 @@
 
 # SMK - Small (device) Mechanical Keyboard Firmware
 
-[![Build](https://github.com/carlossless/smk/actions/workflows/build.yml/badge.svg)](https://github.com/carlossless/smk/actions/workflows/build.yml) [![](https://img.shields.io/badge/discord-SMK-blue)](https://discord.gg/pXA8PbHa)
+[![Build](https://github.com/carlossless/smk/actions/workflows/build.yml/badge.svg)](https://github.com/carlossless/smk/actions/workflows/build.yml) [![](https://img.shields.io/badge/discord-SMK-blue)](https://discord.gg/SZFBDBuxrK)
 
 This is a keyboard firmware similar to [QMK](https://github.com/qmk/qmk_firmware), but targeting 8051-based devices like the Sinowealth SH68F90A (labeled as BYK916 or BYK901). It's aimed to be at least partially compatible with QMK configurations.
 
@@ -20,7 +20,7 @@ You can very easily end up with a bricked device if the written firmware can't j
 
 | Keyboard | MCU | ISP | USB | Wireless | Details |
 | -------- | --- | --- | --- | -------- | ------- |
-| [NuPhy Air60 v1](https://nuphy.com/products/air60) | SH68F90A / BYK916 | ✅ | ✅ | TBD | [Details](docs/keyboards/nuphy-air60.md) |
+| [NuPhy Air60 v1](https://nuphy.com/products/air60) | SH68F90A / BYK916 | ✅ | ✅ | 2.4G (BT WIP) | [Details](docs/keyboards/nuphy-air60.md) |
 | E-YOOSO Z11 | SH68F90A / BYK901 | ✅ | ✅ | N/A | [Details](docs/keyboards/nuphy-air60.md) |
 
 ## Developing

@@ -12,4 +12,7 @@
     - [ ] NKRO
 - [~] QMK Compatibility
     - [~] Layouts
-- [ ] Wireless
+- [~] Wireless
+    - [~] BK3632
+        - [~] 2.4G
+        - [ ] BT

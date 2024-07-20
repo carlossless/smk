@@ -11,6 +11,11 @@
 #include "keyboard.h"
 #include "user_init.h"
 #include "indicators.h"
+#include "uart.h"
+#include "kb.h"
+#ifdef RF_ENABLED
+#    include "rf_controller.h"
+#endif
 
 #include "pwm.h" // TODO: interrupt is defined here and need to be imported in main, centralise interupt definitions
 
@@ -24,9 +29,7 @@ void init()
     uart_init();
 #endif
 
-    // platform_init();
     user_init();
-    // smk_init();
 
     matrix_init();
     keyboard_init();
@@ -49,8 +52,18 @@ void main()
 {
     init();
 
+    delay_ms(1000); // perhaps clocks are unstable at this point? influences UART
+
     dprintf("SMK v" TOSTRING(SMK_VERSION) "\r\n");
     dprintf("DEVICE vId:" TOSTRING(USB_VID) " pId:" TOSTRING(USB_PID) "\n\r");
+
+    delay_ms(1000);
+
+    kb_init();
+
+#ifdef RF_ENABLED
+    rf_init();
+#endif
 
     // enable pwm and interrupt (driving matrix scan)
     indicators_start();
@@ -59,6 +72,10 @@ void main()
 
     while (1) {
         CLR_WDT();
+
+        kb_update_switches();
+
+        kb_update();
 
         matrix_task();
     }

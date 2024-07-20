@@ -3,6 +3,7 @@
 #include "layout.h"
 #include "keycodes.h"
 #include <string.h>
+#include "kb.h"
 
 static uint8_t real_mods = 0;
 static uint8_t weak_mods = 0;
