@@ -20,7 +20,7 @@ default_options = {
 parts = [
     # keyboard, platform, layouts, options
     ['example', 'sh68f90a', ['default'], {}],
-    ['nuphy-air60', 'sh68f90a', ['default'], { 'vendor_id': '0x05ac', 'product_id': '0x024f' }],
+    ['nuphy-air60', 'sh68f90a', ['default'], { 'vendor_id': '0x05ac', 'product_id': '0x024f', 'wireless': 'bk3632' }],
     ['eyooso-z11', 'sh68f90a', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x002a' }],
 ]
 
@@ -68,6 +68,16 @@ src_platform_sh68f90a = [
     'src/platform/sh68f90a/pwm.c',
     'src/platform/sh68f90a/uart.c',
     'src/platform/sh68f90a/usb.c',
+]
+
+inc_platform_bk3632 = [
+    'src/platform/bk3632',
+    'src/platform', # for bb_spi
+]
+
+src_platform_bk3632 = [
+    'src/platform/bb_spi.c',
+    'src/platform/bk3632/rf_controller.c',
 ]
 
 possible_src_keyboard = [
@@ -139,6 +149,14 @@ foreach part : parts
             src_main += src_platform_sh68f90a
             inc_dirs += inc_platform_sh68f90a
         else
+            error('unsupported platform: @0@'.format(platform))
+        endif
+
+        wireless = options.get('wireless', '')
+        if wireless == 'bk3632'
+            src_main += src_platform_bk3632
+            inc_dirs += inc_platform_bk3632
+        elif wireless != ''
             error('unsupported platform: @0@'.format(platform))
         endif
 
