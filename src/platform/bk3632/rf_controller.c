@@ -9,14 +9,14 @@ __xdata uint8_t rf_tx_buf[32];
 
 void rf_send_blank_report();
 // void rf_cmd_generic(uint8_t cmd, uint8_t *buf, uint8_t len);
-void rf_cmd_01(uint8_t param1, uint8_t param2);
-void rf_cmd_03(uint8_t param);
-void rf_cmd_04();
-void rf_cmd_06(uint8_t param);
-void rf_cmd_08(uint8_t param1, uint8_t param2);
-void rf_cmd_0a();
-void rf_cmd_0c();
-void rf_fetch_4();
+void    rf_cmd_01(uint8_t param1, uint8_t param2);
+void    rf_cmd_03(uint8_t param);
+void    rf_cmd_04();
+void    rf_cmd_06(uint8_t param);
+void    rf_cmd_08(uint8_t param1, uint8_t param2);
+void    rf_cmd_0a();
+void    rf_cmd_0c();
+void    rf_fetch_4();
 uint8_t checksum(uint8_t *data, int len);
 
 void rf_init()
@@ -93,11 +93,11 @@ void rf_cmd_01(uint8_t param1, uint8_t param2) // ??, 0x00 or 0x01
 {
     const uint8_t len = 6;
 
-    rf_tx_buf[0] = MAGIC_BYTE;
-    rf_tx_buf[1] = len - 3;
-    rf_tx_buf[2] = 0x01;
-    rf_tx_buf[3] = param1;
-    rf_tx_buf[4] = param2;
+    rf_tx_buf[0]       = MAGIC_BYTE;
+    rf_tx_buf[1]       = len - 3;
+    rf_tx_buf[2]       = 0x01;
+    rf_tx_buf[3]       = param1;
+    rf_tx_buf[4]       = param2;
     rf_tx_buf[len - 1] = checksum(rf_tx_buf, len - 1);
 
     bb_spi_xfer(rf_tx_buf, 6);
@@ -107,11 +107,11 @@ void rf_cmd_03(uint8_t param) // ?? or 0x02
 {
     const uint8_t len = 6;
 
-    rf_tx_buf[0] = MAGIC_BYTE;
-    rf_tx_buf[1] = len - 3;
-    rf_tx_buf[2] = 0x03;
-    rf_tx_buf[3] = param;
-    rf_tx_buf[4] = 0x00;
+    rf_tx_buf[0]       = MAGIC_BYTE;
+    rf_tx_buf[1]       = len - 3;
+    rf_tx_buf[2]       = 0x03;
+    rf_tx_buf[3]       = param;
+    rf_tx_buf[4]       = 0x00;
     rf_tx_buf[len - 1] = checksum(rf_tx_buf, len - 1);
 
     bb_spi_xfer(rf_tx_buf, 6);
@@ -133,11 +133,11 @@ void rf_cmd_06(uint8_t param) // 0x00 or 0x01
 {
     const uint8_t len = 6;
 
-    rf_tx_buf[0] = MAGIC_BYTE;
-    rf_tx_buf[1] = len - 3;
-    rf_tx_buf[2] = 0x06;
-    rf_tx_buf[3] = param;
-    rf_tx_buf[4] = 0x00;
+    rf_tx_buf[0]       = MAGIC_BYTE;
+    rf_tx_buf[1]       = len - 3;
+    rf_tx_buf[2]       = 0x06;
+    rf_tx_buf[3]       = param;
+    rf_tx_buf[4]       = 0x00;
     rf_tx_buf[len - 1] = checksum(rf_tx_buf, len - 1);
 
     bb_spi_xfer(rf_tx_buf, len);
@@ -147,37 +147,37 @@ void rf_cmd_08(uint8_t param1, uint8_t param2) // 0x00 0x01, 0x35 0x33
 {
     const uint8_t len = 32;
 
-    rf_tx_buf[0] = MAGIC_BYTE;
-    rf_tx_buf[1] = len - 3;
-    rf_tx_buf[2] = 0x08;
-    rf_tx_buf[3] = param1;
-    rf_tx_buf[4] = 0x0b;
-    rf_tx_buf[5] = 0x41;
-    rf_tx_buf[6] = 0x69;
-    rf_tx_buf[7] = 0x72;
-    rf_tx_buf[8] = 0x36;
-    rf_tx_buf[9] = 0x30;
-    rf_tx_buf[10] = 0x20;
-    rf_tx_buf[11] = 0x42;
-    rf_tx_buf[12] = 0x54;
-    rf_tx_buf[13] = param2;
-    rf_tx_buf[14] = 0x2e;
-    rf_tx_buf[15] = 0x30;
-    rf_tx_buf[16] = 0x00;
-    rf_tx_buf[17] = 0x00;
-    rf_tx_buf[18] = 0x00;
-    rf_tx_buf[19] = 0x00;
-    rf_tx_buf[20] = 0x00;
-    rf_tx_buf[21] = 0x00;
-    rf_tx_buf[22] = 0x00;
-    rf_tx_buf[23] = 0x00;
-    rf_tx_buf[24] = 0x00;
-    rf_tx_buf[25] = 0x00;
-    rf_tx_buf[26] = 0x00;
-    rf_tx_buf[27] = 0x00;
-    rf_tx_buf[28] = 0x00;
-    rf_tx_buf[29] = 0x00;
-    rf_tx_buf[30] = 0x00;
+    rf_tx_buf[0]       = MAGIC_BYTE;
+    rf_tx_buf[1]       = len - 3;
+    rf_tx_buf[2]       = 0x08;
+    rf_tx_buf[3]       = param1;
+    rf_tx_buf[4]       = 0x0b;
+    rf_tx_buf[5]       = 0x41;
+    rf_tx_buf[6]       = 0x69;
+    rf_tx_buf[7]       = 0x72;
+    rf_tx_buf[8]       = 0x36;
+    rf_tx_buf[9]       = 0x30;
+    rf_tx_buf[10]      = 0x20;
+    rf_tx_buf[11]      = 0x42;
+    rf_tx_buf[12]      = 0x54;
+    rf_tx_buf[13]      = param2;
+    rf_tx_buf[14]      = 0x2e;
+    rf_tx_buf[15]      = 0x30;
+    rf_tx_buf[16]      = 0x00;
+    rf_tx_buf[17]      = 0x00;
+    rf_tx_buf[18]      = 0x00;
+    rf_tx_buf[19]      = 0x00;
+    rf_tx_buf[20]      = 0x00;
+    rf_tx_buf[21]      = 0x00;
+    rf_tx_buf[22]      = 0x00;
+    rf_tx_buf[23]      = 0x00;
+    rf_tx_buf[24]      = 0x00;
+    rf_tx_buf[25]      = 0x00;
+    rf_tx_buf[26]      = 0x00;
+    rf_tx_buf[27]      = 0x00;
+    rf_tx_buf[28]      = 0x00;
+    rf_tx_buf[29]      = 0x00;
+    rf_tx_buf[30]      = 0x00;
     rf_tx_buf[len - 1] = checksum(rf_tx_buf, len - 1);
 
     bb_spi_xfer(rf_tx_buf, len);
@@ -187,11 +187,11 @@ void rf_cmd_0a()
 {
     const uint8_t len = 6;
 
-    rf_tx_buf[0] = MAGIC_BYTE;
-    rf_tx_buf[1] = len - 1;
-    rf_tx_buf[2] = 0x0a;
-    rf_tx_buf[3] = 0x00;
-    rf_tx_buf[4] = 0x00;
+    rf_tx_buf[0]       = MAGIC_BYTE;
+    rf_tx_buf[1]       = len - 1;
+    rf_tx_buf[2]       = 0x0a;
+    rf_tx_buf[3]       = 0x00;
+    rf_tx_buf[4]       = 0x00;
     rf_tx_buf[len - 1] = checksum(rf_tx_buf, len - 1);
 
     bb_spi_xfer(rf_tx_buf, len);
@@ -201,11 +201,11 @@ void rf_cmd_0c()
 {
     const uint8_t len = 6;
 
-    rf_tx_buf[0] = MAGIC_BYTE;
-    rf_tx_buf[1] = len - 1;
-    rf_tx_buf[2] = 0x0c;
-    rf_tx_buf[3] = 0x00;
-    rf_tx_buf[4] = 0x00;
+    rf_tx_buf[0]       = MAGIC_BYTE;
+    rf_tx_buf[1]       = len - 1;
+    rf_tx_buf[2]       = 0x0c;
+    rf_tx_buf[3]       = 0x00;
+    rf_tx_buf[4]       = 0x00;
     rf_tx_buf[len - 1] = checksum(rf_tx_buf, len - 1);
 
     bb_spi_xfer(rf_tx_buf, len);

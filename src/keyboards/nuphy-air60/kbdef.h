@@ -122,8 +122,8 @@
 #define CONN_MODE_SWITCH_P5_5 _P5_5 // 1 - USB, 0 - RF
 #define OS_MODE_SWITCH_P5_6   _P5_6 // 1 - MAC, 0 - WIN
 
-#define RF_BB_SPI_CS P7_4
-#define RF_BB_SPI_SCK P4_7
+#define RF_BB_SPI_CS   P7_4
+#define RF_BB_SPI_SCK  P4_7
 #define RF_BB_SPI_MISO P0_6
 #define RF_BB_SPI_MOSI P0_7
 
