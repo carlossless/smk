@@ -11,7 +11,9 @@
 #include "keyboard.h"
 #include "user_init.h"
 #include "indicators.h"
-#include "rf_controller.h"
+#if RF_ENABLED == 1
+#    include "rf_controller.h"
+#endif
 
 #include "pwm.h" // TODO: interrupt is defined here and need to be imported in main, centralise interupt definitions
 
@@ -53,7 +55,9 @@ void main()
     dprintf("SMK v" TOSTRING(SMK_VERSION) "\r\n");
     dprintf("DEVICE vId:" TOSTRING(USB_VID) " pId:" TOSTRING(USB_PID) "\n\r");
 
+#if RF_ENABLED == 1
     rf_init();
+#endif
 
     // enable pwm and interrupt (driving matrix scan)
     indicators_start();
