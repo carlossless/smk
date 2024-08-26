@@ -34,7 +34,7 @@ const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      * |-----------------------------------------------------------------|
      * |Shift   |  Z|  X|  C|  V|  B|  N|  M|  ,|  .|  /|Shift  | Up|PgDn|
      * |-----------------------------------------------------------------|
-     * |Ctrl|Win |Alt |          Space          |Gui| Fn|Ctrl|Lef|Dow|Rig|
+     * |Ctrl|Win |Alt |          Space          |Alt| Fn|Ctrl|Lef|Dow|Rig|
      * `-----------------------------------------------------------------'
      */
     [_BL] = LAYOUT_68(
