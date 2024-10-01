@@ -87,9 +87,6 @@
 #define RGB_R4R P4_4
 #define RGB_R4G P6_5
 #define RGB_R4B P4_3
-#define RGB_ULR P1_1
-#define RGB_ULG P1_2
-#define RGB_ULB P1_3
 
 // RGB Row Pin Bits
 #define RGB_R0R_P0_4 _P0_4
@@ -107,8 +104,5 @@
 #define RGB_R4R_P4_4 _P4_4
 #define RGB_R4G_P6_5 _P6_5
 #define RGB_R4B_P4_3 _P4_3
-#define RGB_ULR_P1_1 _P1_1
-#define RGB_ULG_P1_2 _P1_2
-#define RGB_ULB_P1_3 _P1_3
 
 #endif
