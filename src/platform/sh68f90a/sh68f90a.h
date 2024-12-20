@@ -1,5 +1,4 @@
-#ifndef SH68F90A_H
-#define SH68F90A_H
+#pragma once
 
 #include <stdint.h>
 #include <compiler.h>
@@ -803,5 +802,3 @@ enum interrupt_index {
     _INT_PWM4   = 12,
     _INT_EUART0 = 13,
 };
-
-#endif

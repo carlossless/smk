@@ -1,5 +1,4 @@
-#ifndef USB_H
-#define USB_H
+#pragma once
 
 #include "sh68f90a.h"
 #include "report.h"
@@ -9,5 +8,3 @@ void usb_init();
 void usb_send_report(report_keyboard_t *report);
 
 void usb_interrupt_handler() __interrupt(_INT_USB);
-
-#endif

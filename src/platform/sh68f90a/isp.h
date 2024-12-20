@@ -1,6 +1,3 @@
-#ifndef ISP_H
-#define ISP_H
+#pragma once
 
 void isp_jump();
-
-#endif

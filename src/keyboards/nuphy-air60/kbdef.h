@@ -1,5 +1,4 @@
-#ifndef KBDEF_H
-#define KBDEF_H
+#pragma once
 
 #include "sh68f90a.h"
 #include "keycodes.h"
@@ -143,5 +142,3 @@ enum custom_keycodes {
 
     KB_SAFE_RANGE,
 };
-
-#endif

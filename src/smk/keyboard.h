@@ -1,5 +1,4 @@
-#ifndef KEYBOARD_H
-#define KEYBOARD_H
+#pragma once
 
 #include <stdint.h>
 
@@ -10,5 +9,3 @@ typedef struct {
 extern volatile __xdata keyboard_state_t keyboard_state;
 
 void keyboard_init();
-
-#endif

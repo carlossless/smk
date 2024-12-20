@@ -1,5 +1,4 @@
-#ifndef DEBUG_H
-#define DEBUG_H
+#pragma once
 
 #include <stdio.h>
 
@@ -7,5 +6,3 @@
     do {                                \
         if (DEBUG) printf(__VA_ARGS__); \
     } while (0)
-
-#endif

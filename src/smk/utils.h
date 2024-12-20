@@ -1,5 +1,4 @@
-#ifndef UTILS_H
-#define UTILS_H
+#pragma once
 
 // clang-format off
 
@@ -25,5 +24,3 @@
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x)  STRINGIFY(x)
-
-#endif

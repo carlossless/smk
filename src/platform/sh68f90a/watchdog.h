@@ -1,5 +1,4 @@
-#ifndef WATCHDOG_H
-#define WATCHDOG_H
+#pragma once
 
 #include "sh68f90a.h"
 
@@ -7,7 +6,5 @@
 
 #    define WDT_INIT  0 // watchdog period 1024ms
 #    define CLR_WDT() (RSTSTAT = WDT_INIT)
-
-#endif
 
 #endif

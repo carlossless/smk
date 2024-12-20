@@ -1,5 +1,4 @@
-#ifndef REPORT_H
-#define REPORT_H
+#pragma once
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -62,5 +61,3 @@ void    add_mods(uint8_t mods);
 void    del_mods(uint8_t mods);
 void    set_mods(uint8_t mods);
 void    clear_mods(void);
-
-#endif

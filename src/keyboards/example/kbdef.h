@@ -1,5 +1,4 @@
-#ifndef KBDEF_H
-#define KBDEF_H
+#pragma once
 
 #include "sh68f90a.h"
 
@@ -19,5 +18,3 @@
 // Column Pins
 #define KB_C0 P5_0
 #define KB_C1 P5_1
-
-#endif
