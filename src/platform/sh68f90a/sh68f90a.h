@@ -1,8 +1,8 @@
 #ifndef SH68F90A_H
 #define SH68F90A_H
 
-#include <compiler.h>
 #include <stdint.h>
+#include <compiler.h>
 
 #define _SBUF(addr) static __xdata __at(addr) volatile uint8_t
 

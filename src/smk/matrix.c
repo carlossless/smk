@@ -3,6 +3,7 @@
 #include "debug.h"
 #include "layout.h"
 #include "user_layout.h"
+#include "kb.h"
 #include "indicators.h"
 #include "user_matrix.h"
 #include "kbdef.h"
@@ -69,6 +70,10 @@ void process_key_state(uint8_t row, uint8_t col, bool pressed)
         if (acode != KC_TRANSPARENT) {
             qcode = acode;
         }
+    }
+
+    if (!kb_process_record(qcode, pressed)) {
+        return;
     }
 
     if (!layout_process_record(qcode, pressed)) {
