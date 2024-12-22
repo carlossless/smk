@@ -8,7 +8,7 @@
     - [x] ISP Command
     - [x] USB Keyboard
     - [x] Status LEDs
-    - [ ] Extra Keys (System / Consumer)
+    - [x] Extra Keys (System / Consumer)
     - [ ] NKRO
 - [~] QMK Compatibility
     - [~] Layouts
