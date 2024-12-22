@@ -142,12 +142,9 @@ enum consumer_usages {
  */
 enum desktop_usages {
     // 4.5.1 System Controls - Power Controls
-    SYSTEM_POWER_DOWN = 0x81,
-    SYSTEM_SLEEP      = 0x82,
-    SYSTEM_WAKE_UP    = 0x83,
-    SYSTEM_RESTART    = 0x8F,
-    // 4.10 System Display Controls
-    SYSTEM_DISPLAY_TOGGLE_INT_EXT = 0xB5
+    SYSTEM_POWER_DOWN = 1 << 0,
+    SYSTEM_SLEEP      = 1 << 1,
+    SYSTEM_WAKE_UP    = 1 << 2,
 };
 
 /* keycode to system usage */

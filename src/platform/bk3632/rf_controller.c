@@ -35,10 +35,12 @@ void    rf_cmd_01(uint8_t mode, uint8_t pairing);
 void    rf_cmd_02(uint8_t *buffer);
 void    rf_cmd_03(uint8_t param);
 void    rf_cmd_04();
-void    rf_cmd_05(uint16_t data);
+void    rf_cmd_05(uint16_t consumer, uint16_t system);
 void    rf_cmd_06(uint8_t param);
+void    rf_cmd_07(uint8_t param);
 void    rf_cmd_08(uint8_t type, char *name);
 void    rf_cmd_0a();
+void    rf_cmd_0b();
 void    rf_cmd_0c();
 void    rf_fetch_4();
 uint8_t checksum(uint8_t *data, int len);
@@ -63,7 +65,7 @@ void rf_init()
     delay_ms(20);
     rf_cmd_01(RF_MODE_2_4G, RF_PAIRING_OFF);
     delay_ms(15);
-    rf_cmd_05(0);
+    rf_cmd_05(0, 0);
     delay_ms(30);
     rf_send_blank_report();
 }
@@ -111,10 +113,10 @@ void rf_send_extra(report_extra_t *report)
 {
     switch (report->report_id) {
         case REPORT_ID_SYSTEM:
-            // TODO: implement
+            rf_cmd_05(0, report->usage);
             break;
         case REPORT_ID_CONSUMER:
-            rf_cmd_05(report->usage);
+            rf_cmd_05(report->usage, 0);
             break;
     }
 }
@@ -216,7 +218,7 @@ void rf_cmd_02(uint8_t *buffer)
     // FIXME: last keyboard report key is lost
     rf_tx_buf[9] = 0x00; // 0x00 or 0x01
 
-    for (int i = 10; i < 31; i++) { // FIXME: NKRO / Extra Keys bytes are blanked out until they are implemented
+    for (int i = 10; i < 31; i++) { // FIXME: NKRO bytes are blanked out until they are implemented
         rf_tx_buf[i] = 0x00;
     }
 
@@ -253,7 +255,7 @@ void rf_cmd_04()
     bb_spi_xfer(rf_tx_buf, 4);
 }
 
-void rf_cmd_05(uint16_t data) // Consumer Keys
+void rf_cmd_05(uint16_t consumer, uint16_t system)
 {
     const uint8_t len = 14;
 
@@ -266,10 +268,10 @@ void rf_cmd_05(uint16_t data) // Consumer Keys
     rf_tx_buf[6]  = 0x00;
     rf_tx_buf[7]  = 0x00;
     rf_tx_buf[8]  = 0x00;
-    rf_tx_buf[9]  = data & 0xff;
-    rf_tx_buf[10] = data >> 8;
-    rf_tx_buf[11] = 0x00;
-    rf_tx_buf[12] = 0x00;
+    rf_tx_buf[9]  = consumer & 0xff;
+    rf_tx_buf[10] = consumer >> 8;
+    rf_tx_buf[11] = system & 0xff;
+    rf_tx_buf[12] = system >> 8;
 
     rf_tx_buf[len - 1] = checksum(rf_tx_buf, len - 1);
 
@@ -283,6 +285,21 @@ void rf_cmd_06(uint8_t param) // 0x00 or 0x01
     rf_tx_buf[0] = MAGIC_BYTE;
     rf_tx_buf[1] = len - 3;
     rf_tx_buf[2] = 0x06;
+    rf_tx_buf[3] = param;
+    rf_tx_buf[4] = 0x00;
+
+    rf_tx_buf[len - 1] = checksum(rf_tx_buf, len - 1);
+
+    bb_spi_xfer(rf_tx_buf, len);
+}
+
+void rf_cmd_07(uint8_t param)
+{
+    const uint8_t len = 6;
+
+    rf_tx_buf[0] = MAGIC_BYTE;
+    rf_tx_buf[1] = len - 3;
+    rf_tx_buf[2] = 0x07;
     rf_tx_buf[3] = param;
     rf_tx_buf[4] = 0x00;
 
@@ -321,6 +338,21 @@ void rf_cmd_0a()
     rf_tx_buf[0] = MAGIC_BYTE;
     rf_tx_buf[1] = len - 3;
     rf_tx_buf[2] = 0x0a;
+    rf_tx_buf[3] = 0x00;
+    rf_tx_buf[4] = 0x00;
+
+    rf_tx_buf[len - 1] = checksum(rf_tx_buf, len - 1);
+
+    bb_spi_xfer(rf_tx_buf, len);
+}
+
+void rf_cmd_0b()
+{
+    const uint8_t len = 6;
+
+    rf_tx_buf[0] = MAGIC_BYTE;
+    rf_tx_buf[1] = len - 3;
+    rf_tx_buf[2] = 0x0b;
     rf_tx_buf[3] = 0x00;
     rf_tx_buf[4] = 0x00;
 
