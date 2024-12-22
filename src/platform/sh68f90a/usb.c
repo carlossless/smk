@@ -28,13 +28,6 @@ enum usb_string_index {
     USB_STRING_SERIAL_NUMBER = 3,
 };
 
-enum report_id {
-    REPORT_ID_ACPI     = 1,
-    REPORT_ID_CONSUMER = 2,
-    REPORT_ID_ISP      = 5,
-    REPORT_ID_NKRO     = 6,
-};
-
 typedef enum {
     USB_EP0_STATE_DEFAULT     = 0x00,
     USB_EP0_STATE_IN_DATA     = 0x01,
@@ -96,35 +89,35 @@ const uint8_t hid_report_desc_extra[] = {
     HID_RI_USAGE_PAGE(8, 0x01),           // Generic Desktop
     HID_RI_USAGE(8, 0x80),                // System Control
     HID_RI_COLLECTION(8, 0x01),           // Application
-        HID_RI_REPORT_ID(8, REPORT_ID_ACPI),        // ACPI
+        HID_RI_REPORT_ID(8, REPORT_ID_SYSTEM),
         HID_RI_USAGE_MINIMUM(8, 0x81),
         HID_RI_USAGE_MAXIMUM(8, 0x83),
         HID_RI_LOGICAL_MINIMUM(8, 0x00),
         HID_RI_LOGICAL_MAXIMUM(8, 0x01),
         HID_RI_REPORT_SIZE(8, 1),
         HID_RI_REPORT_COUNT(8, 3),
-        HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE),
+        HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
         HID_RI_REPORT_COUNT(8, 5),
-        HID_RI_INPUT(8, HID_IOF_CONSTANT),
+        HID_RI_INPUT(8, HID_IOF_CONSTANT | HID_IOF_ARRAY | HID_IOF_ABSOLUTE),
     HID_RI_END_COLLECTION(0),
 
-    HID_RI_USAGE_PAGE(8, 0x0C),           // Consumer
+    HID_RI_USAGE_PAGE(8, 0x0c),           // Consumer
     HID_RI_USAGE(8, 0x01),                // Consumer Control
     HID_RI_COLLECTION(8, 0x01),           // Application
         HID_RI_REPORT_ID(8, REPORT_ID_CONSUMER),
-        HID_RI_USAGE_MINIMUM(8, 0x00),
-        HID_RI_USAGE_MAXIMUM(16, 0x023c),
-        HID_RI_LOGICAL_MINIMUM(8, 0x00),
-        HID_RI_LOGICAL_MAXIMUM(16, 0x023c),
+        HID_RI_USAGE_MINIMUM(8, 0x00), // TODO: revise ranges
+        HID_RI_USAGE_MAXIMUM(16, 0x023c), // TODO: revise ranges
+        HID_RI_LOGICAL_MINIMUM(8, 0x00), // TODO: revise ranges
+        HID_RI_LOGICAL_MAXIMUM(16, 0x023c), // TODO: revise ranges
         HID_RI_REPORT_SIZE(8, 16),
         HID_RI_REPORT_COUNT(8, 1),
-        HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
+        HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_ARRAY | HID_IOF_ABSOLUTE),
     HID_RI_END_COLLECTION(0),
 
     HID_RI_USAGE_PAGE(16, 0xff00),        // Vendor
     HID_RI_USAGE(8, 0x01),                // Vendor
     HID_RI_COLLECTION(8, 0x01),           // Application
-        HID_RI_REPORT_ID(8, REPORT_ID_ISP),        // ISP
+        HID_RI_REPORT_ID(8, REPORT_ID_ISP),
         HID_RI_USAGE_MINIMUM(8, 0x01),
         HID_RI_USAGE_MAXIMUM(8, 0x02),
         HID_RI_LOGICAL_MINIMUM(8, 0x00),
@@ -287,6 +280,8 @@ static void set_ep0_in_buffer(uint8_t *src, uint8_t len);
 static void get_ep0_out_buffer(uint8_t *dest);
 static void set_ep1_in_buffer(uint8_t *src, uint8_t len);
 static void get_ep1_out_buffer(uint8_t *dest);
+static void set_ep2_in_buffer(uint8_t *src, uint8_t len);
+static void get_ep2_out_buffer(uint8_t *dest);
 
 // request handlers
 static void usb_clear_remote_wakeup_handler(__xdata struct usb_req_setup *req);
@@ -353,11 +348,19 @@ void usb_send_report(report_keyboard_t *report)
 {
     set_ep1_in_buffer(report->raw, KEYBOARD_REPORT_SIZE);
 
-    SET_EP1_CNT(8);
+    SET_EP1_CNT(KEYBOARD_REPORT_SIZE);
     SET_EP1_IN_RDY;
 
     // TODO: this function should be blocking until transaction is finished, instead of a delay
     delay_ms(10);
+}
+
+void usb_send_extra(report_extra_t *report)
+{
+    set_ep2_in_buffer((uint8_t *)report, sizeof(report_extra_t));
+
+    SET_EP2_CNT(sizeof(report_extra_t));
+    SET_EP2_IN_RDY;
 }
 
 static void usb_setup_irq()
@@ -1098,4 +1101,19 @@ static void set_ep1_in_buffer(uint8_t *src, uint8_t len)
 static void get_ep1_out_buffer(uint8_t *dest)
 {
     memcpy(dest, EP1_OUT_BUF, EP1_BUF_SIZE);
+}
+
+static void set_ep2_in_buffer(uint8_t *src, uint8_t len)
+{
+    if (len > EP2_BUF_SIZE) {
+        dprintf("%s buffer too long: %d", __func__, len);
+        return;
+    }
+
+    memcpy(EP2_IN_BUF, src, len);
+}
+
+static void get_ep2_out_buffer(uint8_t *dest)
+{
+    memcpy(dest, EP2_OUT_BUF, EP2_BUF_SIZE);
 }
