@@ -90,6 +90,11 @@ void kb_send_report(report_keyboard_t *report)
     }
 }
 
+void kb_send_extra(report_extra_t *report)
+{
+    usb_send_extra(report);
+}
+
 uint16_t ticks = 0;
 
 void kb_update()
