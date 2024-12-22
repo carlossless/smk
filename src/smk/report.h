@@ -7,6 +7,13 @@
 #define KEYBOARD_REPORT_SIZE 8
 #define KEYBOARD_REPORT_KEYS 6
 
+enum report_id {
+    REPORT_ID_SYSTEM   = 1,
+    REPORT_ID_CONSUMER = 2,
+    REPORT_ID_ISP      = 5,
+    REPORT_ID_NKRO     = 6,
+};
+
 /*
  * keyboard report is 8-byte array retains state of 8 modifiers and 6 keys.
  *
