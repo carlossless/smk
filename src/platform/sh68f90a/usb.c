@@ -346,17 +346,26 @@ void usb_init()
 
 void usb_send_report(report_keyboard_t *report)
 {
+    uint8_t timeout = 0;
+    while (timeout < 255 && EP1CON & _IEP1RDY) {
+        delay_us(40);
+        timeout++;
+    }
+
     set_ep1_in_buffer(report->raw, KEYBOARD_REPORT_SIZE);
 
     SET_EP1_CNT(KEYBOARD_REPORT_SIZE);
     SET_EP1_IN_RDY;
-
-    // TODO: this function should be blocking until transaction is finished, instead of a delay
-    delay_ms(10);
 }
 
 void usb_send_extra(report_extra_t *report)
 {
+    uint8_t timeout = 0;
+    while (timeout < 255 && EP2CON & _IEP2RDY) {
+        delay_us(40);
+        timeout++;
+    }
+
     set_ep2_in_buffer((uint8_t *)report, sizeof(report_extra_t));
 
     SET_EP2_CNT(sizeof(report_extra_t));
