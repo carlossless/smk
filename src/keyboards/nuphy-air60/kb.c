@@ -90,6 +90,20 @@ void kb_send_report(report_keyboard_t *report)
     }
 }
 
+void kb_send_nkro(report_nkro_t *report)
+{
+    switch (user_keyboard_state.conn_mode) {
+        case KEYBOARD_CONN_MODE_USB:
+            usb_send_nkro(report);
+            break;
+#ifdef RF_ENABLED
+        case KEYBOARD_CONN_MODE_RF:
+            // TODO: implement rf
+            break;
+#endif
+    }
+}
+
 void kb_send_extra(report_extra_t *report)
 {
     switch (user_keyboard_state.conn_mode) {

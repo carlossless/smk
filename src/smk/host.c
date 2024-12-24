@@ -11,6 +11,11 @@ void host_keyboard_send(report_keyboard_t *report)
     kb_send_report(report);
 }
 
+void host_nkro_send(report_nkro_t *report)
+{
+    kb_send_nkro(report);
+}
+
 void host_system_send(uint16_t usage)
 {
     if (usage == last_system_usage) return;

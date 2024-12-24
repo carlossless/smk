@@ -111,6 +111,7 @@ cc_base_args = [
     '--out-fmt-ihx',
 
     '-DSMK_VERSION=@0@'.format(meson.project_version()),
+    '-DNKRO_ENABLE=1', # TODO: move it into a feature
 ]
 
 if get_option('buildtype') == 'debug'

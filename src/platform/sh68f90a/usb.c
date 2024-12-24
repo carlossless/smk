@@ -127,20 +127,23 @@ const uint8_t hid_report_desc_extra[] = {
         HID_RI_FEATURE(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
     HID_RI_END_COLLECTION(0),
 
+#ifdef NKRO_ENABLE
     HID_RI_USAGE_PAGE(8, 0x01),           // Generic Desktop
     HID_RI_USAGE(8, 0x06),                // Keyboard
     HID_RI_COLLECTION(8, 0x01),           // Application
         HID_RI_REPORT_ID(8, REPORT_ID_NKRO),
         // Modifiers (8 bits)
         HID_RI_USAGE_PAGE(8, 0x07),       // Keyboard/Keypad
-        HID_RI_USAGE_MINIMUM(8, 0x04),
-        HID_RI_USAGE_MAXIMUM(8, 0x70),
+        HID_RI_USAGE_MINIMUM(8, 0x00), // was 0x04
+        HID_RI_USAGE_MAXIMUM(8, NKRO_REPORT_BITS * 8 - 1), // was 0x70
         HID_RI_LOGICAL_MINIMUM(8, 0x00),
         HID_RI_LOGICAL_MAXIMUM(8, 0x01),
         HID_RI_REPORT_SIZE(8, 1),
-        HID_RI_REPORT_COUNT(8, 120),
+        HID_RI_REPORT_COUNT(8, NKRO_REPORT_BITS * 8), // was 120
         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
     HID_RI_END_COLLECTION(0),
+#endif // NKRO_ENABLE
+
     // clang-format on
 };
 
@@ -358,6 +361,20 @@ void usb_send_report(report_keyboard_t *report)
     SET_EP1_IN_RDY;
 }
 
+void usb_send_nkro(report_nkro_t *report)
+{
+    uint8_t timeout = 0;
+    while (timeout < 255 && EP2CON & _IEP2RDY) {
+        delay_us(40);
+        timeout++;
+    }
+
+    set_ep2_in_buffer(report->raw, sizeof(report_nkro_t));
+
+    SET_EP2_CNT(sizeof(report_nkro_t));
+    SET_EP2_IN_RDY;
+}
+
 void usb_send_extra(report_extra_t *report)
 {
     uint8_t timeout = 0;
@@ -366,10 +383,15 @@ void usb_send_extra(report_extra_t *report)
         timeout++;
     }
 
-    set_ep2_in_buffer((uint8_t *)report, sizeof(report_extra_t));
+    set_ep2_in_buffer(report->raw, sizeof(report_extra_t));
 
     SET_EP2_CNT(sizeof(report_extra_t));
     SET_EP2_IN_RDY;
+}
+
+uint8_t usb_device_state_get_protocol()
+{
+    return interface0_protocol;
 }
 
 static void usb_setup_irq()

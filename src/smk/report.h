@@ -7,6 +7,11 @@
 #define KEYBOARD_REPORT_SIZE 8
 #define KEYBOARD_REPORT_KEYS 6
 
+#define NKRO_REPORT_SIZE 2 + NKRO_REPORT_BITS
+#define NKRO_REPORT_BITS 30
+
+#define EXTRA_REPORT_SIZE 3
+
 enum report_id {
     REPORT_ID_SYSTEM   = 1,
     REPORT_ID_CONSUMER = 2,
@@ -37,7 +42,25 @@ typedef union {
     };
 } report_keyboard_t;
 
+typedef union {
+    uint8_t raw[NKRO_REPORT_SIZE];
+    struct {
+        uint8_t report_id;
+        uint8_t mods;
+        uint8_t bits[NKRO_REPORT_BITS];
+    };
+} report_nkro_t;
+
+typedef union {
+    uint8_t raw[EXTRA_REPORT_SIZE];
+    struct {
+        uint8_t  report_id;
+        uint16_t usage;
+    };
+} report_extra_t;
+
 extern __xdata report_keyboard_t keyboard_report;
+extern __xdata report_nkro_t     nkro_report;
 
 void send_keyboard_report();
 
@@ -69,11 +92,6 @@ void    add_mods(uint8_t mods);
 void    del_mods(uint8_t mods);
 void    set_mods(uint8_t mods);
 void    clear_mods(void);
-
-typedef struct {
-    uint8_t  report_id;
-    uint16_t usage;
-} report_extra_t;
 
 /* Consumer Page (0x0C)
  *
