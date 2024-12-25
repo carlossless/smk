@@ -43,8 +43,7 @@
  *  @{
  */
 
-#ifndef USBHIDREPORT_H
-#define USBHIDREPORT_H
+#pragma once
 
 // clang-format off
 
@@ -145,5 +144,3 @@
 // clang-format on
 
 /** @} */
-
-#endif

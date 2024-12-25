@@ -1,5 +1,4 @@
-#ifndef USBDEF_H
-#define USBDEF_H
+#pragma once
 
 #include <stdint.h>
 
@@ -307,5 +306,3 @@ typedef enum {
     USB_DEVICE_STATE_CONFIGURED = 2,
     USB_DEVICE_STATE_SUSPENDED  = 3,
 } usb_device_state_t;
-
-#endif

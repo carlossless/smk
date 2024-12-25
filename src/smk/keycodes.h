@@ -1,5 +1,4 @@
-#ifndef KEYCODES_H
-#define KEYCODES_H
+#pragma once
 
 // clang-format off
 
@@ -1442,5 +1441,3 @@ enum keycode_aliases {
 #define MODS_SHIFT_MASK (MOD_BIT(KC_LSFT)|MOD_BIT(KC_RSFT))
 
 // clang-format on
-
-#endif

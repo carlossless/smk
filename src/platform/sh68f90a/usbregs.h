@@ -1,5 +1,4 @@
-#ifndef USBREGS_H
-#define USBREGS_H
+#pragma once
 
 /**
  * Indicate an error in response to a EP0 transfer.
@@ -117,5 +116,3 @@
         CLEAR_EP2_CNT;     \
         IEP2CNT |= COUNT;  \
     } while (0)
-
-#endif

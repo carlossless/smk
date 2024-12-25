@@ -1,8 +1,7 @@
-#ifndef SH68F90A_H
-#define SH68F90A_H
+#pragma once
 
-#include <compiler.h>
 #include <stdint.h>
+#include <compiler.h>
 
 #define _SBUF(addr) static __xdata __at(addr) volatile uint8_t
 
@@ -803,5 +802,3 @@ enum interrupt_index {
     _INT_PWM4   = 12,
     _INT_EUART0 = 13,
 };
-
-#endif

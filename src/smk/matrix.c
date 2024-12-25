@@ -3,9 +3,11 @@
 #include "debug.h"
 #include "layout.h"
 #include "user_layout.h"
+#include "kb.h"
 #include "indicators.h"
 #include "user_matrix.h"
 #include "kbdef.h"
+#include "host.h"
 #include <stdlib.h>
 #include <stdbool.h>
 
@@ -71,6 +73,10 @@ void process_key_state(uint8_t row, uint8_t col, bool pressed)
         }
     }
 
+    if (!kb_process_record(qcode, pressed)) {
+        return;
+    }
+
     if (!layout_process_record(qcode, pressed)) {
         return;
     }
@@ -94,6 +100,20 @@ void process_key_state(uint8_t row, uint8_t col, bool pressed)
         }
 
         send_keyboard_report();
+        return;
+    } else if (IS_SYSTEM_KEYCODE(qcode)) {
+        if (pressed) {
+            host_system_send(KEYCODE2SYSTEM(qcode));
+        } else {
+            host_system_send(0);
+        }
+        return;
+    } else if (IS_CONSUMER_KEYCODE(qcode)) {
+        if (pressed) {
+            host_consumer_send(KEYCODE2CONSUMER(qcode));
+        } else {
+            host_consumer_send(0);
+        }
         return;
     }
 

@@ -49,6 +49,25 @@ void user_gpio_init()
 
     P5PCR = (uint8_t)(KB_R3_P5_3 | KB_R4_P5_4 | CONN_MODE_SWITCH_P5_5 | OS_MODE_SWITCH_P5_6);
     P7PCR = (uint8_t)(KB_R0_P7_1 | KB_R1_P7_2 | KB_R2_P7_3);
+
+    if (DEBUG) {
+        // UART TXD conflicts with CONN_MODE_SWITCH
+        // FIXME: make this configurable somehow
+        // P5CR |= CONN_MODE_SWITCH_P5_5;
+        // P5PCR &= ~CONN_MODE_SWITCH_P5_5;
+    }
+
+    // BB SPI pins for RF
+    // TODO: move this out
+    P7 |= RF_BB_SPI_CS_P7_4;
+    P4 |= RF_BB_SPI_SCK_P4_7;
+    P0 |= (RF_BB_SPI_MOSI_P0_7 | RF_BB_SPI_MOT_P0_5);
+
+    P7CR |= RF_BB_SPI_CS_P7_4;
+    P4CR |= RF_BB_SPI_SCK_P4_7;
+    P0CR |= (RF_BB_SPI_MOSI_P0_7 | RF_BB_SPI_MOT_P0_5);
+
+    P0PCR |= RF_BB_SPI_MISO_P0_6;
 }
 
 void user_pwm_init()

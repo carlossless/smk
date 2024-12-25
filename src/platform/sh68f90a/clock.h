@@ -1,6 +1,3 @@
-#ifndef CLOCK_H
-#define CLOCK_H
+#pragma once
 
 void clock_init();
-
-#endif

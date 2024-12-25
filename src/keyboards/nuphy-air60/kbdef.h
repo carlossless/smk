@@ -1,7 +1,7 @@
-#ifndef KBDEF_H
-#define KBDEF_H
+#pragma once
 
 #include "sh68f90a.h"
+#include "keycodes.h"
 
 #define MATRIX_ROWS 5
 #define MATRIX_COLS 16
@@ -122,4 +122,23 @@
 #define CONN_MODE_SWITCH_P5_5 _P5_5 // 1 - USB, 0 - RF
 #define OS_MODE_SWITCH_P5_6   _P5_6 // 1 - MAC, 0 - WIN
 
-#endif
+#define RF_BB_SPI_CS   P7_4
+#define RF_BB_SPI_SCK  P4_7
+#define RF_BB_SPI_MISO P0_6
+#define RF_BB_SPI_MOSI P0_7
+#define RF_BB_SPI_MOT  P0_5
+
+#define RF_BB_SPI_CS_P7_4   _P7_4
+#define RF_BB_SPI_SCK_P4_7  _P4_7
+#define RF_BB_SPI_MISO_P0_6 _P0_6
+#define RF_BB_SPI_MOSI_P0_7 _P0_7
+#define RF_BB_SPI_MOT_P0_5  _P0_5
+
+enum custom_keycodes {
+    LNK_24G = SAFE_RANGE,
+    LNK_BT1,
+    LNK_BT2,
+    LNK_BT3,
+
+    KB_SAFE_RANGE,
+};

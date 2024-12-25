@@ -1,5 +1,4 @@
-#ifndef PWM_H
-#define PWM_H
+#pragma once
 
 #include "sh68f90a.h"
 #include <stdint.h>
@@ -22,5 +21,3 @@
     } while (0)
 
 void pwm_interrupt_handler() __interrupt(_INT_PWM0);
-
-#endif

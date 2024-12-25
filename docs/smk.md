@@ -8,8 +8,11 @@
     - [x] ISP Command
     - [x] USB Keyboard
     - [x] Status LEDs
-    - [ ] Extra Keys (System / Consumer)
+    - [x] Extra Keys (System / Consumer)
     - [ ] NKRO
 - [~] QMK Compatibility
     - [~] Layouts
-- [ ] Wireless
+- [~] Wireless
+    - [~] BK3632
+        - [~] 2.4G
+        - [ ] BT
