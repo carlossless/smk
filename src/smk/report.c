@@ -55,7 +55,7 @@ void send_6kro_report()
 #ifdef NKRO_ENABLE
 void send_nkro_report()
 {
-    nkro_report.report_id = REPORT_ID_NKRO; // TODO: set this once
+    nkro_report.report_id = REPORT_ID_NKRO; // TODO: set this more permanently
     nkro_report.mods      = real_mods;
     nkro_report.mods |= weak_mods;
 

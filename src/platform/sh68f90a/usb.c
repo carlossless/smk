@@ -133,6 +133,16 @@ const uint8_t hid_report_desc_extra[] = {
     HID_RI_COLLECTION(8, 0x01),           // Application
         HID_RI_REPORT_ID(8, REPORT_ID_NKRO),
         // Modifiers (8 bits)
+        HID_RI_USAGE_PAGE(8, 0x07),     // Keyboard/Keypad
+        HID_RI_USAGE_MINIMUM(8, 0xe0),  // Keyboard Left Control
+        HID_RI_USAGE_MAXIMUM(8, 0xe7),  // Keyboard Right Gui
+        HID_RI_LOGICAL_MINIMUM(8, 0x00),
+        HID_RI_LOGICAL_MAXIMUM(8, 0x01),
+        HID_RI_REPORT_SIZE(8, 0x01),
+        HID_RI_REPORT_COUNT(8, 0x08),
+        HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
+
+        // NKRO
         HID_RI_USAGE_PAGE(8, 0x07),       // Keyboard/Keypad
         HID_RI_USAGE_MINIMUM(8, 0x00), // was 0x04
         HID_RI_USAGE_MAXIMUM(8, NKRO_REPORT_BITS * 8 - 1), // was 0x70
@@ -369,9 +379,9 @@ void usb_send_nkro(report_nkro_t *report)
         timeout++;
     }
 
-    set_ep2_in_buffer(report->raw, sizeof(report_nkro_t));
+    set_ep2_in_buffer(report->raw, NKRO_REPORT_SIZE);
 
-    SET_EP2_CNT(sizeof(report_nkro_t));
+    SET_EP2_CNT(NKRO_REPORT_SIZE);
     SET_EP2_IN_RDY;
 }
 
@@ -383,9 +393,9 @@ void usb_send_extra(report_extra_t *report)
         timeout++;
     }
 
-    set_ep2_in_buffer(report->raw, sizeof(report_extra_t));
+    set_ep2_in_buffer(report->raw, EXTRA_REPORT_SIZE);
 
-    SET_EP2_CNT(sizeof(report_extra_t));
+    SET_EP2_CNT(EXTRA_REPORT_SIZE);
     SET_EP2_IN_RDY;
 }
 
