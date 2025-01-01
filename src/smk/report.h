@@ -7,7 +7,7 @@
 #define KEYBOARD_REPORT_SIZE 8
 #define KEYBOARD_REPORT_KEYS 6
 
-#define NKRO_REPORT_BITS 13
+#define NKRO_REPORT_BITS 20 // limited by wireless dongle hid descriptor
 #define NKRO_REPORT_SIZE 2 + NKRO_REPORT_BITS
 
 #define EXTRA_REPORT_SIZE 3

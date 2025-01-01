@@ -144,12 +144,12 @@ const uint8_t hid_report_desc_extra[] = {
 
         // NKRO
         HID_RI_USAGE_PAGE(8, 0x07),       // Keyboard/Keypad
-        HID_RI_USAGE_MINIMUM(8, 0x00), // was 0x04
-        HID_RI_USAGE_MAXIMUM(8, NKRO_REPORT_BITS * 8 - 1), // was 0x70
+        HID_RI_USAGE_MINIMUM(8, 0x00),
+        HID_RI_USAGE_MAXIMUM(8, NKRO_REPORT_BITS * 8 - 1),
         HID_RI_LOGICAL_MINIMUM(8, 0x00),
         HID_RI_LOGICAL_MAXIMUM(8, 0x01),
         HID_RI_REPORT_SIZE(8, 1),
-        HID_RI_REPORT_COUNT(8, NKRO_REPORT_BITS * 8), // was 120
+        HID_RI_REPORT_COUNT(8, NKRO_REPORT_BITS * 8),
         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
     HID_RI_END_COLLECTION(0),
 #endif // NKRO_ENABLE
@@ -201,8 +201,8 @@ usb_desc_endpoint_c usb_desc_endpoint_main = {
     .bDescriptorType  = USB_DESC_ENDPOINT,
     .bEndpointAddress = 1 | USB_DIR_IN,
     .bmAttributes     = USB_XFER_INTERRUPT,
-    .wMaxPacketSize   = 8, // 8 bytes
-    .bInterval        = 1, // 1ms
+    .wMaxPacketSize   = 16, // 16 bytes
+    .bInterval        = 1,  // 1ms
 };
 
 usb_desc_interface_c usb_desc_interface_extra = {
@@ -232,7 +232,7 @@ usb_desc_endpoint_c usb_desc_endpoint_extra = {
     .bDescriptorType  = USB_DESC_ENDPOINT,
     .bEndpointAddress = 2 | USB_DIR_IN,
     .bmAttributes     = USB_XFER_INTERRUPT,
-    .wMaxPacketSize   = 16, // 16 bytes
+    .wMaxPacketSize   = 64, // 64 bytes
     .bInterval        = 1,  // 1ms
 };
 
