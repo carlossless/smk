@@ -1,0 +1,1 @@
+option('nkro', type : 'feature', value : 'enabled', description: 'NKRO support')
