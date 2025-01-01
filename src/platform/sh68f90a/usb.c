@@ -357,7 +357,7 @@ void usb_init()
     IEN1 |= _EUSB;
 }
 
-void usb_send_report(report_keyboard_t *report)
+void usb_send_report(__xdata report_keyboard_t *report)
 {
     uint8_t timeout = 0;
     while (timeout < 255 && EP1CON & _IEP1RDY) {
@@ -371,7 +371,7 @@ void usb_send_report(report_keyboard_t *report)
     SET_EP1_IN_RDY;
 }
 
-void usb_send_nkro(report_nkro_t *report)
+void usb_send_nkro(__xdata report_nkro_t *report)
 {
     uint8_t timeout = 0;
     while (timeout < 255 && EP2CON & _IEP2RDY) {
@@ -385,7 +385,7 @@ void usb_send_nkro(report_nkro_t *report)
     SET_EP2_IN_RDY;
 }
 
-void usb_send_extra(report_extra_t *report)
+void usb_send_extra(__xdata report_extra_t *report)
 {
     uint8_t timeout = 0;
     while (timeout < 255 && EP2CON & _IEP2RDY) {
