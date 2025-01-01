@@ -33,6 +33,7 @@ void    rf_send_blank_report();
 bool    rf_get_status(uint8_t status_bytes[2]);
 void    rf_cmd_01(uint8_t mode, uint8_t pairing);
 void    rf_cmd_02(uint8_t *buffer);
+void    rf_cmd_02_nkro(__xdata uint8_t mods, __xdata uint8_t *nkro_buffer);
 void    rf_cmd_03(uint8_t param);
 void    rf_cmd_04();
 void    rf_cmd_05(uint16_t consumer, uint16_t system);
@@ -70,46 +71,78 @@ void rf_init()
     rf_send_blank_report();
 }
 
-void rf_send_report(report_keyboard_t *report)
-{
-    __xdata uint8_t buffer[6];
+__xdata uint8_t kro6buffer[6];
 
-    buffer[0] = report->raw[0];
-    buffer[1] = report->raw[2];
-    buffer[2] = report->raw[3];
-    buffer[3] = report->raw[4];
-    buffer[4] = report->raw[5];
-    buffer[5] = report->raw[6];
+void rf_send_report(__xdata report_keyboard_t *report)
+{
+    kro6buffer[0] = report->raw[0];
+    kro6buffer[1] = report->raw[2];
+    kro6buffer[2] = report->raw[3];
+    kro6buffer[3] = report->raw[4];
+    kro6buffer[4] = report->raw[5];
+    kro6buffer[5] = report->raw[6];
 
     bool blank = true;
-    for (int i = 0; i < 6; i++) {
-        if (buffer[i] != 0) {
+    for (__xdata int i = 0; i < 6; i++) {
+        if (kro6buffer[i] != 0) {
             blank = false;
         }
     }
 
     if (blank) {
         // blanking sequence
-        buffer[1] = 0x00;
-        rf_cmd_02(buffer);
-        buffer[1] = 0x01;
-        rf_cmd_02(buffer);
-        buffer[1] = 0x00;
-        rf_cmd_02(buffer);
-        buffer[1] = 0x01;
-        rf_cmd_02(buffer);
-        buffer[1] = 0x00;
-        rf_cmd_02(buffer);
-        buffer[1] = 0x01;
-        rf_cmd_02(buffer);
-        buffer[1] = 0x00;
-        rf_cmd_02(buffer);
+        kro6buffer[1] = 0x00;
+        rf_cmd_02(kro6buffer);
+        kro6buffer[1] = 0x01;
+        rf_cmd_02(kro6buffer);
+        kro6buffer[1] = 0x00;
+        rf_cmd_02(kro6buffer);
+        kro6buffer[1] = 0x01;
+        rf_cmd_02(kro6buffer);
+        kro6buffer[1] = 0x00;
+        rf_cmd_02(kro6buffer);
+        kro6buffer[1] = 0x01;
+        rf_cmd_02(kro6buffer);
+        kro6buffer[1] = 0x00;
+        rf_cmd_02(kro6buffer);
     } else {
-        rf_cmd_02(buffer);
+        rf_cmd_02(kro6buffer);
     }
 }
 
-void rf_send_extra(report_extra_t *report)
+void rf_send_nkro(__xdata report_nkro_t *report)
+{
+    __xdata bool blank = true;
+    for (__xdata int i = 1; i < NKRO_REPORT_SIZE - 1; i++) {
+        if (report->raw[i] != 0) {
+            blank = false;
+        }
+    }
+
+    dprintf("is blank: %d\r\n", blank); // FIXME: a delay is necessary here
+
+    if (blank) {
+        // blanking sequence
+        kro6buffer[1] = 0x00;
+        rf_cmd_02(kro6buffer);
+        kro6buffer[1] = 0x01;
+        rf_cmd_02(kro6buffer);
+        kro6buffer[1] = 0x00;
+        rf_cmd_02(kro6buffer);
+        kro6buffer[1] = 0x01;
+        rf_cmd_02(kro6buffer);
+        kro6buffer[1] = 0x00;
+        rf_cmd_02(kro6buffer);
+        kro6buffer[1] = 0x01;
+        rf_cmd_02(kro6buffer);
+        kro6buffer[1] = 0x00;
+        rf_cmd_02(kro6buffer);
+    } else {
+        rf_cmd_02_nkro(report->mods, report->bits);
+    }
+}
+
+void rf_send_extra(__xdata report_extra_t *report)
 {
     switch (report->report_id) {
         case REPORT_ID_SYSTEM:
@@ -215,12 +248,56 @@ void rf_cmd_02(uint8_t *buffer)
     rf_tx_buf[6] = buffer[3];
     rf_tx_buf[7] = buffer[4];
     rf_tx_buf[8] = buffer[5];
-    // FIXME: last keyboard report key is lost
     rf_tx_buf[9] = 0x00; // 0x00 or 0x01
 
     for (int i = 10; i < 31; i++) { // FIXME: NKRO bytes are blanked out until they are implemented
         rf_tx_buf[i] = 0x00;
     }
+
+    rf_tx_buf[31] = checksum(rf_tx_buf, len - 1);
+
+    bb_spi_xfer(rf_tx_buf, len);
+}
+
+void rf_cmd_02_nkro(__xdata uint8_t mods, __xdata uint8_t *nkro_buffer)
+{
+    const uint8_t len = 32;
+
+    rf_tx_buf[0] = MAGIC_BYTE;
+    rf_tx_buf[1] = len - 3;
+    rf_tx_buf[2] = CMD_REPORT;
+    rf_tx_buf[3] = mods;
+
+    rf_tx_buf[4] = 0x00;
+    rf_tx_buf[5] = 0x00;
+    rf_tx_buf[6] = 0x00;
+    rf_tx_buf[7] = 0x00;
+    rf_tx_buf[8] = 0x00;
+
+    rf_tx_buf[9] = 0x00; // 0x00 or 0x01
+
+    rf_tx_buf[10] = nkro_buffer[0];
+    rf_tx_buf[11] = nkro_buffer[1];
+    rf_tx_buf[12] = nkro_buffer[2];
+    rf_tx_buf[13] = nkro_buffer[3];
+    rf_tx_buf[14] = nkro_buffer[4];
+    rf_tx_buf[15] = nkro_buffer[5];
+    rf_tx_buf[16] = nkro_buffer[6];
+    rf_tx_buf[17] = nkro_buffer[7];
+    rf_tx_buf[18] = nkro_buffer[8];
+    rf_tx_buf[19] = nkro_buffer[9];
+    rf_tx_buf[20] = nkro_buffer[10];
+    rf_tx_buf[21] = nkro_buffer[11];
+    rf_tx_buf[22] = nkro_buffer[12];
+    rf_tx_buf[23] = nkro_buffer[13];
+    rf_tx_buf[24] = nkro_buffer[14];
+    rf_tx_buf[25] = nkro_buffer[15];
+    rf_tx_buf[26] = nkro_buffer[16];
+    rf_tx_buf[27] = nkro_buffer[17];
+    rf_tx_buf[28] = nkro_buffer[18];
+    rf_tx_buf[29] = nkro_buffer[19];
+
+    rf_tx_buf[30] = 0x00;
 
     rf_tx_buf[31] = checksum(rf_tx_buf, len - 1);
 

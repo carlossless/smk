@@ -2,7 +2,7 @@ project(
     'smk',
     'c',
     version: 'alpha',
-    meson_version: '>=0.53.0'
+    meson_version: '>=1.1.0'
 )
 
 fs = import('fs')
@@ -112,6 +112,10 @@ cc_base_args = [
 
     '-DSMK_VERSION=@0@'.format(meson.project_version()),
 ]
+
+if get_option('nkro').enabled()
+    cc_base_args += '-DNKRO_ENABLE=1'
+endif
 
 if get_option('buildtype') == 'debug'
     cc_base_args += '-DDEBUG=1'

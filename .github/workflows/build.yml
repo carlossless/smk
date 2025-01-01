@@ -8,6 +8,9 @@ on:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        nkro: [enabled, disabled]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -21,13 +24,13 @@ jobs:
         name: smk
         authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
     - name: Setup
-      run: nix develop --command meson setup build
+      run: nix develop --command meson setup build -Dnkro=${{ matrix.nkro }}
     - name: Build
       run: nix develop --command meson compile -C build
     - name: Archive code coverage results
       uses: actions/upload-artifact@v4
       with:
-        name: firmware
+        name: smk-${{ matrix.nkro == 'enabled' && 'nkro' || '6kro' }}
         path: build/*.hex
 
   lint:

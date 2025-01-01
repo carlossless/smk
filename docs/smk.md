@@ -9,7 +9,7 @@
     - [x] USB Keyboard
     - [x] Status LEDs
     - [x] Extra Keys (System / Consumer)
-    - [ ] NKRO
+    - [x] NKRO
 - [~] QMK Compatibility
     - [~] Layouts
 - [~] Wireless
