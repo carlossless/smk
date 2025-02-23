@@ -4,6 +4,7 @@
 
 typedef struct {
     uint8_t led_state;
+    uint8_t rf_link;
 } keyboard_state_t;
 
 typedef struct {

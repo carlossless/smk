@@ -21,9 +21,17 @@ typedef enum {
     KEYBOARD_OS_MODE_MAC = 1,
 } user_keyboard_os_mode_t;
 
+typedef enum {
+    RF_LINK_2_4G = 0x00,
+    RF_LINK_BT1  = 0x01,
+    RF_LINK_BT2  = 0x02,
+    RF_LINK_BT3  = 0x03
+} user_keyboard_rf_link_t;
+
 typedef struct {
     user_keyboard_conn_mode_t conn_mode;
     user_keyboard_os_mode_t   os_mode;
+    user_keyboard_rf_link_t   rf_link;
 } user_keyboard_state_t;
 
 volatile __xdata user_keyboard_state_t user_keyboard_state;
@@ -61,16 +69,36 @@ void kb_update_switches()
     }
 }
 
+int kb_keycode_to_rf_mode(uint16_t keycode)
+{
+    switch (keycode) {
+        case LNK_BT1:
+            return RF_LINK_BT1;
+        case LNK_BT2:
+            return RF_LINK_BT2;
+        case LNK_BT3:
+            return RF_LINK_BT3;
+        case LNK_24G:
+            return RF_LINK_2_4G;
+        default:
+            return -1;
+    }
+}
+
 bool kb_process_record(uint16_t keycode, bool key_pressed)
 {
     key_pressed;
     switch (keycode) {
+#ifdef RF_ENABLED
         case LNK_BT1:
         case LNK_BT2:
         case LNK_BT3:
         case LNK_24G:
+            if (user_keyboard_state.conn_mode == KEYBOARD_CONN_MODE_RF) {
+                rf_set_link(kb_keycode_to_rf_mode(keycode));
+            }
             return false;
-
+#endif
         default:
             return true;
     }
