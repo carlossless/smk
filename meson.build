@@ -239,7 +239,7 @@ foreach part : parts
 
         flash_target_name = '@0@flash'.format(prefix)
         run_target(flash_target_name,
-            command : [skbt, 'write', '-d', keyboard, '--force', hex_smk.full_path()],
+            command : [skbt, 'write', '-d', keyboard, '--force', hex_smk.full_path()], # TODO: try to remove the need for --force
             depends : hex_smk,
         )
 
