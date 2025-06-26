@@ -1,8 +1,10 @@
 #pragma once
 
+#include <stdint.h>
+
 // clang-format off
 
-enum qk_keycode_ranges {
+enum qk_keycode_ranges : uint16_t {
     // Ranges
     QK_BASIC                       = 0x0000,
     QK_BASIC_MAX                   = 0x00FF,

@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
     utils.url = "github:numtide/flake-utils";
     sinowealth-kb-tool.url = "github:carlossless/sinowealth-kb-tool";
   };

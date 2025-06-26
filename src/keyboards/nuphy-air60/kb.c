@@ -76,7 +76,7 @@ bool kb_process_record(uint16_t keycode, bool key_pressed)
     }
 }
 
-void kb_send_report(report_keyboard_t *report)
+void kb_send_report(__xdata report_keyboard_t *report)
 {
     switch (user_keyboard_state.conn_mode) {
         case KEYBOARD_CONN_MODE_USB:
@@ -90,7 +90,21 @@ void kb_send_report(report_keyboard_t *report)
     }
 }
 
-void kb_send_extra(report_extra_t *report)
+void kb_send_nkro(__xdata report_nkro_t *report)
+{
+    switch (user_keyboard_state.conn_mode) {
+        case KEYBOARD_CONN_MODE_USB:
+            usb_send_nkro(report);
+            break;
+#ifdef RF_ENABLED
+        case KEYBOARD_CONN_MODE_RF:
+            rf_send_nkro(report);
+            break;
+#endif
+    }
+}
+
+void kb_send_extra(__xdata report_extra_t *report)
 {
     switch (user_keyboard_state.conn_mode) {
         case KEYBOARD_CONN_MODE_USB:

@@ -52,8 +52,6 @@ void main()
 {
     init();
 
-    delay_ms(1000); // perhaps clocks are unstable at this point? influences UART
-
     dprintf("SMK v" TOSTRING(SMK_VERSION) "\r\n");
     dprintf("DEVICE vId:" TOSTRING(USB_VID) " pId:" TOSTRING(USB_PID) "\n\r");
 
