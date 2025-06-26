@@ -42,7 +42,9 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
 
     uint16_t intensity = 0;
 
-    intensity = 1024 - (uint16_t)abs((int16_t)((current_cycle + 1024) % 2048) - 1024);
+    // intensity = 1024 - (uint16_t)abs((int16_t)((current_cycle + 1024) % 2048) - 1024);
+    
+    intensity = 1024;   // set brightness to 100% static
 
     LED_CAPS = !(keyboard->led_state & (1 << 1));
 
