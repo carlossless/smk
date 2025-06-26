@@ -1,5 +1,4 @@
-#ifndef KBDEF_H
-#define KBDEF_H
+#pragma once
 
 #include "sh68f90a.h"
 
@@ -87,5 +86,3 @@
 
 // KC_CAPS LED Pin Bit
 #define LED_CAPS_P0_3 _P0_3
-
-#endif
