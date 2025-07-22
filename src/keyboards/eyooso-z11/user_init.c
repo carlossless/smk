@@ -5,7 +5,7 @@
 // TODO: move these defines out
 #define PWM_PERD 0x0400 // 1024 / PWM_CLK ~= 43 us
 
-#define PWM_DUTY1 (uint16_t) PWM_PERD
+#define PWM_DUTY1 (uint16_t)PWM_PERD
 #define PWM_DUTY2 (uint16_t)0
 
 #define PWM_PERDH_INIT ((uint8_t)(PWM_PERD >> 8))

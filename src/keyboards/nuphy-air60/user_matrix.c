@@ -92,8 +92,8 @@ uint8_t user_matrix_scan_col(uint8_t col)
 void user_matrix_post_scan()
 {
     // set all columns down to low
-    P1 &= (uint8_t) ~(KB_C15_P1_5);
-    P2 &= (uint8_t) ~(KB_C14_P2_0 | KB_C13_P2_1 | KB_C12_P2_2 | KB_C11_P2_3 | KB_C10_P2_4 | KB_C9_P2_5);
-    P3 &= (uint8_t) ~(KB_C8_P3_0 | KB_C7_P3_1 | KB_C6_P3_2 | KB_C5_P3_3 | KB_C4_P3_4 | KB_C3_P3_5);
-    P5 &= (uint8_t) ~(KB_C0_P5_0 | KB_C1_P5_1 | KB_C2_P5_2);
+    P1 &= (uint8_t)~(KB_C15_P1_5);
+    P2 &= (uint8_t)~(KB_C14_P2_0 | KB_C13_P2_1 | KB_C12_P2_2 | KB_C11_P2_3 | KB_C10_P2_4 | KB_C9_P2_5);
+    P3 &= (uint8_t)~(KB_C8_P3_0 | KB_C7_P3_1 | KB_C6_P3_2 | KB_C5_P3_3 | KB_C4_P3_4 | KB_C3_P3_5);
+    P5 &= (uint8_t)~(KB_C0_P5_0 | KB_C1_P5_1 | KB_C2_P5_2);
 }
