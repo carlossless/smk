@@ -7,22 +7,22 @@
 #define MAGIC_BYTE 0xaa
 #define CMD_REPORT 0x02
 
-enum rf_mode {
-    RF_MODE_2_4G = 0x00,
-    RF_MODE_BT1  = 0x01,
-    RF_MODE_BT2  = 0x02,
-    RF_MODE_BT3  = 0x03
-};
+// typedef enum {
+//     RF_MODE_2_4G = 0x00,
+//     RF_MODE_BT1  = 0x01,
+//     RF_MODE_BT2  = 0x02,
+//     RF_MODE_BT3  = 0x03
+// } rf_mode_t;
 
-enum rf_pairing {
+typedef enum {
     RF_PAIRING_OFF = 0x00,
     RF_PAIRING_ON  = 0x01
-};
+} rf_pairing_t;
 
-enum rf_set_name {
+typedef enum {
     RF_SET_NAME_BT5 = 0x00,
     RF_SET_NAME_BT3 = 0x01
-};
+} rf_set_name_t;
 
 __code const char *rf_bt5_name = "SMK BT5.0";
 __code const char *rf_bt3_name = "SMK BT3.0";
@@ -160,6 +160,19 @@ void rf_update_keyboard_state(keyboard_state_t *keyboard)
     rf_get_status(status_bytes);
 
     keyboard->led_state = status_bytes[1] & ((1 << 0) | (1 << 1) | (1 << 2)); // num, caps, scroll
+
+    // keyboard->conn_status = status_bytes[1] & (1 << 3);
+    // keyboard->pairing_status = status_bytes[1] & (1 << 4);
+    uint8_t old_rf_link = keyboard->rf_link;
+    keyboard->rf_link   = ((status_bytes[1] & ((1 << 5) | (1 << 6))) >> 5);
+    if (old_rf_link != keyboard->rf_link) {
+        dprintf("rf link changed: %d\r\n", keyboard->rf_link);
+    }
+}
+
+void rf_set_link(rf_mode_t link)
+{
+    rf_cmd_01(link, 0);
 }
 
 void rf_send_blank_report()
@@ -227,8 +240,8 @@ void rf_cmd_01(uint8_t mode, uint8_t pairing)
     rf_tx_buf[0] = MAGIC_BYTE;
     rf_tx_buf[1] = len - 3;
     rf_tx_buf[2] = 0x01;
-    rf_tx_buf[3] = mode;
-    rf_tx_buf[4] = pairing;
+    rf_tx_buf[3] = pairing;
+    rf_tx_buf[4] = mode;
 
     rf_tx_buf[len - 1] = checksum(rf_tx_buf, len - 1);
 

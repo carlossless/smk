@@ -72,6 +72,30 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
         blue_intensity = 1024;
     }
 
+    if (keyboard->rf_link == 0) { // RF_LINK_2_4G
+        red_intensity   = 0;
+        green_intensity = 0;
+        blue_intensity  = 1024;
+    }
+
+    if (keyboard->rf_link == 1) { // RF_LINK_BT1
+        red_intensity   = 0;
+        green_intensity = 1024;
+        blue_intensity  = 0;
+    }
+
+    if (keyboard->rf_link == 2) { // RF_LINK_BT2
+        green_intensity = 0;
+        red_intensity   = 1024;
+        blue_intensity  = 0;
+    }
+
+    if (keyboard->rf_link == 3) { // RF_LINK_BT3
+        green_intensity = 1024;
+        red_intensity   = 1024;
+        blue_intensity  = 0;
+    }
+
     switch (current_step % 3) {
         case 0: // red
             RGB_R0R = 1;
