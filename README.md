@@ -22,6 +22,7 @@ You can very easily end up with a bricked device if the written firmware can't j
 | -------- | --- | --- | --- | -------- | ------- |
 | [NuPhy Air60 v1](https://nuphy.com/products/air60) | SH68F90A / BYK916 | ✅ | ✅ | 2.4G (BT WIP) | [Details](docs/keyboards/nuphy-air60.md) |
 | E-YOOSO Z11 | SH68F90A / BYK901 | ✅ | ✅ | N/A | [Details](docs/keyboards/nuphy-air60.md) |
+| Royal Kludge RK61 | SH68F90? / BYK901 | ✅ | ✅ | N/A | [Details](docs/keyboards/royalkludge-rk61.md) |
 
 ## Developing
 
