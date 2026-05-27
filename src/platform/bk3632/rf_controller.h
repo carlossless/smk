@@ -3,7 +3,7 @@
 #include "report.h"
 #include "keyboard.h"
 
-#include "../../utils/8051_inc_error_hide.h"
+#include "utils/8051_inc_error_hide.h"
 
 typedef enum {
     RF_MODE_2_4G = 0x00,

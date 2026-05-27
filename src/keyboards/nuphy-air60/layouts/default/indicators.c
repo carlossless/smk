@@ -3,6 +3,10 @@
 #include "pwm.h"
 #include <stdlib.h>
 
+#ifdef RF_ENABLED
+#    include "rf_controller.h"
+#endif
+
 // TODO: move these defines out
 #define PWM_CLK_DIV         0b010 // PWM_CLK = SYS_CLK / 4
 #define PWM_SS_BIT          (1 << 3)
@@ -72,29 +76,30 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
         blue_intensity = 1024;
     }
 
-    if (keyboard->rf_link == 0) { // RF_LINK_2_4G
-        red_intensity   = 0;
-        green_intensity = 0;
-        blue_intensity  = 1024;
+#ifdef RF_ENABLED
+    switch ((rf_mode_t)keyboard->rf_link) {
+        case RF_MODE_2_4G:
+            red_intensity   = 0;
+            green_intensity = 0;
+            blue_intensity  = 1024;
+            break;
+        case RF_MODE_BT1:
+            red_intensity   = 0;
+            green_intensity = 1024;
+            blue_intensity  = 0;
+            break;
+        case RF_MODE_BT2:
+            red_intensity   = 1024;
+            green_intensity = 0;
+            blue_intensity  = 0;
+            break;
+        case RF_MODE_BT3:
+            red_intensity   = 1024;
+            green_intensity = 1024;
+            blue_intensity  = 0;
+            break;
     }
-
-    if (keyboard->rf_link == 1) { // RF_LINK_BT1
-        red_intensity   = 0;
-        green_intensity = 1024;
-        blue_intensity  = 0;
-    }
-
-    if (keyboard->rf_link == 2) { // RF_LINK_BT2
-        green_intensity = 0;
-        red_intensity   = 1024;
-        blue_intensity  = 0;
-    }
-
-    if (keyboard->rf_link == 3) { // RF_LINK_BT3
-        green_intensity = 1024;
-        red_intensity   = 1024;
-        blue_intensity  = 0;
-    }
+#endif
 
     switch (current_step % 3) {
         case 0: // red
