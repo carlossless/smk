@@ -13,13 +13,13 @@ jobs:
         nkro: [enabled, disabled]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
-    - uses: cachix/install-nix-action@v22
+    - uses: cachix/install-nix-action@v31
       with:
         github_access_token: ${{ secrets.GITHUB_TOKEN }}
-    - uses: cachix/cachix-action@v14
+    - uses: cachix/cachix-action@v17
       with:
         name: smk
         authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
@@ -28,7 +28,7 @@ jobs:
     - name: Build
       run: nix develop --command meson compile -C build
     - name: Archive code coverage results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: smk-${{ matrix.nkro == 'enabled' && 'nkro' || '6kro' }}
         path: build/*.hex
@@ -36,13 +36,13 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
-    - uses: cachix/install-nix-action@v22
+    - uses: cachix/install-nix-action@v31
       with:
         github_access_token: ${{ secrets.GITHUB_TOKEN }}
-    - uses: cachix/cachix-action@v14
+    - uses: cachix/cachix-action@v17
       with:
         name: smk
         authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
