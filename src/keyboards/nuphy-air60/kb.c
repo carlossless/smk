@@ -61,16 +61,37 @@ void kb_update_switches()
     }
 }
 
+#ifdef RF_ENABLED
+static rf_mode_t kb_keycode_to_rf_mode(uint16_t keycode)
+{
+    switch (keycode) {
+        case LNK_BT1:
+            return RF_MODE_BT1;
+        case LNK_BT2:
+            return RF_MODE_BT2;
+        case LNK_BT3:
+            return RF_MODE_BT3;
+        case LNK_24G:
+        default:
+            return RF_MODE_2_4G;
+    }
+}
+#endif
+
 bool kb_process_record(uint16_t keycode, bool key_pressed)
 {
     key_pressed;
     switch (keycode) {
+#ifdef RF_ENABLED
         case LNK_BT1:
         case LNK_BT2:
         case LNK_BT3:
         case LNK_24G:
+            if (user_keyboard_state.conn_mode == KEYBOARD_CONN_MODE_RF) {
+                rf_set_link(kb_keycode_to_rf_mode(keycode));
+            }
             return false;
-
+#endif
         default:
             return true;
     }

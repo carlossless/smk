@@ -3,6 +3,10 @@
 #include "pwm.h"
 #include <stdlib.h>
 
+#ifdef RF_ENABLED
+#    include "rf_controller.h"
+#endif
+
 // TODO: move these defines out
 #define PWM_CLK_DIV         0b010 // PWM_CLK = SYS_CLK / 4
 #define PWM_SS_BIT          (1 << 3)
@@ -71,6 +75,31 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
     if (keyboard->led_state & (1 << 2)) { // scroll_lock
         blue_intensity = 1024;
     }
+
+#ifdef RF_ENABLED
+    switch ((rf_mode_t)keyboard->rf_link) {
+        case RF_MODE_2_4G:
+            red_intensity   = 0;
+            green_intensity = 0;
+            blue_intensity  = 1024;
+            break;
+        case RF_MODE_BT1:
+            red_intensity   = 0;
+            green_intensity = 1024;
+            blue_intensity  = 0;
+            break;
+        case RF_MODE_BT2:
+            red_intensity   = 1024;
+            green_intensity = 0;
+            blue_intensity  = 0;
+            break;
+        case RF_MODE_BT3:
+            red_intensity   = 1024;
+            green_intensity = 1024;
+            blue_intensity  = 0;
+            break;
+    }
+#endif
 
     switch (current_step % 3) {
         case 0: // red
