@@ -22,6 +22,7 @@ You can very easily end up with a bricked device if the written firmware can't j
 | -------- | --- | --- | --- | -------- | ------- |
 | [NuPhy Air60 v1](https://nuphy.com/products/air60) | SH68F90A / BYK916 | ✅ | ✅ | 2.4G (BT WIP) | [Details](docs/keyboards/nuphy-air60.md) |
 | E-YOOSO Z11 | SH68F90A / BYK901 | ✅ | ✅ | N/A | [Details](docs/keyboards/nuphy-air60.md) |
+| [Redragon K630 NoRGB](https://www.redragonzone.com/products/redragon-k630-gaming-mechanical-keyboard) | SH68F90AU | ✅ | ✅ | N/A | [Details](docs/keyboards/redragon-k630-norgb.md)
 
 ## Developing
 
