@@ -21,7 +21,7 @@
 #include <unistd.h>
 
 #define REPORT_ID_CONSOLE 7
-#define MAX_DEVS 32
+#define MAX_DEVS          32
 
 int main(int argc, char **argv)
 {
@@ -32,7 +32,7 @@ int main(int argc, char **argv)
     }
 
     struct pollfd fds[MAX_DEVS];
-    int nfds = 0;
+    int           nfds = 0;
 
     // Wait up to ~15s for matching hidraw nodes so we survive a reboot/re-enum.
     for (int tries = 0; tries < 75 && nfds == 0; tries++) {
@@ -49,8 +49,7 @@ int main(int argc, char **argv)
             int fd = open(path, O_RDONLY);
             if (fd < 0) continue;
             struct hidraw_devinfo info;
-            if (ioctl(fd, HIDIOCGRAWINFO, &info) == 0 &&
-                (uint16_t)info.vendor == vid && (uint16_t)info.product == pid) {
+            if (ioctl(fd, HIDIOCGRAWINFO, &info) == 0 && (uint16_t)info.vendor == vid && (uint16_t)info.product == pid) {
                 fprintf(stderr, "[smk-console] listening on %s\n", path);
                 fds[nfds].fd     = fd;
                 fds[nfds].events = POLLIN;
@@ -64,8 +63,9 @@ int main(int argc, char **argv)
     }
 
     if (nfds == 0) {
-        fprintf(stderr, "[smk-console] no hidraw node for %04x:%04x "
-                        "(device present? permission? DEBUG build flashed?)\n",
+        fprintf(stderr,
+                "[smk-console] no hidraw node for %04x:%04x "
+                "(device present? permission? DEBUG build flashed?)\n",
                 vid, pid);
         return 1;
     }

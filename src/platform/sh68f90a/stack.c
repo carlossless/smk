@@ -2,13 +2,13 @@
 
 #if DEBUG == 1
 
-#include "sh68f90a.h" // SP
-#include "debug.h"
-#include <stdint.h>
+#    include "sh68f90a.h" // SP
+#    include "debug.h"
+#    include <stdint.h>
 
-#define STACK_SENTINEL 0xAA
-#define STACK_BASE     0x85 // SP reset value; the first push lands at 0x86
-#define STACK_TOP      0xFF // top of the SH68F90A's 256-byte internal RAM
+#    define STACK_SENTINEL 0xAA
+#    define STACK_BASE     0x85 // SP reset value; the first push lands at 0x86
+#    define STACK_TOP      0xFF // top of the SH68F90A's 256-byte internal RAM
 
 // Fill everything above the current frame up to STACK_TOP with the sentinel.
 // Must be the first call in main(), while the stack is shallow.

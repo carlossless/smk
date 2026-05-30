@@ -281,5 +281,8 @@ if sim.found() and py.found()
         args : ['-m', 'unittest', 'discover', '-s', join_paths(dir_base, 'tests'),
                 '-t', join_paths(dir_base, 'tests')],
         env : {'SMK_UCSIM': sim.full_path()},
+        # full suite is ~30s locally and most tests boot through real init;
+        # bump well above the meson 30s default so slower CI runners pass.
+        timeout : 300,
     )
 endif

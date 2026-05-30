@@ -2,15 +2,15 @@
 
 #if DEBUG == 1
 
-#include "report.h"
-#include "usb.h"     // usb_is_configured(), EP2 buffer/SFRs via sh68f90a.h
-#include "usbregs.h" // SET_EP2_CNT, SET_EP2_IN_RDY
-#include <stdint.h>
+#    include "report.h"
+#    include "usb.h"     // usb_is_configured(), EP2 buffer/SFRs via sh68f90a.h
+#    include "usbregs.h" // SET_EP2_CNT, SET_EP2_IN_RDY
+#    include <stdint.h>
 
-#define CONSOLE_BUF_SIZE 128 // must stay a power of two
-#define CONSOLE_BUF_MASK (CONSOLE_BUF_SIZE - 1)
+#    define CONSOLE_BUF_SIZE 128 // must stay a power of two
+#    define CONSOLE_BUF_MASK (CONSOLE_BUF_SIZE - 1)
 
-static __xdata unsigned char console_buf[CONSOLE_BUF_SIZE];
+static __xdata unsigned char    console_buf[CONSOLE_BUF_SIZE];
 static volatile __xdata uint8_t console_head; // producer (console_putc)
 static volatile __xdata uint8_t console_tail; // consumer (console_task)
 
@@ -19,11 +19,12 @@ void console_putc(unsigned char c)
     uint8_t next;
     // __critical so a dprintf() reached from an interrupt can't tear the head
     // update against a main-loop writer. Drops the byte when the buffer is full.
-    __critical {
+    __critical
+    {
         next = (console_head + 1) & CONSOLE_BUF_MASK;
         if (next != console_tail) {
             console_buf[console_head] = c;
-            console_head            = next;
+            console_head              = next;
         }
     }
 }
