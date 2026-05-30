@@ -44,6 +44,53 @@ def find_firmware():
     return str(candidates[0]) if candidates else None
 
 
+def load_symbols(map_path):
+    """Parse SDCC's `.map` file. Returns {name_without_leading_underscore: addr}.
+    Lines look like: `D:   00000061  _keyboard_state                    keyboard`
+    (D = data/xram, C = code, plus other area letters)."""
+    pat = re.compile(r"^[A-Z]:\s+([0-9A-Fa-f]+)\s+_(\S+)")
+    syms = {}
+    with open(map_path) as f:
+        for line in f:
+            m = pat.match(line)
+            if m:
+                syms[m.group(2)] = int(m.group(1), 16)
+    return syms
+
+
+def read_intel_hex(hex_path):
+    """Parse Intel HEX into a flat {addr: byte} dict (data records only)."""
+    mem = {}
+    with open(hex_path) as f:
+        for line in f:
+            line = line.strip()
+            if not line.startswith(":"):
+                continue
+            n, addr, rec = int(line[1:3], 16), int(line[3:7], 16), int(line[7:9], 16)
+            if rec == 0:
+                for i in range(n):
+                    mem[addr + i] = int(line[9 + 2 * i:11 + 2 * i], 16)
+    return mem
+
+
+def find_post_init(syms, hex_path):
+    """The address right after the first `LCALL _init` instruction in `_main`.
+    `_main` itself isn't a stable breakpoint for "post-init" because main() may
+    call other functions first (e.g. stack_paint() under DEBUG=1), so we scan the
+    first ~64 bytes of main() for the 3-byte opcode `12 hi lo` matching _init."""
+    init_addr = syms["init"]
+    target = (0x12, (init_addr >> 8) & 0xFF, init_addr & 0xFF)
+    mem = read_intel_hex(hex_path)
+    base = syms["main"]
+    for off in range(64):
+        if tuple(mem.get(base + off + i) for i in range(3)) == target:
+            return base + off + 3
+    raise RuntimeError(
+        f"could not locate `LCALL _init` (opcode {target[0]:02x} {target[1]:02x} "
+        f"{target[2]:02x}) within 64 bytes of _main=0x{base:x}"
+    )
+
+
 def get_descriptor(desc_type, index=0, length=64):
     """Build an 8-byte GET_DESCRIPTOR control-IN SETUP packet."""
     return [0x80, 0x06, index, desc_type, 0x00, 0x00, length & 0xFF, (length >> 8) & 0xFF]
@@ -117,30 +164,34 @@ class UsbSim:
     ISP_MAGIC_ACC, ISP_MAGIC_B = 0x5A, 0xA5
     SLED_END = 0x900E  # break address at the end of the 16-byte NOP sled
 
-    # firmware globals (xram) and code addresses -- from the nuphy-air60 .map;
-    # re-derive with: grep _name build/<target>.map
-    LED_STATE = 0x0061       # keyboard_state.led_state
-    KB_REPORT = 0x0025       # keyboard_report (8 bytes)
-    CONN_MODE = 0x032E       # user_keyboard_state.conn_mode (1 = USB)
-    IFACE0_PROTOCOL = 0x02EF
-    SEND_KB_REPORT = 0x0A69  # send_keyboard_report() entry (no args)
-    CONN_MODE_USB = 0x01
-
     # key-matrix staging for the SIE model: a "pressed" key whose row reads pull
     # low while its column is being scanned (see cl_sh68f90_sie::read in the patch)
     KEY_ENABLE = 0x1F00      # 1 = a key is held
     KEY_COL = 0x1F01         # its column (0..15)
     KEY_ROW = 0x1F02         # its row (0..4)
 
-    # full-init enumeration (boot from reset through the real init path)
-    POST_INIT = 0x026E       # main(), right after init() returns (EA=1, usb_init done)
-    MAIN_LOOP = 0x302D       # kb_update_switches(), first call in main's while-loop
-    USB_DEVICE_STATE = 0x02EC
     STATE_DEFAULT, STATE_ADDRESSED, STATE_CONFIGURED = 0, 1, 2
 
     def __init__(self, firmware=None, sim=None):
         self.sim = sim or find_sim()
         self.firmware = firmware or find_firmware()
+        # Firmware globals / code addresses are derived from the SDCC .map (and
+        # the .hex for POST_INIT); they shift whenever the firmware is rebuilt.
+        # Only resolve when the firmware exists -- otherwise the test suite skips
+        # via `available()` and these attrs are never read.
+        if self.firmware and Path(self.firmware).exists():
+            self._resolve_firmware_addresses()
+
+    def _resolve_firmware_addresses(self):
+        s = load_symbols(Path(self.firmware).with_suffix(".map"))
+        self.KB_REPORT = s["keyboard_report"]
+        self.LED_STATE = s["keyboard_state"]      # struct, led_state is field 0
+        self.SEND_KB_REPORT = s["send_keyboard_report"]
+        self.MAIN_LOOP = s["kb_update_switches"]  # first call in main's while-loop
+        self.USB_DEVICE_STATE = s["usb_device_state"]
+        # POST_INIT can't be a single symbol -- it's the address after the LCALL
+        # _init inside main(). find_post_init() walks main()'s prologue to find it.
+        self.POST_INIT = find_post_init(s, self.firmware)
 
     def available(self):
         """Return None if runnable, else a human reason it is not."""
