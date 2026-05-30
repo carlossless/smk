@@ -36,12 +36,14 @@ static void ssp_run(uint16_t addr, uint8_t op, uint8_t data)
     IB_CON3   = 0x0A;
     IB_CON4   = 0x09;
     IB_CON5   = 0x06;
+    // clang-format off
     __asm
         nop
         nop
         nop
         nop
     __endasm;
+    // clang-format on
     XPAGE = 0;
     EA    = 1;
 }
@@ -83,8 +85,7 @@ bool flash_settings_load(__xdata uint8_t *dst, uint8_t len)
 void flash_settings_save(const __xdata uint8_t *src, uint8_t len)
 {
     // skip the write entirely if the stored record already matches (avoids wear)
-    bool same = flash_read(CFG_ADDR) == CFG_MAGIC0 && flash_read(CFG_ADDR + 1) == CFG_MAGIC1 &&
-                flash_read(CFG_ADDR + 2) == len;
+    bool same = flash_read(CFG_ADDR) == CFG_MAGIC0 && flash_read(CFG_ADDR + 1) == CFG_MAGIC1 && flash_read(CFG_ADDR + 2) == len;
     if (same) {
         for (uint8_t i = 0; i < len; i++) {
             if (flash_read((uint16_t)(CFG_ADDR + CFG_HDR + i)) != src[i]) {

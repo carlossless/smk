@@ -42,8 +42,7 @@ typedef enum {
 // Per-device geometry baked into ROM at build time (utils/led_geometry_gen.c). Shared
 // with the RGB boards; here the values index a brightness wave instead of a colour wheel.
 #include LED_GEOMETRY_HEADER
-_Static_assert(LED_GEOMETRY_ROWS == LED_ROWS && LED_GEOMETRY_COLS == LED_COLS,
-               "generated LED geometry size does not match the key matrix");
+_Static_assert(LED_GEOMETRY_ROWS == LED_ROWS && LED_GEOMETRY_COLS == LED_COLS, "generated LED geometry size does not match the key matrix");
 
 // Single-channel framebuffer (brightness per LED). __xdata to spare internal RAM.
 static __xdata uint8_t led_fb[LED_ROWS][LED_COLS];
@@ -53,8 +52,8 @@ static __xdata uint8_t led_phase;
 static __xdata uint8_t regen_row;
 static __xdata uint8_t regen_col;
 
-void indicators_pwm_enable();
-void indicators_pwm_disable();
+void        indicators_pwm_enable();
+void        indicators_pwm_disable();
 static void led_regen_one();
 static void led_enable_row();
 static void led_set_columns();
@@ -179,11 +178,21 @@ static void led_regen_one()
 static void led_enable_row()
 {
     switch (led_row) {
-        case 0: LED_R0 = 0; break;
-        case 1: LED_R1 = 0; break;
-        case 2: LED_R2 = 0; break;
-        case 3: LED_R3 = 0; break;
-        case 4: LED_R4 = 0; break;
+        case 0:
+            LED_R0 = 0;
+            break;
+        case 1:
+            LED_R1 = 0;
+            break;
+        case 2:
+            LED_R2 = 0;
+            break;
+        case 3:
+            LED_R3 = 0;
+            break;
+        case 4:
+            LED_R4 = 0;
+            break;
     }
 }
 

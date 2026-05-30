@@ -60,8 +60,7 @@ typedef enum {
 // included here as const __code tables (radial_index, col_hue, row_hue). Costs no RAM
 // and no runtime computation. The generated header is selected per board via meson.
 #include LED_GEOMETRY_HEADER
-_Static_assert(LED_GEOMETRY_ROWS == LED_ROWS && LED_GEOMETRY_COLS == LED_COLS,
-               "generated LED geometry size does not match the key matrix");
+_Static_assert(LED_GEOMETRY_ROWS == LED_ROWS && LED_GEOMETRY_COLS == LED_COLS, "generated LED geometry size does not match the key matrix");
 
 // Per-LED RGB framebuffer for the main key matrix, indexed [row][color][col].
 // Kept entirely in __xdata so the scarce internal RAM stays untouched.
@@ -84,8 +83,8 @@ static __xdata uint8_t ul_phase;
 static __xdata uint8_t regen_row;
 static __xdata uint8_t regen_col;
 
-void indicators_pwm_enable();
-void indicators_pwm_disable();
+void        indicators_pwm_enable();
+void        indicators_pwm_disable();
 static void apply_defaults();
 static void led_regen_one();
 static void led_enable_sink();
@@ -458,34 +457,52 @@ static void led_enable_sink()
 {
     switch (led_row) {
         case 0:
-            if (led_color == 0) RGB_R0R = 1;
-            else if (led_color == 1) RGB_R0G = 1;
-            else RGB_R0B = 1;
+            if (led_color == 0)
+                RGB_R0R = 1;
+            else if (led_color == 1)
+                RGB_R0G = 1;
+            else
+                RGB_R0B = 1;
             break;
         case 1:
-            if (led_color == 0) RGB_R1R = 1;
-            else if (led_color == 1) RGB_R1G = 1;
-            else RGB_R1B = 1;
+            if (led_color == 0)
+                RGB_R1R = 1;
+            else if (led_color == 1)
+                RGB_R1G = 1;
+            else
+                RGB_R1B = 1;
             break;
         case 2:
-            if (led_color == 0) RGB_R2R = 1;
-            else if (led_color == 1) RGB_R2G = 1;
-            else RGB_R2B = 1;
+            if (led_color == 0)
+                RGB_R2R = 1;
+            else if (led_color == 1)
+                RGB_R2G = 1;
+            else
+                RGB_R2B = 1;
             break;
         case 3:
-            if (led_color == 0) RGB_R3R = 1;
-            else if (led_color == 1) RGB_R3G = 1;
-            else RGB_R3B = 1;
+            if (led_color == 0)
+                RGB_R3R = 1;
+            else if (led_color == 1)
+                RGB_R3G = 1;
+            else
+                RGB_R3B = 1;
             break;
         case 4:
-            if (led_color == 0) RGB_R4R = 1;
-            else if (led_color == 1) RGB_R4G = 1;
-            else RGB_R4B = 1;
+            if (led_color == 0)
+                RGB_R4R = 1;
+            else if (led_color == 1)
+                RGB_R4G = 1;
+            else
+                RGB_R4B = 1;
             break;
         case LED_UL_ROW:
-            if (led_color == 0) RGB_ULR = 1;
-            else if (led_color == 1) RGB_ULG = 1;
-            else RGB_ULB = 1;
+            if (led_color == 0)
+                RGB_ULR = 1;
+            else if (led_color == 1)
+                RGB_ULG = 1;
+            else
+                RGB_ULB = 1;
             break;
     }
 }
@@ -493,8 +510,7 @@ static void led_enable_sink()
 static void led_set_columns()
 {
     // underglow uses its own framebuffer; key rows use the main one
-    __xdata uint8_t *fb =
-        (led_row == LED_UL_ROW) ? led_ul_fb[led_color] : led_fb[led_row][led_color];
+    __xdata uint8_t *fb = (led_row == LED_UL_ROW) ? led_ul_fb[led_color] : led_fb[led_row][led_color];
 
     SET_PWM_DUTY_2(LED_PWM_C0, LED_DUTY(fb[0]));
     SET_PWM_DUTY_2(LED_PWM_C1, LED_DUTY(fb[1]));
