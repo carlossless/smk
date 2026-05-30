@@ -78,14 +78,93 @@ static rf_mode_t kb_keycode_to_rf_mode(uint16_t keycode)
 }
 #endif
 
-extern void indicators_cycle_effect();
+extern void indicators_next_effect();
+extern void indicators_prev_effect();
+extern void indicators_brightness_up();
+extern void indicators_brightness_down();
+extern void indicators_speed_up();
+extern void indicators_speed_down();
+extern void indicators_ul_next_effect();
+extern void indicators_ul_prev_effect();
+extern void indicators_ul_brightness_up();
+extern void indicators_ul_brightness_down();
+extern void indicators_ul_speed_up();
+extern void indicators_ul_speed_down();
+extern void indicators_factory_reset();
+
+// While UL_MODE (the "?" key on the Fn layer) is held, the RGB_* chords adjust the
+// underglow instead of the main backlight. Held in xdata to spare internal RAM.
+static __xdata bool ul_mode_active;
+
+// While RESET_HOLD (Fn+Tab) is held, pressing FACT_RESET (V) factory-resets settings.
+static __xdata bool reset_mode_active;
 
 bool kb_process_record(uint16_t keycode, bool key_pressed)
 {
     switch (keycode) {
-        case RGB_FX:
+        case UL_MODE:
+            ul_mode_active = key_pressed;
+            return false;
+        case RESET_HOLD:
+            reset_mode_active = key_pressed;
+            return false;
+        case FACT_RESET:
+            if (key_pressed && reset_mode_active) {
+                indicators_factory_reset();
+            }
+            return false;
+        case RGB_FX_NEXT:
             if (key_pressed) {
-                indicators_cycle_effect();
+                if (ul_mode_active) {
+                    indicators_ul_next_effect();
+                } else {
+                    indicators_next_effect();
+                }
+            }
+            return false;
+        case RGB_FX_PREV:
+            if (key_pressed) {
+                if (ul_mode_active) {
+                    indicators_ul_prev_effect();
+                } else {
+                    indicators_prev_effect();
+                }
+            }
+            return false;
+        case RGB_BRI_UP:
+            if (key_pressed) {
+                if (ul_mode_active) {
+                    indicators_ul_brightness_up();
+                } else {
+                    indicators_brightness_up();
+                }
+            }
+            return false;
+        case RGB_BRI_DN:
+            if (key_pressed) {
+                if (ul_mode_active) {
+                    indicators_ul_brightness_down();
+                } else {
+                    indicators_brightness_down();
+                }
+            }
+            return false;
+        case RGB_SPD_UP:
+            if (key_pressed) {
+                if (ul_mode_active) {
+                    indicators_ul_speed_up();
+                } else {
+                    indicators_speed_up();
+                }
+            }
+            return false;
+        case RGB_SPD_DN:
+            if (key_pressed) {
+                if (ul_mode_active) {
+                    indicators_ul_speed_down();
+                } else {
+                    indicators_speed_down();
+                }
             }
             return false;
 #ifdef RF_ENABLED

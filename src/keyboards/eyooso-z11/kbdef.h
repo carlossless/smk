@@ -7,7 +7,9 @@
 #define MATRIX_COLS 14
 
 enum custom_keycodes {
-    RGB_FX = SAFE_RANGE, // cycle to the next backlight animation
+    RGB_FX_NEXT = SAFE_RANGE, // cycle to the next backlight animation
+    RESET_HOLD,               // held: enables the factory-reset chord
+    FACT_RESET,               // factory-reset all user settings (only acts while RESET_HOLD is held)
 
     KB_SAFE_RANGE,
 };

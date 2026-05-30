@@ -66,23 +66,31 @@ void indicators_start()
     regen_row = 0;
     regen_col = 0;
 
-    // restore the last saved effect (defaults to off on a fresh flash)
-    user_settings.led_effect = FX_OFF;
+    // restore the last saved effect (defaults to radial on a fresh flash)
+    user_settings.led_effect = FX_RADIAL;
     settings_load();
     if (user_settings.led_effect > FX_OFF) {
-        user_settings.led_effect = FX_OFF;
+        user_settings.led_effect = FX_RADIAL;
     }
 
     indicators_pwm_enable();
 }
 
-void indicators_cycle_effect()
+void indicators_next_effect()
 {
     // OFF -> FX_RADIAL -> ... -> FX_SOLID -> OFF -> ...
     if (++user_settings.led_effect > FX_OFF) {
         user_settings.led_effect = 0;
     }
 
+    settings_save();
+}
+
+// Factory reset: turn the backlight off and persist that. (The shared user_settings
+// struct also carries fields the eyooso doesn't use; leave them alone.)
+void indicators_factory_reset()
+{
+    user_settings.led_effect = FX_RADIAL;
     settings_save();
 }
 

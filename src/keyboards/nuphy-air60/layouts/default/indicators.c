@@ -2,6 +2,9 @@
 #include "kbdef.h"
 #include "pwm.h"
 #include "settings.h"
+#ifdef RF_ENABLED
+#    include "rf_controller.h"
+#endif
 
 // TODO: move these defines out
 #define PWM_CLK_DIV         0b010 // PWM_CLK = SYS_CLK / 4
@@ -22,12 +25,25 @@
 #define LED_UL_ROW    LED_ROWS
 #define LED_SCAN_ROWS (LED_ROWS + 1)
 
-// Hue increment applied once per full framebuffer regeneration sweep (~73 Hz).
-// Larger = faster animation. A full 256-step cycle takes 256 / (73 * SPEED) seconds.
-#define LED_PHASE_SPEED 4
+// Defaults / clamps for user_settings.led_speed (phase increment per ~73 Hz sweep).
+#define LED_SPEED_DEFAULT    4
+#define LED_UL_SPEED_DEFAULT 1 // underglow defaults slow - it's ambient
+#define LED_SPEED_MIN        1
+#define LED_SPEED_MAX        16
+
+// Underglow LEDs at or below this column display the status colour (caps / conn mode).
+#define UL_STATUS_COLS (LED_COLS / 2)
+
+// Brightness step for one Fn+Up / Fn+Down press (out of 256 levels).
+#define LED_BRIGHTNESS_DEFAULT 255
+#define LED_BRIGHTNESS_STEP    32
 
 // 8-bit framebuffer brightness -> 10-bit column PWM duty (0 = full on, 0x400 = off)
 #define LED_DUTY(v) (uint16_t)(0x0400u - ((uint16_t)(v) << 2))
+
+// Scale an 8-bit channel by the current brightness (main and underglow are independent).
+#define SCALE_BRI(v)    (uint8_t)(((uint16_t)(uint8_t)(v) * user_settings.led_brightness) >> 8)
+#define SCALE_UL_BRI(v) (uint8_t)(((uint16_t)(uint8_t)(v) * user_settings.ul_brightness) >> 8)
 
 typedef enum {
     FX_RADIAL = 0, // rainbow rings radiating from the centre
@@ -47,27 +63,51 @@ typedef enum {
 _Static_assert(LED_GEOMETRY_ROWS == LED_ROWS && LED_GEOMETRY_COLS == LED_COLS,
                "generated LED geometry size does not match the key matrix");
 
-// Per-LED RGB framebuffer, indexed [row][color][col] (color: 0=R, 1=G, 2=B).
+// Per-LED RGB framebuffer for the main key matrix, indexed [row][color][col].
 // Kept entirely in __xdata so the scarce internal RAM stays untouched.
 static __xdata uint8_t led_fb[LED_ROWS][3][LED_COLS];
+
+// Separate framebuffer for the underglow ("user") LEDs, since they animate
+// independently of the main backlight.
+static __xdata uint8_t led_ul_fb[3][LED_COLS];
 
 // LED scan cursor, advanced one (row,color) substep per PWM ISR. Decoupled from
 // the key-matrix column scan (current_step). Also __xdata to avoid internal RAM.
 static __xdata uint8_t led_row;
 static __xdata uint8_t led_color;
 
-// Animation state. The framebuffer is regenerated incrementally one LED per ISR
-// (regen_row/regen_col); led_phase shifts the rainbow once per sweep. The active
-// effect lives in persistent user_settings.led_effect.
+// Animation state. The framebuffers are regenerated one LED per ISR cycling through
+// the main rows then the underglow row (regen_row/regen_col). led_phase / ul_phase
+// shift their respective rainbow each time their portion of the sweep completes.
 static __xdata uint8_t led_phase;
+static __xdata uint8_t ul_phase;
 static __xdata uint8_t regen_row;
 static __xdata uint8_t regen_col;
 
 void indicators_pwm_enable();
 void indicators_pwm_disable();
+static void apply_defaults();
 static void led_regen_one();
 static void led_enable_sink();
 static void led_set_columns();
+
+// Sets every field of user_settings to its factory default value.
+static void apply_defaults()
+{
+    user_settings.led_effect     = FX_RADIAL;
+    user_settings.led_brightness = LED_BRIGHTNESS_DEFAULT;
+    user_settings.led_speed      = LED_SPEED_DEFAULT;
+    user_settings.ul_effect      = FX_RADIAL;
+    user_settings.ul_brightness  = LED_BRIGHTNESS_DEFAULT;
+    user_settings.ul_speed       = LED_UL_SPEED_DEFAULT;
+}
+
+// Factory reset: restore defaults and persist them so the next boot loads them too.
+void indicators_factory_reset()
+{
+    apply_defaults();
+    settings_save();
+}
 
 void indicators_start()
 {
@@ -75,26 +115,152 @@ void indicators_start()
     led_color = 0;
 
     led_phase = 0;
+    ul_phase  = 0;
     regen_row = 0;
     regen_col = 0;
 
-    // restore the last saved effect (defaults to off on a fresh flash)
-    user_settings.led_effect = FX_OFF;
+    // restore the last saved settings (defaults applied on a fresh flash or
+    // whenever the stored record is missing / has a different size)
+    apply_defaults();
     settings_load();
     if (user_settings.led_effect > FX_OFF) {
         user_settings.led_effect = FX_OFF;
+    }
+    if (user_settings.led_speed < LED_SPEED_MIN) {
+        user_settings.led_speed = LED_SPEED_MIN;
+    }
+    if (user_settings.led_speed > LED_SPEED_MAX) {
+        user_settings.led_speed = LED_SPEED_MAX;
+    }
+    if (user_settings.ul_effect > FX_OFF) {
+        user_settings.ul_effect = FX_OFF;
+    }
+    if (user_settings.ul_speed < LED_SPEED_MIN) {
+        user_settings.ul_speed = LED_SPEED_MIN;
+    }
+    if (user_settings.ul_speed > LED_SPEED_MAX) {
+        user_settings.ul_speed = LED_SPEED_MAX;
     }
 
     indicators_pwm_enable();
 }
 
-void indicators_cycle_effect()
+void indicators_next_effect()
 {
     // OFF -> FX_RADIAL -> ... -> FX_SOLID -> OFF -> ...
     if (++user_settings.led_effect > FX_OFF) {
         user_settings.led_effect = 0;
     }
 
+    settings_save();
+}
+
+void indicators_prev_effect()
+{
+    // OFF <- FX_RADIAL <- ... <- FX_SOLID <- OFF <- ...
+    if (user_settings.led_effect == 0) {
+        user_settings.led_effect = FX_OFF;
+    } else {
+        user_settings.led_effect--;
+    }
+
+    settings_save();
+}
+
+void indicators_brightness_up()
+{
+    if (user_settings.led_brightness > (uint8_t)(255 - LED_BRIGHTNESS_STEP)) {
+        user_settings.led_brightness = 255;
+    } else {
+        user_settings.led_brightness = (uint8_t)(user_settings.led_brightness + LED_BRIGHTNESS_STEP);
+    }
+
+    settings_save();
+}
+
+void indicators_brightness_down()
+{
+    if (user_settings.led_brightness < LED_BRIGHTNESS_STEP) {
+        user_settings.led_brightness = 0;
+    } else {
+        user_settings.led_brightness = (uint8_t)(user_settings.led_brightness - LED_BRIGHTNESS_STEP);
+    }
+
+    settings_save();
+}
+
+void indicators_speed_up()
+{
+    if (user_settings.led_speed < LED_SPEED_MAX) {
+        user_settings.led_speed++;
+    }
+
+    settings_save();
+}
+
+void indicators_speed_down()
+{
+    if (user_settings.led_speed > LED_SPEED_MIN) {
+        user_settings.led_speed--;
+    }
+
+    settings_save();
+}
+
+// Underglow / "user-light" controls. Identical logic to the main backlight ones,
+// but operating on the independent ul_* fields of user_settings.
+
+void indicators_ul_next_effect()
+{
+    if (++user_settings.ul_effect > FX_OFF) {
+        user_settings.ul_effect = 0;
+    }
+    settings_save();
+}
+
+void indicators_ul_prev_effect()
+{
+    if (user_settings.ul_effect == 0) {
+        user_settings.ul_effect = FX_OFF;
+    } else {
+        user_settings.ul_effect--;
+    }
+    settings_save();
+}
+
+void indicators_ul_brightness_up()
+{
+    if (user_settings.ul_brightness > (uint8_t)(255 - LED_BRIGHTNESS_STEP)) {
+        user_settings.ul_brightness = 255;
+    } else {
+        user_settings.ul_brightness = (uint8_t)(user_settings.ul_brightness + LED_BRIGHTNESS_STEP);
+    }
+    settings_save();
+}
+
+void indicators_ul_brightness_down()
+{
+    if (user_settings.ul_brightness < LED_BRIGHTNESS_STEP) {
+        user_settings.ul_brightness = 0;
+    } else {
+        user_settings.ul_brightness = (uint8_t)(user_settings.ul_brightness - LED_BRIGHTNESS_STEP);
+    }
+    settings_save();
+}
+
+void indicators_ul_speed_up()
+{
+    if (user_settings.ul_speed < LED_SPEED_MAX) {
+        user_settings.ul_speed++;
+    }
+    settings_save();
+}
+
+void indicators_ul_speed_down()
+{
+    if (user_settings.ul_speed > LED_SPEED_MIN) {
+        user_settings.ul_speed--;
+    }
     settings_save();
 }
 
@@ -115,19 +281,21 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
     keyboard;
     current_step;
 
-    if (user_settings.led_effect >= FX_OFF) {
-        // backlight off: pre_update already cleared every sink, so nothing lights
-        return false;
-    }
-
     // Regenerate one LED of the framebuffer per ISR (cheap), spreading the rainbow
     // computation over many interrupts instead of one expensive burst.
     led_regen_one();
 
-    // Light exactly one (row, color) this substep, with per-column brightness from
-    // the framebuffer. A full frame is LED_SCAN_ROWS * 3 substeps (key rows + underglow).
-    led_enable_sink();
-    led_set_columns();
+    // Main rows scan only when the main effect is on. The UL row always scans so the
+    // left-side status indicator stays visible regardless of UL effect.
+    if (led_row < LED_ROWS) {
+        if (user_settings.led_effect < FX_OFF) {
+            led_enable_sink();
+            led_set_columns();
+        }
+    } else {
+        led_enable_sink();
+        led_set_columns();
+    }
 
     if (++led_color >= 3) {
         led_color = 0;
@@ -149,51 +317,139 @@ void indicators_post_update()
 
 static void led_regen_one()
 {
-    if (user_settings.led_effect == FX_SOLID) {
-        // static white, no animation
-        led_fb[regen_row][0][regen_col] = 255;
-        led_fb[regen_row][1][regen_col] = 255;
-        led_fb[regen_row][2][regen_col] = 255;
-    } else {
-        uint8_t h;
+    if (regen_row < LED_ROWS) {
+        // -------- MAIN backlight cell --------
+        if (user_settings.led_effect == FX_SOLID) {
+            led_fb[regen_row][0][regen_col] = user_settings.led_brightness;
+            led_fb[regen_row][1][regen_col] = user_settings.led_brightness;
+            led_fb[regen_row][2][regen_col] = user_settings.led_brightness;
+        } else if (user_settings.led_effect < FX_OFF) {
+            uint8_t h;
+            switch (user_settings.led_effect) {
+                case FX_HORIZONTAL:
+                    h = (uint8_t)(col_hue[regen_col] + led_phase);
+                    break;
+                case FX_VERTICAL:
+                    h = (uint8_t)(row_hue[regen_row] + led_phase);
+                    break;
+                case FX_RADIAL:
+                default:
+                    h = (uint8_t)(radial_index[regen_row][regen_col] + led_phase);
+                    break;
+            }
 
-        // hue source depends on the active effect; phase animates all of them
-        switch (user_settings.led_effect) {
-            case FX_HORIZONTAL:
-                h = (uint8_t)(col_hue[regen_col] + led_phase);
-                break;
-            case FX_VERTICAL:
-                h = (uint8_t)(row_hue[regen_row] + led_phase);
-                break;
-            case FX_RADIAL:
-            default:
-                h = (uint8_t)(radial_index[regen_row][regen_col] + led_phase);
-                break;
+            // Full-saturation colour wheel (h -> R->B->G->R), scaled by brightness.
+            if (h < 85) {
+                led_fb[regen_row][0][regen_col] = SCALE_BRI(255 - h * 3);
+                led_fb[regen_row][1][regen_col] = 0;
+                led_fb[regen_row][2][regen_col] = SCALE_BRI(h * 3);
+            } else if (h < 170) {
+                h                               = (uint8_t)(h - 85);
+                led_fb[regen_row][0][regen_col] = 0;
+                led_fb[regen_row][1][regen_col] = SCALE_BRI(h * 3);
+                led_fb[regen_row][2][regen_col] = SCALE_BRI(255 - h * 3);
+            } else {
+                h                               = (uint8_t)(h - 170);
+                led_fb[regen_row][0][regen_col] = SCALE_BRI(h * 3);
+                led_fb[regen_row][1][regen_col] = SCALE_BRI(255 - h * 3);
+                led_fb[regen_row][2][regen_col] = 0;
+            }
+        }
+        // if main is off, leave led_fb stale (the scanner skips that section)
+    } else {
+        // -------- UNDERGLOW cell --------
+        if (user_settings.ul_effect == FX_SOLID) {
+            led_ul_fb[0][regen_col] = user_settings.ul_brightness;
+            led_ul_fb[1][regen_col] = user_settings.ul_brightness;
+            led_ul_fb[2][regen_col] = user_settings.ul_brightness;
+        } else if (user_settings.ul_effect < FX_OFF) {
+            uint8_t h;
+            switch (user_settings.ul_effect) {
+                case FX_HORIZONTAL:
+                    h = (uint8_t)(col_hue[regen_col] + ul_phase);
+                    break;
+                case FX_VERTICAL:
+                    // UL is one strip, so vertical = whole strip cycling together
+                    h = ul_phase;
+                    break;
+                case FX_RADIAL:
+                default: {
+                    // distance from the strip centre, scaled so the wheel spans
+                    // from centre to either end
+                    uint8_t r = (regen_col < (LED_COLS / 2)) ? (uint8_t)((LED_COLS / 2 - 1) - regen_col) : (uint8_t)(regen_col - LED_COLS / 2);
+                    h         = (uint8_t)((uint8_t)(r * 36) + ul_phase);
+                    break;
+                }
+            }
+
+            if (h < 85) {
+                led_ul_fb[0][regen_col] = SCALE_UL_BRI(255 - h * 3);
+                led_ul_fb[1][regen_col] = 0;
+                led_ul_fb[2][regen_col] = SCALE_UL_BRI(h * 3);
+            } else if (h < 170) {
+                h                       = (uint8_t)(h - 85);
+                led_ul_fb[0][regen_col] = 0;
+                led_ul_fb[1][regen_col] = SCALE_UL_BRI(h * 3);
+                led_ul_fb[2][regen_col] = SCALE_UL_BRI(255 - h * 3);
+            } else {
+                h                       = (uint8_t)(h - 170);
+                led_ul_fb[0][regen_col] = SCALE_UL_BRI(h * 3);
+                led_ul_fb[1][regen_col] = SCALE_UL_BRI(255 - h * 3);
+                led_ul_fb[2][regen_col] = 0;
+            }
+        } else {
+            // UL off: clear so stale effect doesn't leak (the UL row always scans for status)
+            led_ul_fb[0][regen_col] = 0;
+            led_ul_fb[1][regen_col] = 0;
+            led_ul_fb[2][regen_col] = 0;
         }
 
-        // Full-saturation colour wheel (h: 0..255 -> R->B->G->R). S = V = max.
-        if (h < 85) {
-            led_fb[regen_row][0][regen_col] = (uint8_t)(255 - h * 3);
-            led_fb[regen_row][1][regen_col] = 0;
-            led_fb[regen_row][2][regen_col] = (uint8_t)(h * 3);
-        } else if (h < 170) {
-            h                               = (uint8_t)(h - 85);
-            led_fb[regen_row][0][regen_col] = 0;
-            led_fb[regen_row][1][regen_col] = (uint8_t)(h * 3);
-            led_fb[regen_row][2][regen_col] = (uint8_t)(255 - h * 3);
-        } else {
-            h                               = (uint8_t)(h - 170);
-            led_fb[regen_row][0][regen_col] = (uint8_t)(h * 3);
-            led_fb[regen_row][1][regen_col] = (uint8_t)(255 - h * 3);
-            led_fb[regen_row][2][regen_col] = 0;
+        // Status indicator on the left-side UL LEDs. Overrides the UL effect so the
+        // mode is visible regardless of UL state.
+        //   caps lock      -> grayish green (highest priority)
+        //   wired (USB)    -> yellow
+        //   2.4G wireless  -> green
+        //   bluetooth      -> blue
+        if (regen_col < UL_STATUS_COLS) {
+            if (keyboard_state.led_state & (1 << 1)) {
+                led_ul_fb[0][regen_col] = SCALE_UL_BRI(50);
+                led_ul_fb[1][regen_col] = SCALE_UL_BRI(120);
+                led_ul_fb[2][regen_col] = SCALE_UL_BRI(50);
+            } else if (CONN_MODE_SWITCH) {
+                led_ul_fb[0][regen_col] = SCALE_UL_BRI(255);
+                led_ul_fb[1][regen_col] = SCALE_UL_BRI(180);
+                led_ul_fb[2][regen_col] = 0;
+#ifdef RF_ENABLED
+            } else if (keyboard_state.rf_link == RF_MODE_2_4G) {
+                led_ul_fb[0][regen_col] = 0;
+                led_ul_fb[1][regen_col] = SCALE_UL_BRI(255);
+                led_ul_fb[2][regen_col] = 0;
+            } else {
+                led_ul_fb[0][regen_col] = 0;
+                led_ul_fb[1][regen_col] = 0;
+                led_ul_fb[2][regen_col] = SCALE_UL_BRI(255);
+#else
+            } else {
+                led_ul_fb[0][regen_col] = 0;
+                led_ul_fb[1][regen_col] = 0;
+                led_ul_fb[2][regen_col] = 0;
+#endif
+            }
         }
     }
 
+    // Cursor advance: main rows 0..LED_ROWS-1 then the UL row, then back to 0.
+    // Each region bumps its own phase when its sweep completes.
     if (++regen_col >= LED_COLS) {
         regen_col = 0;
-        if (++regen_row >= LED_ROWS) {
+        regen_row++;
+        if (regen_row == LED_UL_ROW) {
+            // just finished the main sweep
+            led_phase = (uint8_t)(led_phase + user_settings.led_speed);
+        } else if (regen_row >= LED_SCAN_ROWS) {
+            // just finished the UL sweep
+            ul_phase  = (uint8_t)(ul_phase + user_settings.ul_speed);
             regen_row = 0;
-            led_phase = (uint8_t)(led_phase + LED_PHASE_SPEED);
         }
     }
 }
@@ -236,9 +492,9 @@ static void led_enable_sink()
 
 static void led_set_columns()
 {
-    // the underglow row has no framebuffer of its own; it mirrors the bottom key row
-    uint8_t          src = (led_row == LED_UL_ROW) ? (LED_ROWS - 1) : led_row;
-    __xdata uint8_t *fb  = led_fb[src][led_color];
+    // underglow uses its own framebuffer; key rows use the main one
+    __xdata uint8_t *fb =
+        (led_row == LED_UL_ROW) ? led_ul_fb[led_color] : led_fb[led_row][led_color];
 
     SET_PWM_DUTY_2(LED_PWM_C0, LED_DUTY(fb[0]));
     SET_PWM_DUTY_2(LED_PWM_C1, LED_DUTY(fb[1]));
