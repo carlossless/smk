@@ -29,15 +29,16 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1763384566,
-        "narHash": "sha256-r+wgI+WvNaSdxQmqaM58lVNvJYJ16zoq+tKN20cLst4=",
-        "owner": "nix-community",
+        "lastModified": 1779912356,
+        "narHash": "sha256-yj5O6vmAj+OfhTQMiUwhmQRP0HAII3BxEI6zuY6h/5k=",
+        "owner": "link2xt",
         "repo": "naersk",
-        "rev": "d4155d6ebb70fbe2314959842f744aa7cabbbf6a",
+        "rev": "33eaf5c72a67db15073322d26cd342c443556214",
         "type": "github"
       },
       "original": {
-        "owner": "nix-community",
+        "owner": "link2xt",
+        "ref": "link2xt/static-crates-io",
         "repo": "naersk",
         "type": "github"
       }
@@ -119,11 +120,11 @@
         "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "lastModified": 1766285238,
-        "narHash": "sha256-DqVXFZ4ToiFHgnxebMWVL70W+U+JOxpmfD37eWD/Qc8=",
+        "lastModified": 1779851998,
+        "narHash": "sha256-UkkMh3bX9QW4Luqkm98nUaOqKWrU6i65mUnph3WeSSw=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "c4249d0c370d573d95e33b472014eae4f2507c2f",
+        "rev": "6cddd512fa2bf7231f098d3a2f92f6e4cff71e0a",
         "type": "github"
       },
       "original": {
@@ -142,11 +143,11 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1778410633,
-        "narHash": "sha256-tY+Xk5ZTaXYgUJ8yr7Gula235/PRb9QnsxrZmM/FfJk=",
+        "lastModified": 1779946764,
+        "narHash": "sha256-jTExsD7/knXJvMXXiYPU9KDeTs1isz/k69s1quWzJnQ=",
         "owner": "carlossless",
         "repo": "sinowealth-kb-tool",
-        "rev": "4be6575a6b0bc4849533fd672edbb7eca978b16a",
+        "rev": "c4e675be67ccec2655eda12d75be59841e761abc",
         "type": "github"
       },
       "original": {

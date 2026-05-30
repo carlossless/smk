@@ -20,8 +20,8 @@ default_options = {
 parts = [
     # keyboard, platform, layouts, options
     ['example', 'sh68f90a', ['default'], {}],
-    ['nuphy-air60', 'sh68f90a', ['default'], { 'vendor_id': '0x05ac', 'product_id': '0x024f', 'wireless': 'bk3632' }],
-    ['eyooso-z11', 'sh68f90a', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x002a' }],
+    ['nuphy-air60', 'sh68f90a', ['default'], { 'vendor_id': '0x05ac', 'product_id': '0x024f', 'wireless': 'bk3632', 'led_rows': '5', 'led_cols': '16', 'led_cx2': '13', 'led_cy2': '4' }],
+    ['eyooso-z11', 'sh68f90a', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x002a', 'led_rows': '5', 'led_cols': '14', 'led_cx2': '13', 'led_cy2': '4' }],
 ]
 
 # SMK
@@ -43,6 +43,7 @@ src_smk = [
     'src/smk/report.c',
     'src/smk/keyboard.c',
     'src/smk/console.c',
+    'src/smk/settings.c',
 ]
 
 # USER DEFAULTS
@@ -70,6 +71,7 @@ inc_platform_sh68f90a = [
 src_platform_sh68f90a = [
     'src/platform/sh68f90a/clock.c',
     'src/platform/sh68f90a/delay.c',
+    'src/platform/sh68f90a/flash.c',
     'src/platform/sh68f90a/isp.c',
     'src/platform/sh68f90a/ldo.c',
     'src/platform/sh68f90a/pwm.c',
@@ -108,7 +110,7 @@ cc_base_args = [
     '--model-small',
     '--xram-size', '0x1000',
     '--xram-loc', '0x0000',
-    '--code-size', '0xf000',
+    '--code-size', '0xec00', # cap code below the flash config sector (0xEC00) + bootloader
     '--opt-code-speed',
     '--out-fmt-ihx',
 
@@ -129,6 +131,13 @@ cc = find_program('sdcc', required : true)
 sdar = find_program('sdar', required : true)
 packihx = find_program('packihx', required : true)
 skbt = find_program('sinowealth-kb-tool', required : true)
+
+# Host-side generator that bakes per-device LED animation geometry into ROM tables
+# (see utils/led_geometry_gen.c). Compiled once with the host compiler at configure
+# time so the generated headers exist on disk before any firmware source is built.
+host_cc = find_program('cc', 'gcc', required : true)
+gen_led_geometry = join_paths(meson.current_build_dir(), 'led_geometry_gen')
+run_command(host_cc, '-O2', '-o', gen_led_geometry, join_paths(meson.current_source_dir(), 'utils/led_geometry_gen.c'), check : true)
 
 dir_base = meson.current_source_dir()
 
@@ -208,6 +217,17 @@ foreach part : parts
         endforeach
 
         prefix = '@0@_@1@_'.format(keyboard, layout)
+
+        # RGB boards bake their animation geometry into a ROM table at configure time.
+        if options.has_key('led_cols')
+            configure_file(
+                output : prefix + 'led_geometry.h',
+                command : [gen_led_geometry, options['led_rows'], options['led_cols'], options['led_cx2'], options['led_cy2']],
+                capture : true,
+            )
+            cc_args += '-DLED_GEOMETRY_HEADER="@0@led_geometry.h"'.format(prefix)
+            cc_args += '-I' + meson.current_build_dir()
+        endif
 
         cc_incs = []
         foreach dir : inc_dirs

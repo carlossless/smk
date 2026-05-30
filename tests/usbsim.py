@@ -121,9 +121,9 @@ class UsbSim:
     # re-derive with: grep _name build/<target>.map
     LED_STATE = 0x0061       # keyboard_state.led_state
     KB_REPORT = 0x0025       # keyboard_report (8 bytes)
-    CONN_MODE = 0x0328       # user_keyboard_state.conn_mode (1 = USB)
-    IFACE0_PROTOCOL = 0x02E9
-    SEND_KB_REPORT = 0x0A6E  # send_keyboard_report() entry (no args)
+    CONN_MODE = 0x032E       # user_keyboard_state.conn_mode (1 = USB)
+    IFACE0_PROTOCOL = 0x02EF
+    SEND_KB_REPORT = 0x0A69  # send_keyboard_report() entry (no args)
     CONN_MODE_USB = 0x01
 
     # key-matrix staging for the SIE model: a "pressed" key whose row reads pull
@@ -133,9 +133,9 @@ class UsbSim:
     KEY_ROW = 0x1F02         # its row (0..4)
 
     # full-init enumeration (boot from reset through the real init path)
-    POST_INIT = 0x0273       # main(), right after init() returns (EA=1, usb_init done)
-    MAIN_LOOP = 0x2DD5       # kb_update_switches(), first call in main's while-loop
-    USB_DEVICE_STATE = 0x02E6
+    POST_INIT = 0x026E       # main(), right after init() returns (EA=1, usb_init done)
+    MAIN_LOOP = 0x302D       # kb_update_switches(), first call in main's while-loop
+    USB_DEVICE_STATE = 0x02EC
     STATE_DEFAULT, STATE_ADDRESSED, STATE_CONFIGURED = 0, 1, 2
 
     def __init__(self, firmware=None, sim=None):

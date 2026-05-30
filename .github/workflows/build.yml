@@ -59,7 +59,7 @@ jobs:
         name: sim-tests-testlog
         path: build/meson-logs/testlog.txt
 
-  lint:
+  format-check:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
