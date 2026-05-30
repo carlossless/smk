@@ -11,14 +11,14 @@ Override targets with env vars SMK_UCSIM (simulator) and SMK_FIRMWARE (.hex).
 
 import unittest
 
-from usbsim import (
-    UsbSim, get_descriptor,
+from sim import (
+    Sim, get_descriptor,
     DESC_DEVICE, DESC_CONFIGURATION, DESC_STRING,
     set_address, set_configuration, get_configuration, get_status_device,
     hid_set_idle, hid_get_idle, hid_set_protocol, hid_get_protocol,
 )
 
-SIM = UsbSim()
+SIM = Sim()
 
 # The device-descriptor header is identical across SMK keyboards (only VID/PID,
 # which live further in, differ), so these assertions hold for any built target.

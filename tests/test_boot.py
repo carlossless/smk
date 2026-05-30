@@ -11,9 +11,9 @@ Override targets with env vars SMK_UCSIM (simulator) and SMK_FIRMWARE (.hex).
 
 import unittest
 
-from usbsim import UsbSim
+from sim import Sim
 
-SIM = UsbSim()
+SIM = Sim()
 
 
 def setUpModule():
