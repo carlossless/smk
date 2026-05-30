@@ -3,3 +3,9 @@
 .direnv/
 
 build/
+
+# `nix build` output symlink
+/result
+
+# Python bytecode caches
+__pycache__/

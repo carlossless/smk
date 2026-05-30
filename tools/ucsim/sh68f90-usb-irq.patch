@@ -1,0 +1,285 @@
+--- a/sim/ucsim/src/sims/s51.src/interrupt.cc
++++ b/sim/ucsim/src/sims/s51.src/interrupt.cc
+@@ -39,6 +39,168 @@
+ //#include "uc51cl.h"
+ #include "types51.h"
+ 
++#include <stdio.h>
++
++// Minimal SH68F90 USB SIE model. Stock uCsim has no USB block, so the firmware's
++// USB ISR never sees the SFR/buffer changes a real Serial Interface Engine would
++// produce. This models the host side of a control-IN data phase: when the
++// firmware queues an IN packet (writes EP0CON.IEP0RDY), it reads the bytes out of
++// EP0_IN_BUF (0x1108) like a host would and logs them, then raises USBIF2.IEP0IF
++// so the patched USB it_src re-enters the ISR to ship the next chunk.
++//
++// Deliver a SETUP by staging it in EP0_OUT_BUF (0x1100) and setting
++// USBIF1.SETUPIF (the it_src polls the flag, so `set mem` works); priming the
++// EP0 state machine for multi-packet continuation needs the firmware's C runtime
++// to have run first.
++class cl_sh68f90_sie: public cl_hw
++{
++  class cl_address_space *xram, *sfr;
++  class cl_memory_cell *cell_ep0con, *cell_usbif2, *cell_iep0cnt;
++  class cl_memory_cell *cell_ep1con, *cell_iep1cnt;
++  class cl_memory_cell *cell_pllcon;
++  class cl_memory_cell *cell_sbuf, *cell_scon;
++  class cl_memory_cell *cell_p1, *cell_p2, *cell_p3, *cell_p5, *cell_p7;
++  unsigned pwm_acc;
++  int in_packets;
++
++  // Is the key matrix column `col` currently driven low (being scanned)?
++  // Column map from user_matrix_pre_scan(): C0-2=P5.0-2, C3-8=P3.0-5,
++  // C9-14=P2.5-0, C15=P1.5.
++  bool col_active(int col)
++  {
++    class cl_memory_cell *pc; t_mem bit;
++    if (col <= 2)       { pc= cell_p5; bit= 1 << col; }
++    else if (col <= 8)  { pc= cell_p3; bit= 1 << (col - 3); }
++    else if (col <= 14) { pc= cell_p2; bit= 1 << (14 - col); }
++    else                { pc= cell_p1; bit= 1 << 5; }
++    return pc && ((pc->get() & bit) == 0);
++  }
++public:
++  cl_sh68f90_sie(class cl_uc *auc):
++    cl_hw(auc, HW_DUMMY, 0, "sh68f90_sie")
++  {
++    xram= sfr= 0;
++    cell_ep0con= cell_usbif2= cell_iep0cnt= 0;
++    cell_ep1con= cell_iep1cnt= 0;
++    cell_pllcon= 0;
++    cell_sbuf= cell_scon= 0;
++    cell_p1= cell_p2= cell_p3= cell_p5= cell_p7= 0;
++    pwm_acc= 0;
++    in_packets= 0;
++  }
++  virtual int init(void)
++  {
++    cl_hw::init();
++    xram= uc->address_space("xram");
++    sfr = uc->address_space(MEM_SFR_ID);
++    if (sfr)
++      {
++	cell_ep0con  = register_cell(sfr, 0x97); // EP0CON
++	cell_usbif2  = sfr->get_cell(0x93);      // USBIF2
++	cell_iep0cnt = sfr->get_cell(0x9b);      // IEP0CNT (IN byte count)
++	cell_ep1con  = register_cell(sfr, 0x99); // EP1CON (keyboard report endpoint)
++	cell_iep1cnt = sfr->get_cell(0x9c);      // IEP1CNT
++	cell_pllcon  = register_cell(sfr, 0xbc); // PLLCON (clock PLL)
++	cell_sbuf    = register_cell(sfr, 0xaa); // SBUF (real UART TX data)
++	cell_scon    = sfr->get_cell(0xd8);      // SCON (TI = bit1)
++	// key matrix: column outputs (read to find the active column) + row inputs
++	// (read-hooked so a staged key pulls its row low).
++	cell_p1      = sfr->get_cell(0x90);
++	cell_p2      = sfr->get_cell(0x98);
++	cell_p3      = sfr->get_cell(0xa0);
++	cell_p5      = register_cell(sfr, 0x88); // P5: cols C0-2 + rows R3-R4
++	cell_p7      = register_cell(sfr, 0xf8); // P7: rows R0-R2 (bits 1-3)
++      }
++    return 0;
++  }
++
++  // Key matrix row inputs. A "pressed" key is staged in xram: [0x1f00]=enable,
++  // [0x1f01]=col, [0x1f02]=row. Rows idle high (no key); when the pressed key's
++  // column is being scanned, its row bit reads low. R0-R2 = P7.1-3, R3-R4 = P5.3-4.
++  virtual t_mem read(class cl_memory_cell *cell)
++  {
++    if (!xram)
++      return cell->get();
++    bool active = xram->get(0x1f00) && col_active((int)xram->get(0x1f01));
++    int prow = (int)xram->get(0x1f02);
++    if (cell == cell_p7)
++      {
++	t_mem v= 0xff; // rows idle high
++	if (active && prow <= 2)
++	  v &= ~(1 << (prow + 1)); // R0->P7.1, R1->P7.2, R2->P7.3
++	return v;
++      }
++    if (cell == cell_p5)
++      {
++	// keep column bits; force R3/R4 high (0x18) and CONN_MODE_SWITCH (P5.5,
++	// 0x20) high so the firmware runs in USB mode and routes key reports to
++	// EP1 (1=USB, 0=RF).
++	t_mem v= cell->get() | 0x38;
++	if (active && (prow == 3 || prow == 4))
++	  v &= ~(1 << prow);        // R3->P5.3, R4->P5.4
++	return v;
++      }
++    return cell->get();
++  }
++
++  // PWM0 timebase: periodically request the PWM interrupt (vector 0x43) that
++  // drives matrix_scan_step(), once the firmware has enabled it (IEN1._EPWM0).
++  virtual int tick(int cycles)
++  {
++    if (xram && sfr)
++      {
++	pwm_acc += cycles;
++	// period must exceed the matrix-scan ISR duration or the main code starves
++	if (pwm_acc >= 50000)
++	  {
++	    pwm_acc= 0;
++	    if (sfr->get(0xa9) & 0x02) // IEN1._EPWM0
++	      xram->set(0x1f08, xram->get(0x1f08) | 0x01);
++	  }
++      }
++    return 0;
++  }
++  virtual void write(class cl_memory_cell *cell, t_mem *val)
++  {
++    if (cell == cell_ep0con && ((*val) & 0x04)) // IEP0RDY: firmware queued IN data
++      {
++	t_mem n= cell_iep0cnt ? cell_iep0cnt->get() : 0;
++	fprintf(stderr, "[SIE] EP0 IN[%d] %u bytes:", in_packets, (unsigned)n);
++	for (t_mem i= 0; i < n && i < 8; i++)
++	  fprintf(stderr, " %02x", (unsigned)(xram->get(0x1108 + i) & 0xff));
++	fprintf(stderr, "\n");
++	in_packets++;
++	*val &= ~0x04; // host consumed the packet -> clear ready
++	if (in_packets < 16 && cell_usbif2)
++	  cell_usbif2->set(cell_usbif2->get() | 0x01); // IEP0IF -> next chunk
++      }
++    // EP1 = the keyboard's interrupt-IN report endpoint (single-packet)
++    if (cell == cell_ep1con && ((*val) & 0x04)) // IEP1RDY
++      {
++	t_mem n= cell_iep1cnt ? cell_iep1cnt->get() : 0;
++	fprintf(stderr, "[SIE] EP1 IN %u bytes:", (unsigned)n);
++	for (t_mem i= 0; i < n && i < 16; i++)
++	  fprintf(stderr, " %02x", (unsigned)(xram->get(0x1120 + i) & 0xff));
++	fprintf(stderr, "\n");
++	*val &= ~0x04; // host consumed the report -> clear ready
++      }
++    // Clock PLL: report "locked" (PLLSTA) the moment firmware enables it (PLLON),
++    // so clock_init()'s `while (!(PLLCON & _PLLSTA))` spin returns and the real
++    // boot path (init -> usb_init -> main) runs instead of deadlocking.
++    if (cell == cell_pllcon && ((*val) & 0x02)) // _PLLON -> set _PLLSTA
++      *val |= 0x04;
++    // Real SH68F90 UART TX: a write to SBUF (0xaa) "transmits" instantly -- echo
++    // the byte and raise SCON.TI (0xd8 bit1) so the UART ISR clears uart_tx_busy
++    // and the firmware's blocking putchar() returns (else dprintf hangs forever).
++    if (cell == cell_sbuf)
++      {
++	putc((char)(*val & 0xff), stderr);
++	if (cell_scon)
++	  cell_scon->set(cell_scon->get() | 0x02);
++      }
++  }
++};
++
+ 
+ cl_interrupt::cl_interrupt(class cl_uc *auc):
+   cl_hw(auc, HW_INTERRUPT, 0, "irq")
+@@ -54,12 +216,14 @@
+   if (sfr)
+     {
+       register_cell(sfr, IE);
+-      cell_tcon= register_cell(sfr, TCON);
+-      bit_INT0= sfr->read(P3) & bm_INT0;
+-      bit_INT1= sfr->read(P3) & bm_INT1;
+-      cl_address_space *bas= uc->address_space("bits");
+-      cell_it0= register_cell(bas, 0x88);
+-      cell_it1= register_cell(bas, 0x8a);
++      // SH68F90 has no standard INT0/INT1; TCON(0x88) is actually P5 and 0x8a is
++      // MAPPING. Don't put operators on them (use get_cell) so the SIE's key
++      // matrix owns P5 reads.
++      cell_tcon= sfr->get_cell(TCON);
++      bit_INT0= 0;
++      bit_INT1= 0;
++      cell_it0= sfr->get_cell(TCON);
++      cell_it1= sfr->get_cell(TCON);
+     }
+   return(0);
+ }
+@@ -70,18 +234,57 @@
+   class cl_address_space *sfr= uc->address_space(MEM_SFR_ID);
+   class cl_it_src *is;
+   
+-  uc->it_sources->add(is= new cl_it_src(uc, bmEX0,
+-					sfr->get_cell(IE), bmEX0,
+-					sfr->get_cell(TCON), bmIE0,
+-					0x0003, true, false,
+-					"external #0", 1));
++  // (standard external INT0/INT1 sources removed: they don't exist on the
++  // SH68F90 and their request cell TCON(0x88) is actually P5.)
++  // SH68F90 USB interrupt (_INT_USB = vector 7 @ 0x003B).
++  // enable: IEN1(0xa9).EUSB(bit0); request: USBIF1(0x92).SETUPIF(bit4).
++  // level-triggered (clr_bit=false): the firmware ISR clears the flag.
++  uc->it_sources->add(is= new cl_it_src(uc, 0x100,
++					sfr->get_cell(0xa9), 0x01,
++					sfr->get_cell(0x92), 0x10,
++					0x003b, false, false,
++					"USB (SH68F90)", 7));
++  is->init();
++  // EP0 IN/OUT completion sources at the same USB vector (USBIF2), so the SIE
++  // model can advance control transfers and the ISP set-report status stage.
++  // uCsim's pending() is (flag & mask) == mask, so each source needs a
++  // single-bit mask -- a combined mask would require all those bits set at once.
++  uc->it_sources->add(is= new cl_it_src(uc, 0x101,
++					sfr->get_cell(0xa9), 0x01,
++					sfr->get_cell(0x93), 0x01, // IEP0IF
++					0x003b, false, false,
++					"USB EP0-IN (SH68F90)", 7));
++  is->init();
++  uc->it_sources->add(is= new cl_it_src(uc, 0x102,
++					sfr->get_cell(0xa9), 0x01,
++					sfr->get_cell(0x93), 0x10, // OEP0IF
++					0x003b, false, false,
++					"USB EP0-OUT (SH68F90)", 7));
++  is->init();
++  // SH68F90 UART TX-complete interrupt (_INT_EUART0 = vector 13 @ 0x6B).
++  // enable IEN1(0xa9)._ES0(0x40); request SCON(0xd8).TI(0x02). The SIE sets TI on
++  // each SBUF write, so this fires and uart_interrupt_handler clears uart_tx_busy.
++  uc->it_sources->add(is= new cl_it_src(uc, 0x103,
++					sfr->get_cell(0xa9), 0x40,
++					sfr->get_cell(0xd8), 0x02,
++					0x006b, false, false,
++					"UART TI (SH68F90)", 13));
+   is->init();
+-  uc->it_sources->add(is= new cl_it_src(uc, bmEX1,
+-					sfr->get_cell(IE), bmEX1,
+-					sfr->get_cell(TCON), bmIE1,
+-					0x0013, true, false,
+-					"external #1", 3));
++  // SH68F90 PWM0 interrupt (_INT_PWM0 = vector 8 @ 0x43), which drives the matrix
++  // scan. enable IEN1(0xa9)._EPWM0(0x02); request a virtual flag at xram 0x1f08
++  // that the SIE's tick() raises periodically; clr_bit=true (HW auto-clears, the
++  // firmware ISR doesn't).
++  uc->it_sources->add(is= new cl_it_src(uc, 0x104,
++					sfr->get_cell(0xa9), 0x02,
++					uc->address_space("xram")->get_cell(0x1f08), 0x01,
++					0x0043, true, false,
++					"PWM0 (SH68F90)", 8));
+   is->init();
++  // added_to_uc() runs after the uc's hw-init loop, so init() the SIE explicitly
++  // (the address spaces already exist by now).
++  cl_sh68f90_sie *sie= new cl_sh68f90_sie(uc);
++  uc->add_hw(sie);
++  sie->init();
+ }
+ 
+ void
+--- a/sim/ucsim/src/sims/s51.src/uc51.cc
++++ b/sim/ucsim/src/sims/s51.src/uc51.cc
+@@ -922,15 +922,13 @@
+   acc= sfr->get_cell(ACC);
+   psw= sfr->get_cell(PSW);
+   
+-  h= new cl_timer0(this, 0, "timer0");
+-  h->init();
+-  add_hw(h);
+-  h= new cl_timer1(this, 1, "timer1");
+-  h->init();
+-  add_hw(h);
+-  h= new cl_serial(this);
+-  h->init();
+-  add_hw(h);
++  // SH68F90 patch: the standard 8051 timer0/1 (TCON/TMOD/TL/TH @ 0x88-0x8d) and
++  // serial (SCON/SBUF @ 0x98/0x99) are NOT present on this chip -- it remaps
++  // those addresses to GPIO/clock SFRs (P5, LPDSEL, MAPPING, EXCON, DRVCON,
++  // P5DRV) and the USB EP1CON (0x99). Registering uCsim's models there would run
++  // phantom timer/UART logic on unrelated firmware writes. The real UART
++  // (SCON 0xd8 / SBUF 0xaa) and USB are modeled in interrupt.cc instead. Timer 2
++  // (0xc8) IS at the standard address and is still added by cl_uc52.
+ 
+   add_hw(h= new cl_dreg(this, 0, "dreg"));
+   h->init();

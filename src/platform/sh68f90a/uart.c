@@ -1,6 +1,7 @@
 #include "uart.h"
 #include "delay.h"
 #include "watchdog.h"
+#include "console.h"
 #include <stdint.h>
 
 #define UART_BPS   57600
@@ -92,4 +93,7 @@ void uart_interrupt_handler() __interrupt(_INT_EUART0)
 void putchar(int c)
 {
     uart_putc(c);
+#if DEBUG == 1
+    console_putc(c);
+#endif
 }

@@ -127,6 +127,20 @@ const uint8_t hid_report_desc_extra[] = {
         HID_RI_FEATURE(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
     HID_RI_END_COLLECTION(0),
 
+#if DEBUG == 1
+    HID_RI_USAGE_PAGE(16, 0xff31),        // Vendor (QMK console page)
+    HID_RI_USAGE(8, 0x74),                // Console
+    HID_RI_COLLECTION(8, 0x01),           // Application
+        HID_RI_REPORT_ID(8, REPORT_ID_CONSOLE),
+        HID_RI_USAGE(8, 0x75),            // Console data
+        HID_RI_LOGICAL_MINIMUM(8, 0x00),
+        HID_RI_LOGICAL_MAXIMUM(16, 0x00ff),
+        HID_RI_REPORT_SIZE(8, 0x08),
+        HID_RI_REPORT_COUNT(8, CONSOLE_REPORT_SIZE),
+        HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
+    HID_RI_END_COLLECTION(0),
+#endif // DEBUG
+
 #ifdef NKRO_ENABLE
     HID_RI_USAGE_PAGE(8, 0x01),           // Generic Desktop
     HID_RI_USAGE(8, 0x06),                // Keyboard
@@ -403,6 +417,13 @@ uint8_t usb_device_state_get_protocol()
 {
     return interface0_protocol;
 }
+
+#if DEBUG == 1
+bool usb_is_configured()
+{
+    return usb_device_state == USB_DEVICE_STATE_CONFIGURED;
+}
+#endif // DEBUG
 
 static void usb_setup_irq()
 {
@@ -1117,8 +1138,7 @@ static void step_ep0_in_xfer()
 static void set_ep0_in_buffer(uint8_t *src, uint8_t len)
 {
     if (len > EP0_BUF_SIZE) {
-        dprintf("%s buffer too long: %d", __func__, len);
-        return;
+        return; // never happens; guards the memcpy without logging from an ISR
     }
 
     memcpy(EP0_IN_BUF, src, len);
@@ -1132,8 +1152,7 @@ static void get_ep0_out_buffer(uint8_t *dest)
 static void set_ep1_in_buffer(uint8_t *src, uint8_t len)
 {
     if (len > EP1_BUF_SIZE) {
-        dprintf("%s buffer too long: %d", __func__, len);
-        return;
+        return; // never happens; guards the memcpy without logging from an ISR
     }
 
     memcpy(EP1_IN_BUF, src, len);
@@ -1147,8 +1166,7 @@ static void get_ep1_out_buffer(uint8_t *dest)
 static void set_ep2_in_buffer(uint8_t *src, uint8_t len)
 {
     if (len > EP2_BUF_SIZE) {
-        dprintf("%s buffer too long: %d", __func__, len);
-        return;
+        return; // never happens; guards the memcpy without logging from an ISR
     }
 
     memcpy(EP2_IN_BUF, src, len);
