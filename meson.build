@@ -42,6 +42,7 @@ src_smk = [
     'src/smk/matrix.c',
     'src/smk/report.c',
     'src/smk/keyboard.c',
+    'src/smk/console.c',
 ]
 
 # USER DEFAULTS
@@ -74,6 +75,7 @@ src_platform_sh68f90a = [
     'src/platform/sh68f90a/pwm.c',
     'src/platform/sh68f90a/uart.c',
     'src/platform/sh68f90a/usb.c',
+    'src/platform/sh68f90a/stack.c',
 ]
 
 inc_platform_bk3632 = [
@@ -246,3 +248,18 @@ foreach part : parts
         message('target available: @0@, flash: @1@'.format(hex_smk_target_name, flash_target_name))
     endforeach
 endforeach
+
+# Simulator-based firmware tests, run in the patched uCsim simulator (flake
+# package ucsim-sh68f90). Discovers every tests/test_*.py so new test files are
+# picked up automatically. Only registered when both the simulator and python3
+# are available; the suite itself skips if no firmware .hex has been built yet.
+sim = find_program('ucsim-sh68f90', required : false)
+py = find_program('python3', required : false)
+if sim.found() and py.found()
+    test('sim-tests',
+        py,
+        args : ['-m', 'unittest', 'discover', '-s', join_paths(dir_base, 'tests'),
+                '-t', join_paths(dir_base, 'tests')],
+        env : {'SMK_UCSIM': sim.full_path()},
+    )
+endif

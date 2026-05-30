@@ -13,6 +13,8 @@
 #include "indicators.h"
 #include "uart.h"
 #include "kb.h"
+#include "console.h"
+#include "stack.h"
 #ifdef RF_ENABLED
 #    include "rf_controller.h"
 #endif
@@ -50,6 +52,10 @@ void init()
 
 void main()
 {
+#if DEBUG == 1
+    stack_paint(); // must run before interrupts/deep calls to capture true peak
+#endif
+
     init();
 
     dprintf("SMK v" TOSTRING(SMK_VERSION) "\r\n");
@@ -76,5 +82,10 @@ void main()
         kb_update();
 
         matrix_task();
+
+#if DEBUG == 1
+        stack_task();
+        console_task();
+#endif
     }
 }

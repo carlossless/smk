@@ -33,6 +33,32 @@ jobs:
         name: smk-${{ matrix.nkro == 'enabled' && 'nkro' || '6kro' }}
         path: build/*.hex
 
+  sim-tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    - uses: cachix/install-nix-action@v31
+      with:
+        github_access_token: ${{ secrets.GITHUB_TOKEN }}
+    - uses: cachix/cachix-action@v17
+      with:
+        name: smk
+        authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+    - name: Setup
+      run: nix develop --command meson setup build
+    - name: Build firmware (nuphy-air60)
+      run: nix develop --command meson compile -C build nuphy-air60_default_smk.hex
+    - name: Run simulator tests
+      run: nix develop --command meson test -C build sim-tests --print-errorlogs
+    - name: Upload meson testlog on failure
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: sim-tests-testlog
+        path: build/meson-logs/testlog.txt
+
   lint:
     runs-on: ubuntu-latest
     steps:

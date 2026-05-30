@@ -12,11 +12,15 @@
 
 #define EXTRA_REPORT_SIZE 3
 
+// debug console: text payload bytes per HID report (excludes the report id byte)
+#define CONSOLE_REPORT_SIZE 32
+
 enum report_id {
     REPORT_ID_SYSTEM   = 1,
     REPORT_ID_CONSUMER = 2,
     REPORT_ID_ISP      = 5,
     REPORT_ID_NKRO     = 6,
+    REPORT_ID_CONSOLE  = 7,
 };
 
 /*

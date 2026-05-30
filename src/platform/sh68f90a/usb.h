@@ -15,4 +15,8 @@ void    usb_send_nkro(__xdata report_nkro_t *report);
 void    usb_send_extra(__xdata report_extra_t *report);
 uint8_t usb_device_state_get_protocol();
 
+#if DEBUG == 1
+bool usb_is_configured();
+#endif // DEBUG
+
 void usb_interrupt_handler() __interrupt(_INT_USB);

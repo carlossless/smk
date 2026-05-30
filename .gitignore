@@ -3,3 +3,6 @@
 .direnv/
 
 build/
+
+# `nix build` output symlink
+/result
