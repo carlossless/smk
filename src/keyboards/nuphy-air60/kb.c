@@ -78,10 +78,16 @@ static rf_mode_t kb_keycode_to_rf_mode(uint16_t keycode)
 }
 #endif
 
+extern void indicators_cycle_effect();
+
 bool kb_process_record(uint16_t keycode, bool key_pressed)
 {
-    key_pressed;
     switch (keycode) {
+        case RGB_FX:
+            if (key_pressed) {
+                indicators_cycle_effect();
+            }
+            return false;
 #ifdef RF_ENABLED
         case LNK_BT1:
         case LNK_BT2:

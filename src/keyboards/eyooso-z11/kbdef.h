@@ -1,9 +1,16 @@
 #pragma once
 
 #include "sh68f90a.h"
+#include "keycodes.h"
 
 #define MATRIX_ROWS 5
 #define MATRIX_COLS 14
+
+enum custom_keycodes {
+    RGB_FX = SAFE_RANGE, // cycle to the next backlight animation
+
+    KB_SAFE_RANGE,
+};
 
 // Row Pin Bits
 #define KB_R0_P7_1 _P7_1

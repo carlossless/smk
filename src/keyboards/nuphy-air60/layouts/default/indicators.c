@@ -1,11 +1,7 @@
 #include "indicators.h"
 #include "kbdef.h"
 #include "pwm.h"
-#include <stdlib.h>
-
-#ifdef RF_ENABLED
-#    include "rf_controller.h"
-#endif
+#include "settings.h"
 
 // TODO: move these defines out
 #define PWM_CLK_DIV         0b010 // PWM_CLK = SYS_CLK / 4
@@ -14,13 +10,92 @@
 #define PWM_INT_ENABLE_BIT  (1 << 6)
 #define PWM_MODE_ENABLE_BIT (1 << 7)
 
-void indicators_pwm_set_all_columns(uint16_t intensity);
+// The LED matrix follows the key matrix dimensions, so a differently-sized RGB board
+// only needs the right MATRIX_ROWS/MATRIX_COLS (kbdef.h), its geometry parameters in
+// meson.build, plus its own sink/column wiring below.
+#define LED_ROWS MATRIX_ROWS
+#define LED_COLS MATRIX_COLS
+
+// The underglow ("user") LEDs are wired as an extra sink group, scanned as one more
+// row after the key matrix. They mirror the bottom key row so they animate together
+// with whatever effect is active.
+#define LED_UL_ROW    LED_ROWS
+#define LED_SCAN_ROWS (LED_ROWS + 1)
+
+// Hue increment applied once per full framebuffer regeneration sweep (~73 Hz).
+// Larger = faster animation. A full 256-step cycle takes 256 / (73 * SPEED) seconds.
+#define LED_PHASE_SPEED 4
+
+// 8-bit framebuffer brightness -> 10-bit column PWM duty (0 = full on, 0x400 = off)
+#define LED_DUTY(v) (uint16_t)(0x0400u - ((uint16_t)(v) << 2))
+
+typedef enum {
+    FX_RADIAL = 0, // rainbow rings radiating from the centre
+    FX_HORIZONTAL, // rainbow sweeping across columns
+    FX_VERTICAL,   // rainbow sweeping across rows
+    FX_SOLID,      // static solid white (no animation)
+    FX_COUNT
+} led_effect_t;
+
+// The cycle key steps OFF -> each effect -> OFF -> ...; FX_OFF is the dark state.
+#define FX_OFF FX_COUNT
+
+// Per-device geometry, baked into ROM at build time by utils/led_geometry_gen.c and
+// included here as const __code tables (radial_index, col_hue, row_hue). Costs no RAM
+// and no runtime computation. The generated header is selected per board via meson.
+#include LED_GEOMETRY_HEADER
+_Static_assert(LED_GEOMETRY_ROWS == LED_ROWS && LED_GEOMETRY_COLS == LED_COLS,
+               "generated LED geometry size does not match the key matrix");
+
+// Per-LED RGB framebuffer, indexed [row][color][col] (color: 0=R, 1=G, 2=B).
+// Kept entirely in __xdata so the scarce internal RAM stays untouched.
+static __xdata uint8_t led_fb[LED_ROWS][3][LED_COLS];
+
+// LED scan cursor, advanced one (row,color) substep per PWM ISR. Decoupled from
+// the key-matrix column scan (current_step). Also __xdata to avoid internal RAM.
+static __xdata uint8_t led_row;
+static __xdata uint8_t led_color;
+
+// Animation state. The framebuffer is regenerated incrementally one LED per ISR
+// (regen_row/regen_col); led_phase shifts the rainbow once per sweep. The active
+// effect lives in persistent user_settings.led_effect.
+static __xdata uint8_t led_phase;
+static __xdata uint8_t regen_row;
+static __xdata uint8_t regen_col;
+
 void indicators_pwm_enable();
 void indicators_pwm_disable();
+static void led_regen_one();
+static void led_enable_sink();
+static void led_set_columns();
 
 void indicators_start()
 {
+    led_row   = 0;
+    led_color = 0;
+
+    led_phase = 0;
+    regen_row = 0;
+    regen_col = 0;
+
+    // restore the last saved effect (defaults to off on a fresh flash)
+    user_settings.led_effect = FX_OFF;
+    settings_load();
+    if (user_settings.led_effect > FX_OFF) {
+        user_settings.led_effect = FX_OFF;
+    }
+
     indicators_pwm_enable();
+}
+
+void indicators_cycle_effect()
+{
+    // OFF -> FX_RADIAL -> ... -> FX_SOLID -> OFF -> ...
+    if (++user_settings.led_effect > FX_OFF) {
+        user_settings.led_effect = 0;
+    }
+
+    settings_save();
 }
 
 void indicators_pre_update()
@@ -37,112 +112,29 @@ void indicators_pre_update()
 
 bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
 {
-    static uint16_t current_cycle = 0;
+    keyboard;
+    current_step;
 
-    if (current_step == 0) {
-        if (current_cycle < 3072) {
-            current_cycle++;
-        } else {
-            current_cycle = 0;
+    if (user_settings.led_effect >= FX_OFF) {
+        // backlight off: pre_update already cleared every sink, so nothing lights
+        return false;
+    }
+
+    // Regenerate one LED of the framebuffer per ISR (cheap), spreading the rainbow
+    // computation over many interrupts instead of one expensive burst.
+    led_regen_one();
+
+    // Light exactly one (row, color) this substep, with per-column brightness from
+    // the framebuffer. A full frame is LED_SCAN_ROWS * 3 substeps (key rows + underglow).
+    led_enable_sink();
+    led_set_columns();
+
+    if (++led_color >= 3) {
+        led_color = 0;
+        if (++led_row >= LED_SCAN_ROWS) {
+            led_row = 0;
         }
     }
-
-    uint16_t red_intensity   = 0;
-    uint16_t green_intensity = 0;
-    uint16_t blue_intensity  = 0;
-
-    if (current_cycle < 1024) {
-        blue_intensity = 1024 - (uint16_t)abs((int16_t)((current_cycle + 1024) % 2048) - 1024);
-        red_intensity  = 1024 - (uint16_t)abs((int16_t)((current_cycle) % 2048) - 1024);
-    } else if (current_cycle < 2048) {
-        red_intensity   = 1024 - (uint16_t)abs((int16_t)((current_cycle) % 2048) - 1024);
-        green_intensity = 1024 - (uint16_t)abs((int16_t)((current_cycle + 1024) % 2048) - 1024);
-    } else {
-        green_intensity = 1024 - (uint16_t)abs((int16_t)((current_cycle + 1024) % 2048) - 1024);
-        blue_intensity  = 1024 - (uint16_t)abs((int16_t)((current_cycle) % 2048) - 1024);
-    }
-
-    uint16_t color_intensity;
-
-    if (keyboard->led_state & (1 << 0)) { // num_lock
-        red_intensity = 1024;
-    }
-
-    if (keyboard->led_state & (1 << 1)) { // caps_lock
-        green_intensity = 1024;
-    }
-
-    if (keyboard->led_state & (1 << 2)) { // scroll_lock
-        blue_intensity = 1024;
-    }
-
-#ifdef RF_ENABLED
-    switch ((rf_mode_t)keyboard->rf_link) {
-        case RF_MODE_2_4G:
-            red_intensity   = 0;
-            green_intensity = 0;
-            blue_intensity  = 1024;
-            break;
-        case RF_MODE_BT1:
-            red_intensity   = 0;
-            green_intensity = 1024;
-            blue_intensity  = 0;
-            break;
-        case RF_MODE_BT2:
-            red_intensity   = 1024;
-            green_intensity = 0;
-            blue_intensity  = 0;
-            break;
-        case RF_MODE_BT3:
-            red_intensity   = 1024;
-            green_intensity = 1024;
-            blue_intensity  = 0;
-            break;
-    }
-#endif
-
-    switch (current_step % 3) {
-        case 0: // red
-            RGB_R0R = 1;
-            RGB_R1R = 1;
-            RGB_R2R = 1;
-            RGB_R3R = 1;
-            RGB_R4R = 1;
-            RGB_ULR = 1;
-
-            color_intensity = red_intensity;
-            break;
-
-        case 1: // green
-            RGB_R0G = 1;
-            RGB_R1G = 1;
-            RGB_R2G = 1;
-            RGB_R3G = 1;
-            RGB_R4G = 1;
-            RGB_ULG = 1;
-
-            color_intensity = green_intensity;
-            break;
-
-        case 2: // blue
-            RGB_R0B = 1;
-            RGB_R1B = 1;
-            RGB_R2B = 1;
-            RGB_R3B = 1;
-            RGB_R4B = 1;
-            RGB_ULB = 1;
-
-            color_intensity = blue_intensity;
-            break;
-
-        default:
-            // unreachable
-            color_intensity = 0;
-            break;
-    }
-
-    // set pwm duty cycles to expected colors
-    indicators_pwm_set_all_columns(color_intensity);
 
     return false;
 }
@@ -155,26 +147,115 @@ void indicators_post_update()
     indicators_pwm_enable();
 }
 
-void indicators_pwm_set_all_columns(uint16_t intensity)
+static void led_regen_one()
 {
-    uint16_t adjusted = 0x0400 - intensity;
+    if (user_settings.led_effect == FX_SOLID) {
+        // static white, no animation
+        led_fb[regen_row][0][regen_col] = 255;
+        led_fb[regen_row][1][regen_col] = 255;
+        led_fb[regen_row][2][regen_col] = 255;
+    } else {
+        uint8_t h;
 
-    SET_PWM_DUTY_2(LED_PWM_C0, adjusted);
-    SET_PWM_DUTY_2(LED_PWM_C1, adjusted);
-    SET_PWM_DUTY_2(LED_PWM_C2, adjusted);
-    SET_PWM_DUTY_2(LED_PWM_C3, adjusted);
-    SET_PWM_DUTY_2(LED_PWM_C4, adjusted);
-    SET_PWM_DUTY_2(LED_PWM_C5, adjusted);
-    SET_PWM_DUTY_2(LED_PWM_C6, adjusted);
-    SET_PWM_DUTY_2(LED_PWM_C7, adjusted);
-    SET_PWM_DUTY_2(LED_PWM_C8, adjusted);
-    SET_PWM_DUTY_2(LED_PWM_C9, adjusted);
-    SET_PWM_DUTY_2(LED_PWM_C10, adjusted);
-    SET_PWM_DUTY_2(LED_PWM_C11, adjusted);
-    SET_PWM_DUTY_2(LED_PWM_C12, adjusted);
-    SET_PWM_DUTY_2(LED_PWM_C13, adjusted);
-    SET_PWM_DUTY_2(LED_PWM_C14, adjusted);
-    SET_PWM_DUTY_2(LED_PWM_C15, adjusted);
+        // hue source depends on the active effect; phase animates all of them
+        switch (user_settings.led_effect) {
+            case FX_HORIZONTAL:
+                h = (uint8_t)(col_hue[regen_col] + led_phase);
+                break;
+            case FX_VERTICAL:
+                h = (uint8_t)(row_hue[regen_row] + led_phase);
+                break;
+            case FX_RADIAL:
+            default:
+                h = (uint8_t)(radial_index[regen_row][regen_col] + led_phase);
+                break;
+        }
+
+        // Full-saturation colour wheel (h: 0..255 -> R->B->G->R). S = V = max.
+        if (h < 85) {
+            led_fb[regen_row][0][regen_col] = (uint8_t)(255 - h * 3);
+            led_fb[regen_row][1][regen_col] = 0;
+            led_fb[regen_row][2][regen_col] = (uint8_t)(h * 3);
+        } else if (h < 170) {
+            h                               = (uint8_t)(h - 85);
+            led_fb[regen_row][0][regen_col] = 0;
+            led_fb[regen_row][1][regen_col] = (uint8_t)(h * 3);
+            led_fb[regen_row][2][regen_col] = (uint8_t)(255 - h * 3);
+        } else {
+            h                               = (uint8_t)(h - 170);
+            led_fb[regen_row][0][regen_col] = (uint8_t)(h * 3);
+            led_fb[regen_row][1][regen_col] = (uint8_t)(255 - h * 3);
+            led_fb[regen_row][2][regen_col] = 0;
+        }
+    }
+
+    if (++regen_col >= LED_COLS) {
+        regen_col = 0;
+        if (++regen_row >= LED_ROWS) {
+            regen_row = 0;
+            led_phase = (uint8_t)(led_phase + LED_PHASE_SPEED);
+        }
+    }
+}
+
+static void led_enable_sink()
+{
+    switch (led_row) {
+        case 0:
+            if (led_color == 0) RGB_R0R = 1;
+            else if (led_color == 1) RGB_R0G = 1;
+            else RGB_R0B = 1;
+            break;
+        case 1:
+            if (led_color == 0) RGB_R1R = 1;
+            else if (led_color == 1) RGB_R1G = 1;
+            else RGB_R1B = 1;
+            break;
+        case 2:
+            if (led_color == 0) RGB_R2R = 1;
+            else if (led_color == 1) RGB_R2G = 1;
+            else RGB_R2B = 1;
+            break;
+        case 3:
+            if (led_color == 0) RGB_R3R = 1;
+            else if (led_color == 1) RGB_R3G = 1;
+            else RGB_R3B = 1;
+            break;
+        case 4:
+            if (led_color == 0) RGB_R4R = 1;
+            else if (led_color == 1) RGB_R4G = 1;
+            else RGB_R4B = 1;
+            break;
+        case LED_UL_ROW:
+            if (led_color == 0) RGB_ULR = 1;
+            else if (led_color == 1) RGB_ULG = 1;
+            else RGB_ULB = 1;
+            break;
+    }
+}
+
+static void led_set_columns()
+{
+    // the underglow row has no framebuffer of its own; it mirrors the bottom key row
+    uint8_t          src = (led_row == LED_UL_ROW) ? (LED_ROWS - 1) : led_row;
+    __xdata uint8_t *fb  = led_fb[src][led_color];
+
+    SET_PWM_DUTY_2(LED_PWM_C0, LED_DUTY(fb[0]));
+    SET_PWM_DUTY_2(LED_PWM_C1, LED_DUTY(fb[1]));
+    SET_PWM_DUTY_2(LED_PWM_C2, LED_DUTY(fb[2]));
+    SET_PWM_DUTY_2(LED_PWM_C3, LED_DUTY(fb[3]));
+    SET_PWM_DUTY_2(LED_PWM_C4, LED_DUTY(fb[4]));
+    SET_PWM_DUTY_2(LED_PWM_C5, LED_DUTY(fb[5]));
+    SET_PWM_DUTY_2(LED_PWM_C6, LED_DUTY(fb[6]));
+    SET_PWM_DUTY_2(LED_PWM_C7, LED_DUTY(fb[7]));
+    SET_PWM_DUTY_2(LED_PWM_C8, LED_DUTY(fb[8]));
+    SET_PWM_DUTY_2(LED_PWM_C9, LED_DUTY(fb[9]));
+    SET_PWM_DUTY_2(LED_PWM_C10, LED_DUTY(fb[10]));
+    SET_PWM_DUTY_2(LED_PWM_C11, LED_DUTY(fb[11]));
+    SET_PWM_DUTY_2(LED_PWM_C12, LED_DUTY(fb[12]));
+    SET_PWM_DUTY_2(LED_PWM_C13, LED_DUTY(fb[13]));
+    SET_PWM_DUTY_2(LED_PWM_C14, LED_DUTY(fb[14]));
+    SET_PWM_DUTY_2(LED_PWM_C15, LED_DUTY(fb[15]));
 }
 
 void indicators_pwm_enable()

@@ -140,5 +140,7 @@ enum custom_keycodes {
     LNK_BT2,
     LNK_BT3,
 
+    RGB_FX, // cycle to the next RGB animation
+
     KB_SAFE_RANGE,
 };
