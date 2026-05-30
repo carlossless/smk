@@ -188,6 +188,7 @@ class Sim:
         self.LED_STATE = s["keyboard_state"]      # struct, led_state is field 0
         self.SEND_KB_REPORT = s["send_keyboard_report"]
         self.MAIN_LOOP = s["kb_update_switches"]  # first call in main's while-loop
+        self.PROCESS_KEY_STATE = s["process_key_state"]
         self.USB_DEVICE_STATE = s["usb_device_state"]
         # POST_INIT can't be a single symbol -- it's the address after the LCALL
         # _init inside main(). find_post_init() walks main()'s prologue to find it.
@@ -329,15 +330,26 @@ class Sim:
         stack so the high-water can be read back. The deep path combines, on top of
         the running main loop: a real key press (PWM ISR -> matrix_scan_step ->
         matrix_task -> process_key_state -> send_keyboard_report -> EP1) AND the
-        deepest USB ISR (GET_DESCRIPTOR's descriptor handler) nested over it."""
+        deepest USB ISR (GET_DESCRIPTOR's descriptor handler) nested over it.
+
+        Note: each `run` between two MAIN_LOOP breakpoints is only ~1200 cycles --
+        far below the PWM threshold -- so we use *one* long run that breaks when
+        the firmware enters process_key_state (proving the scan path actually ran)
+        rather than per-iteration breaks that never let PWM fire."""
         cmds = [
             "reset",
             self._set_xram(self.KEY_ENABLE, [0x01, 0x01, 0x02]),  # hold KC_A (col1,row2)
             f"break 0x{self.MAIN_LOOP:x}",
-            "run", "run", "run", "run",  # boot, then run the key path (PWM/matrix/report)
+            "run",                                    # boot to main loop
+            "delete",
+            f"break 0x{self.PROCESS_KEY_STATE:x}",
+            "run",                                    # scan -> matrix_task -> process_key_state
+            "delete",
+            f"break 0x{self.MAIN_LOOP:x}",
+            "run",                                    # let dprintf KEY: + EP1 report finish
             self._set_xram(self.EP0_OUT_BUF, get_descriptor(DESC_DEVICE)),
             f"set mem sfr 0x{self.USBIF1:x} 0x{self.SETUPIF:02x}",
-            "run", "run", "run",  # USB ISR nests on top of the ongoing key activity
+            "run",                                    # USB ISR nests on top of main loop
             "echo ===STACKDUMP===",
             "dump iram 0x86 0xff",
         ]
@@ -410,20 +422,49 @@ class Sim:
         ]
         return self.run(cmds, timeout=45)
 
-    def press_key(self, col, row, enable=True, iterations=10):
+    def press_key(self, col, row, enable=True, settle_wallclock=2.0):
         """Boot to the main loop, then stage a physical key at (col, row) in the
         SIE matrix model. This drives the *real* key path end to end: the PWM ISR
         calls matrix_scan_step(), the main loop's matrix_task() detects the change
         and calls process_key_state() -- which logs `KEY: 0x<qcode>` and (in USB
         mode) sends the HID report on EP1. No cold injection. Returns sim output
-        (parse with key_events() / ep1_report())."""
+        (parse with key_events() / ep1_report()).
+
+        Note: each `run` between two MAIN_LOOP breakpoints is only ~1200 cycles --
+        far below the PWM threshold -- so per-iteration breaks never let PWM fire.
+        Instead we do one long run that breaks when the firmware enters
+        process_key_state. With enable=False no transition is expected, so the run
+        is allowed to hit `settle_wallclock` seconds of subprocess timeout; partial
+        output is returned (it will not contain any KEY: lines)."""
         cmds = [
             "reset",
             self._set_xram(self.KEY_ENABLE,
                            [0x01 if enable else 0x00, col & 0xFF, row & 0xFF]),
             f"break 0x{self.MAIN_LOOP:x}",
-        ] + ["run"] * (1 + iterations)  # 1 run boots; the rest cycle the main loop
-        return self.run(cmds, timeout=60)
+            "run",                                    # boot to main loop
+            "delete",
+            f"break 0x{self.PROCESS_KEY_STATE:x}",
+            "run",                                    # wait for the key path to fire
+            "delete",
+            f"break 0x{self.MAIN_LOOP:x}",
+            "run",                                    # let dprintf KEY: + EP1 report finish
+        ]
+        if enable:
+            return self.run(cmds, timeout=30)
+        # No staged key -> process_key_state is never hit. Let the sim run for a
+        # bounded wall-clock window (enough simulated time for several full matrix
+        # scans) and accept the subprocess timeout; whatever was captured is
+        # what we assert against.
+        try:
+            return self.run(cmds, timeout=settle_wallclock)
+        except subprocess.TimeoutExpired as e:
+            stdout = e.stdout or ""
+            stderr = e.stderr or ""
+            if isinstance(stdout, bytes):
+                stdout = stdout.decode(errors="replace")
+            if isinstance(stderr, bytes):
+                stderr = stderr.decode(errors="replace")
+            return stdout + stderr
 
     def trigger_isp_jump(self, confirm=(0x05, 0x75), phase2_break=None):
         """Perform the SET_REPORT(ISP) control transfer that makes the firmware
