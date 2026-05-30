@@ -33,7 +33,7 @@ jobs:
         name: smk-${{ matrix.nkro == 'enabled' && 'nkro' || '6kro' }}
         path: build/*.hex
 
-  lint:
+  format-check:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
