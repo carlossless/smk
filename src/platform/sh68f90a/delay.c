@@ -17,6 +17,7 @@
 void delay_us(uint16_t cnt) __naked
 {
     (void)cnt;
+    // clang-format off
     __asm
         ; cnt arrives in DPL (low) / DPH (high)
         mov     r6, dpl                 ; 3c
@@ -74,6 +75,7 @@ void delay_us(uint16_t cnt) __naked
 00099$:
         ret                             ; 8c
     __endasm;
+    // clang-format on
 }
 
 // delay_ms uses delay_us(1000) for each ms. Per-iter cost is ~24030 cycles
