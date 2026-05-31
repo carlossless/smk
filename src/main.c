@@ -15,6 +15,7 @@
 #include "kb.h"
 #include "console.h"
 #include "stack.h"
+#include "settings.h"
 #ifdef RF_ENABLED
 #    include "rf_controller.h"
 #endif
@@ -69,8 +70,15 @@ void main()
     rf_init();
 #endif
 
-    // enable pwm and interrupt (driving matrix scan)
+    // enable pwm and interrupt (driving matrix scan). also loads user_settings
+    // from flash.
     indicators_start();
+
+#ifdef RF_ENABLED
+    // user_settings.rf_link is now valid - re-establish whatever link the
+    // user was last on (defaulted to RF_MODE_2_4G if no saved record).
+    rf_set_link((rf_mode_t)user_settings.rf_link);
+#endif
 
     delay_ms(1000);
 

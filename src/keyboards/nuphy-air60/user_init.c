@@ -68,6 +68,8 @@ void user_gpio_init()
     P0CR |= (RF_BB_SPI_MOSI_P0_7 | RF_BB_SPI_MOT_P0_5);
 
     P0PCR |= RF_BB_SPI_MISO_P0_6;
+    // RF ack input from BK3632 (pull-up so a disconnected module idles high).
+    P4PCR |= RF_BB_SPI_ACK_P4_2;
 }
 
 void user_pwm_init()

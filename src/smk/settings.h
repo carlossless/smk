@@ -16,6 +16,13 @@ typedef struct {
     uint8_t ul_effect;
     uint8_t ul_brightness;
     uint8_t ul_speed;
+    // 1 = right-side underglow LEDs continuously show battery level color
+    // (red <20%, yellow 20-80%, green >80%; red also when low_power is set).
+    // 0 = right-side underglow follows the regular UL effect.
+    uint8_t battery_indicator_on;
+    // Last RF link mode selected by the user (RF_MODE_2_4G / BT1 / BT2 / BT3).
+    // Re-applied on boot so the keyboard comes back on the host it was last on.
+    uint8_t rf_link;
 } user_settings_t;
 
 extern __xdata user_settings_t user_settings;

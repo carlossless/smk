@@ -3,6 +3,7 @@
 #include "keycodes.h"
 #include "kbdef.h"
 #include "keyboard.h"
+#include "settings.h"
 #include "debug.h"
 #include "report.h"
 #include "usb.h"
@@ -91,6 +92,9 @@ extern void indicators_ul_brightness_down();
 extern void indicators_ul_speed_up();
 extern void indicators_ul_speed_down();
 extern void indicators_factory_reset();
+extern void indicators_battery_flash();
+extern void indicators_battery_on();
+extern void indicators_battery_off();
 
 // While UL_MODE (the "?" key on the Fn layer) is held, the RGB_* chords adjust the
 // underglow instead of the main backlight. Held in xdata to spare internal RAM.
@@ -98,6 +102,15 @@ static __xdata bool ul_mode_active;
 
 // While RESET_HOLD (Fn+Tab) is held, pressing FACT_RESET (V) factory-resets settings.
 static __xdata bool reset_mode_active;
+
+#ifdef RF_ENABLED
+// Track a LNK_BT* / LNK_24G being held so kb_update can fire the pairing
+// command after a 3 s long-press. ~3 s at ~20 kHz tick rate = 60000 ticks.
+#define LINK_PAIRING_HOLD_TICKS 60000
+static __xdata uint16_t link_hold_ticks       = 0;
+static __xdata uint16_t link_hold_keycode     = 0;
+static __xdata bool     link_pairing_armed    = false;
+#endif
 
 bool kb_process_record(uint16_t keycode, bool key_pressed)
 {
@@ -173,7 +186,44 @@ bool kb_process_record(uint16_t keycode, bool key_pressed)
         case LNK_BT3:
         case LNK_24G:
             if (user_keyboard_state.conn_mode == KEYBOARD_CONN_MODE_RF) {
-                rf_set_link(kb_keycode_to_rf_mode(keycode));
+                if (key_pressed) {
+                    rf_mode_t mode = kb_keycode_to_rf_mode(keycode);
+                    dprintf("rf link selected: %d\r\n", mode);
+                    rf_set_link(mode);
+                    user_settings.rf_link = (uint8_t)mode;
+                    settings_save();
+                    // Optimistic indicator update: assume paired+connected
+                    // so the indicator stays solid until the next status
+                    // poll downgrades it.
+                    keyboard_state.rf_link   = (uint8_t)mode;
+                    keyboard_state.connected = 1;
+                    keyboard_state.paired    = 1;
+                    // Arm long-press → pairing.
+                    link_hold_keycode  = keycode;
+                    link_hold_ticks    = 0;
+                    link_pairing_armed = true;
+                } else {
+                    // Release — clear long-press tracker if it's for this key.
+                    if (link_hold_keycode == keycode) {
+                        link_hold_keycode  = 0;
+                        link_pairing_armed = false;
+                    }
+                }
+            }
+            return false;
+        case BAT_FLASH:
+            if (key_pressed) {
+                indicators_battery_flash();
+            }
+            return false;
+        case BAT_ON:
+            if (key_pressed) {
+                indicators_battery_on();
+            }
+            return false;
+        case BAT_OFF:
+            if (key_pressed) {
+                indicators_battery_off();
             }
             return false;
 #endif
@@ -230,11 +280,34 @@ void kb_update()
 {
 #ifdef RF_ENABLED
     if (user_keyboard_state.conn_mode == KEYBOARD_CONN_MODE_RF) {
+        // Drives the post-release blanking state machine. Internally throttled
+        // — at most one SPI burst per RF_BLANKING_TICK_THROTTLE main-loop
+        // iterations — so it spaces the blanking packets out enough for the
+        // LED PWM ISR to scan between them.
+        rf_blanking_tick();
+
+        // Long-press LNK_*: after the key has been held continuously for
+        // LINK_PAIRING_HOLD_TICKS (~3 s), enter pairing mode for that slot.
+        // Fires exactly once per hold.
+        if (link_pairing_armed && link_hold_keycode) {
+            if (link_hold_ticks < LINK_PAIRING_HOLD_TICKS) {
+                link_hold_ticks++;
+            } else {
+                rf_mode_t mode = kb_keycode_to_rf_mode(link_hold_keycode);
+                dprintf("rf link pairing: %d\r\n", mode);
+                // Show the unpaired (fast blink) state immediately. The
+                // burst inside rf_set_link_pairing will overwrite this
+                // with the real status as soon as the BK3632 confirms.
+                keyboard_state.paired    = 0;
+                keyboard_state.connected = 0;
+                rf_set_link_pairing(mode, &keyboard_state);
+                link_pairing_armed = false;
+            }
+        }
+
         if (ticks > 20000) {
-            EA = 0;
             rf_update_keyboard_state(&keyboard_state);
             ticks = 0;
-            EA    = 1;
         }
     }
 #endif

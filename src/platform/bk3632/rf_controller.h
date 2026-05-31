@@ -18,3 +18,13 @@ void rf_send_nkro(__xdata report_nkro_t *report);
 void rf_send_extra(__xdata report_extra_t *report);
 void rf_update_keyboard_state(keyboard_state_t *keyboard);
 void rf_set_link(rf_mode_t link);
+// Switch to `link` and tell the BK3632 to start advertising / accepting new
+// pairings on that slot. Triggered by a 3-second hold of the link key.
+// After the pairing command, aggressively poll status so the BK3632's
+// pairing-complete signal is consumed quickly and the chip doesn't sit in a
+// half-finished state. `keyboard` is updated with whatever the poll observes.
+void rf_set_link_pairing(rf_mode_t link, __xdata keyboard_state_t *keyboard);
+// Called every main-loop iteration. Internally throttled; emits at most one
+// "key release blanking" packet per ~RF_BLANKING_TICK_THROTTLE iterations and
+// is a no-op when no blanking sequence is active.
+void rf_blanking_tick(void);

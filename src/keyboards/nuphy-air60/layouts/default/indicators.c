@@ -2,6 +2,7 @@
 #include "kbdef.h"
 #include "pwm.h"
 #include "settings.h"
+#include "keyboard.h"
 #ifdef RF_ENABLED
 #    include "rf_controller.h"
 #endif
@@ -32,7 +33,12 @@
 #define LED_SPEED_MAX        16
 
 // Underglow LEDs at or below this column display the status colour (caps / conn mode).
+// LEDs at columns >= UL_STATUS_COLS form the right half, used by the battery indicator.
 #define UL_STATUS_COLS (LED_COLS / 2)
+
+// How long the FN+[ "flash battery" momentary indicator stays on, measured in
+// full UL sweeps. One sweep happens at ~73 Hz so 200 ≈ 2.7 s.
+#define BAT_FLASH_SWEEPS 200
 
 // Brightness step for one Fn+Up / Fn+Down press (out of 256 levels).
 #define LED_BRIGHTNESS_DEFAULT 255
@@ -83,6 +89,24 @@ static __xdata uint8_t ul_phase;
 static __xdata uint8_t regen_row;
 static __xdata uint8_t regen_col;
 
+// FN+[ momentary battery indicator: counts down once per UL sweep; while non-zero
+// the right-side UL LEDs show the battery colour regardless of the persistent
+// `user_settings.battery_indicator_on` flag.
+static __xdata uint8_t battery_flash_sweeps;
+
+// Free-running counter incremented once per UL sweep (~73 Hz). Used to drive
+// the unpaired (fast blink) / disconnected (slow breath) status indicator
+// on the left-side UL LEDs.
+static __xdata uint8_t status_pulse_counter;
+
+// Quarter-sine LUT used to drive the disconnected "breathing" effect. 32
+// entries, 0..255 amplitude over 0..π/2. Mirrored at runtime to produce a
+// full breath cycle in 128 sweeps (~1.75 s, ~0.6 Hz at the 73 Hz UL rate).
+static __code const uint8_t breath_lut[32] = {
+    0,  13, 26, 39,  51,  64,  76,  88,  100, 112, 124, 135, 146, 156, 166, 176,
+    185, 194, 202, 210, 217, 223, 229, 234, 239, 244, 247, 251, 253, 254, 255, 255
+};
+
 void        indicators_pwm_enable();
 void        indicators_pwm_disable();
 static void apply_defaults();
@@ -99,6 +123,27 @@ static void apply_defaults()
     user_settings.ul_effect      = FX_RADIAL;
     user_settings.ul_brightness  = LED_BRIGHTNESS_DEFAULT;
     user_settings.ul_speed       = LED_UL_SPEED_DEFAULT;
+    user_settings.battery_indicator_on = 0;
+#ifdef RF_ENABLED
+    user_settings.rf_link = RF_MODE_2_4G;
+#endif
+}
+
+void indicators_battery_flash()
+{
+    battery_flash_sweeps = BAT_FLASH_SWEEPS;
+}
+
+void indicators_battery_on()
+{
+    user_settings.battery_indicator_on = 1;
+    settings_save();
+}
+
+void indicators_battery_off()
+{
+    user_settings.battery_indicator_on = 0;
+    settings_save();
 }
 
 // Factory reset: restore defaults and persist them so the next boot loads them too.
@@ -419,14 +464,35 @@ static void led_regen_one()
                 led_ul_fb[1][regen_col] = SCALE_UL_BRI(180);
                 led_ul_fb[2][regen_col] = 0;
 #ifdef RF_ENABLED
-            } else if (keyboard_state.rf_link == RF_MODE_2_4G) {
-                led_ul_fb[0][regen_col] = 0;
-                led_ul_fb[1][regen_col] = SCALE_UL_BRI(255);
-                led_ul_fb[2][regen_col] = 0;
             } else {
-                led_ul_fb[0][regen_col] = 0;
-                led_ul_fb[1][regen_col] = 0;
-                led_ul_fb[2][regen_col] = SCALE_UL_BRI(255);
+                // Pick base colour: 2.4G = green, BT = blue.
+                uint8_t r = 0, g = 0, b = 0;
+                if (keyboard_state.rf_link == RF_MODE_2_4G) {
+                    g = 255;
+                } else {
+                    b = 255;
+                }
+
+                // Modulate brightness on RF connection state.
+                //   !paired              -> fast blink (~4.5 Hz, 50% duty)
+                //   paired, !connected   -> smooth breathing (~0.6 Hz)
+                //   paired,  connected   -> solid (status_scale = 255)
+                uint8_t status_scale = 255;
+                if (!keyboard_state.paired) {
+                    status_scale = (status_pulse_counter & 0x08) ? 255 : 0;
+                } else if (!keyboard_state.connected) {
+                    uint8_t p   = status_pulse_counter & 0x7F;       // 0..127
+                    uint8_t idx = (p & 0x40) ? (uint8_t)((0x7F - p) >> 1)
+                                              : (uint8_t)(p >> 1);   // 0..31
+                    status_scale = breath_lut[idx];
+                }
+                r = (uint8_t)(((uint16_t)r * status_scale) >> 8);
+                g = (uint8_t)(((uint16_t)g * status_scale) >> 8);
+                b = (uint8_t)(((uint16_t)b * status_scale) >> 8);
+
+                led_ul_fb[0][regen_col] = SCALE_UL_BRI(r);
+                led_ul_fb[1][regen_col] = SCALE_UL_BRI(g);
+                led_ul_fb[2][regen_col] = SCALE_UL_BRI(b);
 #else
             } else {
                 led_ul_fb[0][regen_col] = 0;
@@ -435,6 +501,28 @@ static void led_regen_one()
 #endif
             }
         }
+#ifdef RF_ENABLED
+        // Right-side UL battery indicator. Active either continuously (FN+]
+        // sets user_settings.battery_indicator_on) or for a brief flash on
+        // FN+[ (battery_flash_sweeps counts down per sweep). Colour mapping
+        // for battery_level (0..7, ~14% per step):
+        //   low_power flag OR level <= 1  -> red    (<20%)
+        //   level >= 6                    -> green  (>80%)
+        //   else                          -> yellow (20-80%)
+        else if (user_settings.battery_indicator_on || battery_flash_sweeps) {
+            uint8_t r, g, b;
+            if (keyboard_state.low_power || keyboard_state.battery_level <= 1) {
+                r = 255; g = 0;   b = 0;
+            } else if (keyboard_state.battery_level >= 6) {
+                r = 0;   g = 255; b = 0;
+            } else {
+                r = 255; g = 180; b = 0;
+            }
+            led_ul_fb[0][regen_col] = SCALE_UL_BRI(r);
+            led_ul_fb[1][regen_col] = SCALE_UL_BRI(g);
+            led_ul_fb[2][regen_col] = SCALE_UL_BRI(b);
+        }
+#endif
     }
 
     // Cursor advance: main rows 0..LED_ROWS-1 then the UL row, then back to 0.
@@ -449,6 +537,10 @@ static void led_regen_one()
             // just finished the UL sweep
             ul_phase  = (uint8_t)(ul_phase + user_settings.ul_speed);
             regen_row = 0;
+            if (battery_flash_sweeps) {
+                battery_flash_sweeps--;
+            }
+            status_pulse_counter++;
         }
     }
 }
