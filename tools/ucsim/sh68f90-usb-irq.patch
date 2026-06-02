@@ -1,6 +1,6 @@
 --- a/sim/ucsim/src/sims/s51.src/interrupt.cc
 +++ b/sim/ucsim/src/sims/s51.src/interrupt.cc
-@@ -39,6 +39,168 @@
+@@ -39,6 +39,183 @@
  //#include "uc51cl.h"
  #include "types51.h"
  
@@ -22,6 +22,7 @@
 +  class cl_address_space *xram, *sfr;
 +  class cl_memory_cell *cell_ep0con, *cell_usbif2, *cell_iep0cnt;
 +  class cl_memory_cell *cell_ep1con, *cell_iep1cnt;
++  class cl_memory_cell *cell_ep2con, *cell_iep2cnt;
 +  class cl_memory_cell *cell_pllcon;
 +  class cl_memory_cell *cell_sbuf, *cell_scon;
 +  class cl_memory_cell *cell_p1, *cell_p2, *cell_p3, *cell_p5, *cell_p7;
@@ -47,6 +48,7 @@
 +    xram= sfr= 0;
 +    cell_ep0con= cell_usbif2= cell_iep0cnt= 0;
 +    cell_ep1con= cell_iep1cnt= 0;
++    cell_ep2con= cell_iep2cnt= 0;
 +    cell_pllcon= 0;
 +    cell_sbuf= cell_scon= 0;
 +    cell_p1= cell_p2= cell_p3= cell_p5= cell_p7= 0;
@@ -65,6 +67,8 @@
 +	cell_iep0cnt = sfr->get_cell(0x9b);      // IEP0CNT (IN byte count)
 +	cell_ep1con  = register_cell(sfr, 0x99); // EP1CON (keyboard report endpoint)
 +	cell_iep1cnt = sfr->get_cell(0x9c);      // IEP1CNT
++	cell_ep2con  = register_cell(sfr, 0x9a); // EP2CON (IF1 multiplexed IN: NKRO etc.)
++	cell_iep2cnt = sfr->get_cell(0x9d);      // IEP2CNT
 +	cell_pllcon  = register_cell(sfr, 0xbc); // PLLCON (clock PLL)
 +	cell_sbuf    = register_cell(sfr, 0xaa); // SBUF (real UART TX data)
 +	cell_scon    = sfr->get_cell(0xd8);      // SCON (TI = bit1)
@@ -146,6 +150,17 @@
 +	fprintf(stderr, "[SIE] EP1 IN %u bytes:", (unsigned)n);
 +	for (t_mem i= 0; i < n && i < 16; i++)
 +	  fprintf(stderr, " %02x", (unsigned)(xram->get(0x1120 + i) & 0xff));
++	fprintf(stderr, "\n");
++	*val &= ~0x04; // host consumed the report -> clear ready
++      }
++    // EP2 = the IF1 multiplexed interrupt-IN endpoint (NKRO keyboard + others,
++    // each prefixed with a Report ID). FIFO at 0x1180, length in IEP2CNT.
++    if (cell == cell_ep2con && ((*val) & 0x04)) // IEP2RDY
++      {
++	t_mem n= cell_iep2cnt ? cell_iep2cnt->get() : 0;
++	fprintf(stderr, "[SIE] EP2 IN %u bytes:", (unsigned)n);
++	for (t_mem i= 0; i < n && i < 24; i++)
++	  fprintf(stderr, " %02x", (unsigned)(xram->get(0x1180 + i) & 0xff));
 +	fprintf(stderr, "\n");
 +	*val &= ~0x04; // host consumed the report -> clear ready
 +      }

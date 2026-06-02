@@ -2,10 +2,20 @@
 #include "user_init.h"
 #include "pwm.h"
 
-// TODO: move these defines out
-#define PWM_PERD 0x0400 // 1024 / PWM_CLK ~= 43 us
+// Stock fw uses 0x0100 (256-tick period). At PWM_CLK = SYS_CLK / 4 = 6 MHz
+// that gives a ~23 kHz PWM frequency, well above the flicker threshold.
+// Our previous 0x0400 (1024-tick) ran at ~5.9 kHz which can be visible.
+// Stock also writes 8-bit DUTY2 values (DUTY2H=0, DUTY2L=fb_byte) so the
+// period must match the DUTY range — 8-bit DUTY against 0x100 PERD =
+// usable 0..100% range; 8-bit DUTY against 0x400 PERD = only 0..25%.
+#define PWM_PERD 0x0100
 
-#define PWM_DUTY1 (uint16_t)PWM_PERD
+// Stock fw writes DUTY1=0 and DUTY2 = framebuffer byte. With DUTY1=0 the
+// PWM hardware transitions at t=0 (start of period) and again at DUTY2.
+// fb=0 → DUTY2=0 (both transitions at same point) → output stays in one
+// state for full period (LED off). fb=PERD-1 → DUTY2=255 → output spans
+// full period (LED on).
+#define PWM_DUTY1 (uint16_t)0
 #define PWM_DUTY2 (uint16_t)0
 
 #define PWM_PERDH_INIT ((uint8_t)(PWM_PERD >> 8))
@@ -19,7 +29,11 @@ void user_init()
     user_gpio_init();
     user_pwm_init();
 
-    IEN1 |= (1 << 1); // EPWM0
+    // PWM0 IRQ is intentionally not enabled — stock fw runs all PWM banks
+    // with their per-bank IE = 0 (the hardware drives the waveform; no ISR
+    // needed). Timer 2 ISR handles the LED scan + animation; INT4 handles
+    // matrix wake. Leaving IEN1 EPWM0 set would just queue a spurious ISR
+    // if anything accidentally turned PWM00CON.IE on later.
 }
 
 void user_gpio_init()
@@ -57,17 +71,28 @@ void user_gpio_init()
         // P5PCR &= ~CONN_MODE_SWITCH_P5_5;
     }
 
-    // BB SPI pins for RF
-    // TODO: move this out
+    // BB SPI pins for RF. Stock-faithful: pins idle as INPUT with pull-up
+    // enabled (idle HIGH via passive pull-up). During each SPI bit the
+    // bit-bang functions briefly switch the pin to OUTPUT to drive LOW,
+    // then back to INPUT so the pull-up takes the line HIGH again. This
+    // open-drain emulation matches the BK3632's preferred SCK/MOSI rise
+    // characteristics — see stock fw bb_spi_byte_tx (CODE:0xB07D) and
+    // bb_spi_byte_rx (CODE:0xB16D).
+    //
+    // Latch the high state up front so the FIRST direction-toggle to
+    // output drives correctly (latch value matters only while output).
     P7 |= RF_BB_SPI_CS_P7_4;
     P4 |= RF_BB_SPI_SCK_P4_7;
     P0 |= (RF_BB_SPI_MOSI_P0_7 | RF_BB_SPI_MOT_P0_5);
 
-    P7CR |= RF_BB_SPI_CS_P7_4;
-    P4CR |= RF_BB_SPI_SCK_P4_7;
-    P0CR |= (RF_BB_SPI_MOSI_P0_7 | RF_BB_SPI_MOT_P0_5);
+    // DON'T set PxCR for these pins — they start as input. bb_spi will
+    // toggle the direction bits per cycle.
 
-    P0PCR |= RF_BB_SPI_MISO_P0_6;
+    // Pull-ups: MISO + ACK (always input from BK3632), plus the SPI
+    // output-side pins so they idle HIGH when in input mode.
+    P0PCR |= (RF_BB_SPI_MISO_P0_6 | RF_BB_SPI_MOSI_P0_7 | RF_BB_SPI_MOT_P0_5);
+    P4PCR |= (RF_BB_SPI_ACK_P4_2  | RF_BB_SPI_SCK_P4_7);
+    P7PCR |= RF_BB_SPI_CS_P7_4;
 }
 
 void user_pwm_init()

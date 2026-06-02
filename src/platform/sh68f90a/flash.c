@@ -8,10 +8,19 @@
 // be erased. We use the sector just below it, and cap the linker (--code-size 0xEC00)
 // so no program code is ever placed here.
 #define CFG_ADDR   0xEC00u // flash sector 118 (0xEC00..0xEDFF)
+#define CFG_SIZE   512u    // SH68F90A sector size — see SH68F90A.gpt [SectorSize]
+#define CFG_END    (CFG_ADDR + CFG_SIZE) // first address past the settings sector
 #define CFG_MAGIC0 0x5Au
 #define CFG_MAGIC1 0xA5u
 // record layout: [magic0][magic1][len][payload x len][checksum]
 #define CFG_HDR 3u // magic0, magic1, len precede the payload
+
+// Belt-and-suspenders compile-time checks. If any of these fail, the build
+// stops before we can flash a binary that might wipe the bootloader.
+_Static_assert((CFG_ADDR & (CFG_SIZE - 1)) == 0,
+               "CFG_ADDR must be aligned to a 512-byte flash sector boundary");
+_Static_assert(CFG_END <= 0xEE00u,
+               "CFG_END must not reach sector 119 (holds reset-vector redirect at 0xEFFC)");
 
 // SSP operation codes and the fixed unlock sequence (datasheet 7.4).
 #define SSP_PROGRAM 0x6Eu
@@ -25,27 +34,37 @@ static uint8_t flash_read(uint16_t addr)
 
 // SSP unlock + trigger. IB_CON2..5 must be written 0x05,0x0A,0x09,0x06 in order with
 // no intervening writes; the 4 NOPs cover the auto-IDLE while the flash op runs.
+// __critical (save+restore EA) instead of CLR/SETB so callers that already run
+// with EA=0 don't get interrupts silently re-enabled on return.
 static void ssp_run(uint16_t addr, uint8_t op, uint8_t data)
 {
-    EA        = 0;
-    XPAGE     = (uint8_t)(addr >> 8);
-    IB_OFFSET = (uint8_t)(addr & 0xFFu);
-    IB_DATA   = data;
-    IB_CON1   = op;
-    IB_CON2   = 0x05;
-    IB_CON3   = 0x0A;
-    IB_CON4   = 0x09;
-    IB_CON5   = 0x06;
-    // clang-format off
-    __asm
-        nop
-        nop
-        nop
-        nop
-    __endasm;
-    // clang-format on
-    XPAGE = 0;
-    EA    = 1;
+    // Address gate — refuses any SSP op outside the settings sector. Covers
+    // a stack-corrupted addr, a future caller bug, or anything else that
+    // would put SSP_ERASE over sector 119 (boot redirect) or the bootloader
+    // at 0xF000+. Inlined (not a separate function) so SDCC doesn't have to
+    // allocate an OSEG slot for the helper's return path.
+    if (addr < CFG_ADDR || addr >= CFG_END) {
+        return;
+    }
+    __critical {
+        XPAGE     = (uint8_t)(addr >> 8);
+        IB_OFFSET = (uint8_t)(addr & 0xFFu);
+        IB_DATA   = data;
+        IB_CON1   = op;
+        IB_CON2   = 0x05;
+        IB_CON3   = 0x0A;
+        IB_CON4   = 0x09;
+        IB_CON5   = 0x06;
+        // clang-format off
+        __asm
+            nop
+            nop
+            nop
+            nop
+        __endasm;
+        // clang-format on
+        XPAGE = 0;
+    }
 }
 
 static void flash_erase_config(void)
@@ -84,6 +103,13 @@ bool flash_settings_load(__xdata uint8_t *dst, uint8_t len)
 
 void flash_settings_save(const __xdata uint8_t *src, uint8_t len)
 {
+    // No runtime length check here: `len` is uint8_t, so max payload is 255
+    // and the total record (CFG_HDR + len + 1) caps at 259 bytes — already
+    // well inside the 512-byte sector. The compile-time assertion in
+    // settings.c (paired with sizeof(user_settings_t)) is what actually
+    // enforces the bound; if the struct ever grows past the limit, the
+    // build fails before we can flash a binary that would overrun.
+
     // skip the write entirely if the stored record already matches (avoids wear)
     bool same = flash_read(CFG_ADDR) == CFG_MAGIC0 && flash_read(CFG_ADDR + 1) == CFG_MAGIC1 && flash_read(CFG_ADDR + 2) == len;
     if (same) {

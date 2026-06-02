@@ -461,13 +461,13 @@ SBIT(B_1, 0xf0, 1);
 SBIT(B_0, 0xf0, 0);
 
 // IPL0
-SBIT(PT2L, 0x88, 0);
-SBIT(PX4L, 0x88, 1);
-SBIT(PX3L, 0x88, 2);
-SBIT(PX2L, 0x88, 3);
-SBIT(PSCML, 0x88, 4);
-SBIT(PLPDL, 0x88, 5);
-SBIT(PSPIL, 0x88, 6);
+SBIT(PT2L, 0xB8, 0);
+SBIT(PX4L, 0xB8, 1);
+SBIT(PX3L, 0xB8, 2);
+SBIT(PX2L, 0xB8, 3);
+SBIT(PSCML, 0xB8, 4);
+SBIT(PLPDL, 0xB8, 5);
+SBIT(PSPIL, 0xB8, 6);
 
 /**
  * \name Bits from register RSTSTAT

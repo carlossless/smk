@@ -55,6 +55,8 @@ src_user = [
     'src/user/indicators_pre_update.c',
     'src/user/indicators_update_step.c',
     'src/user/indicators_post_update.c',
+    'src/user/indicators_apply_defaults.c',
+    'src/user/indicators_validate_settings.c',
 
     'src/kb/kb_init.c',
     'src/kb/kb_process_record.c',
@@ -75,6 +77,7 @@ src_platform_sh68f90a = [
     'src/platform/sh68f90a/isp.c',
     'src/platform/sh68f90a/ldo.c',
     'src/platform/sh68f90a/pwm.c',
+    'src/platform/sh68f90a/timer2.c',
     'src/platform/sh68f90a/uart.c',
     'src/platform/sh68f90a/usb.c',
     'src/platform/sh68f90a/stack.c',
@@ -123,6 +126,14 @@ endif
 
 if get_option('buildtype') == 'debug'
     cc_base_args += '-DDEBUG=1'
+
+    debug_sink = get_option('debug_sink')
+    if debug_sink == 'console' or debug_sink == 'both'
+        cc_base_args += '-DDEBUG_SINK_CONSOLE=1'
+    endif
+    if debug_sink == 'uart' or debug_sink == 'both'
+        cc_base_args += '-DDEBUG_SINK_UART=1'
+    endif
 endif
 
 sdar_args = ['-rc']

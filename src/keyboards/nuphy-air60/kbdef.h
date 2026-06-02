@@ -127,12 +127,18 @@
 #define RF_BB_SPI_MISO P0_6
 #define RF_BB_SPI_MOSI P0_7
 #define RF_BB_SPI_MOT  P0_5
+// BK3632 → MCU "command processed" handshake line. Pin 49 / P4.2 / INT42 on
+// the SH68F90A; the BK3632 toggles it after digesting each SPI burst.
+// bb_spi_xfer polls it after CS rises and returns the edge result, which
+// rf_send_or_retry uses to decide whether to wake-and-retry.
+#define RF_BB_SPI_ACK  P4_2
 
 #define RF_BB_SPI_CS_P7_4   _P7_4
 #define RF_BB_SPI_SCK_P4_7  _P4_7
 #define RF_BB_SPI_MISO_P0_6 _P0_6
 #define RF_BB_SPI_MOSI_P0_7 _P0_7
 #define RF_BB_SPI_MOT_P0_5  _P0_5
+#define RF_BB_SPI_ACK_P4_2  _P4_2
 
 enum custom_keycodes {
     LNK_24G = SAFE_RANGE,
@@ -149,6 +155,9 @@ enum custom_keycodes {
     UL_MODE,     // held: re-route the RGB_* chords to the underglow ("user") LEDs
     RESET_HOLD,  // held: enables the factory-reset chord
     FACT_RESET,  // factory-reset all user settings (only acts while RESET_HOLD is held)
+    BAT_FLASH,   // FN + [: briefly show the current battery level on the right-side underglow
+    BAT_ON,      // FN + ]: keep the right-side underglow showing the battery indicator (persisted)
+    BAT_OFF,     // FN + \\: disable the always-on battery indicator (persisted)
 
     KB_SAFE_RANGE,
 };

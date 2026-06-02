@@ -429,9 +429,11 @@ static void usb_setup_irq()
 {
     usb_req_setup_x req;
 
-    EA = 0;
-    get_ep0_out_buffer((uint8_t *)&req);
-    EA = 1;
+    // __critical (save+restore EA) instead of CLR/SETB so a nested entry
+    // (already EA=0) doesn't get interrupts silently re-enabled on return.
+    __critical {
+        get_ep0_out_buffer((uint8_t *)&req);
+    }
 
     uint8_t type    = req.bmRequestType;
     uint8_t request = req.bRequest;

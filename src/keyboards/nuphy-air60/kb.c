@@ -3,7 +3,9 @@
 #include "keycodes.h"
 #include "kbdef.h"
 #include "keyboard.h"
+#include "settings.h"
 #include "debug.h"
+#include "console.h" // for dprint_str / dprint_hex / dprint_nl
 #include "report.h"
 #include "usb.h"
 
@@ -32,30 +34,87 @@ void kb_init()
 {
     user_keyboard_state.conn_mode = CONN_MODE_SWITCH;
     user_keyboard_state.os_mode   = OS_MODE_SWITCH;
+
+#ifdef RF_ENABLED
+    // Prime the BK3632's Mac-compat byte9 override from the initial
+    // OS_MODE_SWITCH read. Without this the first packets after boot
+    // would carry the wrong byte9 marker for Mac hosts until the
+    // first kb_update_switches transition fires.
+    rf_set_mac_mode_compat(user_keyboard_state.os_mode == KEYBOARD_OS_MODE_MAC);
+#endif
 }
+
+// Slider debouncing. Stock fw (rf_signal_quality_probe at CODE:0x80a8)
+// samples the CONN_MODE and OS_MODE slider pins on every supervisor
+// tick (~260 Hz at stock's clock) and accumulates over a window before
+// committing a transition. We approximate that with a per-slider count
+// of consecutive disagreement: when the raw pin reads `committed` for
+// SLIDER_DEBOUNCE_ITERS iterations in a row, commit the new value.
+//
+// At our ~20 kHz main-loop rate, 256 iters ≈ 13 ms — short enough to
+// feel instantaneous, long enough to filter mechanical contact noise
+// during a slide.
+#define SLIDER_DEBOUNCE_ITERS 256
 
 void kb_update_switches()
 {
-    if (user_keyboard_state.conn_mode != CONN_MODE_SWITCH) {
-        user_keyboard_state.conn_mode = CONN_MODE_SWITCH;
+    static __xdata uint16_t conn_debounce;
+    static __xdata uint16_t os_debounce;
+
+    // CONN_MODE_SWITCH — debounce + commit + transition
+    const uint8_t raw_conn = CONN_MODE_SWITCH;
+    if (raw_conn == user_keyboard_state.conn_mode) {
+        conn_debounce = 0;
+    } else if (++conn_debounce >= SLIDER_DEBOUNCE_ITERS) {
+        conn_debounce               = 0;
+        user_keyboard_state.conn_mode = raw_conn;
         switch (user_keyboard_state.conn_mode) {
             case KEYBOARD_CONN_MODE_USB:
-                dprintf("USB_MODE\r\n");
+                dprint_str("USB_MODE\r\n");
+#ifdef RF_ENABLED
+                // Tell the BK3632 the host is now wired so it stops
+                // trying to forward keys wirelessly. Mirrors
+                // rf_signal_quality_probe's USB-entry branch
+                // (CODE:0x80a8) which fires rf_cmd_06(1) until ack.
+                rf_apply_usb_mode();
+#endif
                 break;
             case KEYBOARD_CONN_MODE_RF:
-                dprintf("RF_MODE\r\n");
+                dprint_str("RF_MODE\r\n");
+#ifdef RF_ENABLED
+                // Re-prime the BK3632 on the saved link slot. Mirrors
+                // the wireless-entry branch of rf_signal_quality_probe
+                // which fires rf_set_link_mode(saved_mode, 0) twice
+                // until ack.
+                rf_set_link((rf_mode_t)user_settings.rf_link);
+                // Lazy-init: queue a clean baseline release so the host
+                // sees zero keys held after the transition, then the
+                // next matrix scan re-detects whatever's actually down.
+                rf_kbd_lazy_state_init();
+#endif
                 break;
         }
     }
 
-    if (user_keyboard_state.os_mode != OS_MODE_SWITCH) {
-        user_keyboard_state.os_mode = OS_MODE_SWITCH;
+    // OS_MODE_SWITCH — debounce + commit + Mac-compat byte9 update
+    const uint8_t raw_os = OS_MODE_SWITCH;
+    if (raw_os == user_keyboard_state.os_mode) {
+        os_debounce = 0;
+    } else if (++os_debounce >= SLIDER_DEBOUNCE_ITERS) {
+        os_debounce               = 0;
+        user_keyboard_state.os_mode = raw_os;
         switch (user_keyboard_state.os_mode) {
             case KEYBOARD_OS_MODE_MAC:
-                dprintf("MAC_MODE\r\n");
+                dprint_str("MAC_MODE\r\n");
+#ifdef RF_ENABLED
+                rf_set_mac_mode_compat(true);
+#endif
                 break;
             case KEYBOARD_OS_MODE_WIN:
-                dprintf("WIN_MODE\r\n");
+                dprint_str("WIN_MODE\r\n");
+#ifdef RF_ENABLED
+                rf_set_mac_mode_compat(false);
+#endif
                 break;
         }
     }
@@ -91,6 +150,9 @@ extern void indicators_ul_brightness_down();
 extern void indicators_ul_speed_up();
 extern void indicators_ul_speed_down();
 extern void indicators_factory_reset();
+extern void indicators_battery_flash();
+extern void indicators_battery_on();
+extern void indicators_battery_off();
 
 // While UL_MODE (the "?" key on the Fn layer) is held, the RGB_* chords adjust the
 // underglow instead of the main backlight. Held in xdata to spare internal RAM.
@@ -98,6 +160,21 @@ static __xdata bool ul_mode_active;
 
 // While RESET_HOLD (Fn+Tab) is held, pressing FACT_RESET (V) factory-resets settings.
 static __xdata bool reset_mode_active;
+
+#ifdef RF_ENABLED
+// Track a LNK_BT* / LNK_24G being held so kb_update can fire the pairing
+// command after a 3 s long-press. ~3 s at ~20 kHz tick rate = 60000 ticks.
+// One long-press = one rf_set_link_pairing call. The BK3632 advertises and
+// accepts pairings for its internal window (~30 s); after that, the user
+// long-presses again or selects a different slot. Closer to stock fw's
+// rf_pairing_burst (FUN_CODE_95e7) which also fires once per FN-key press
+// and doesn't periodically re-fire. Re-firing rotates the BK3632's BLE
+// advertising MAC and disrupts hosts mid-SMP, so we deliberately don't.
+#define LINK_PAIRING_HOLD_TICKS 60000
+static __xdata uint16_t link_hold_ticks   = 0;
+static __xdata uint16_t link_hold_keycode = 0;
+static __xdata bool     link_pairing_armed = false;
+#endif
 
 bool kb_process_record(uint16_t keycode, bool key_pressed)
 {
@@ -111,6 +188,11 @@ bool kb_process_record(uint16_t keycode, bool key_pressed)
         case FACT_RESET:
             if (key_pressed && reset_mode_active) {
                 indicators_factory_reset();
+#ifdef RF_ENABLED
+                // Also wipe the BK3632's BT bond storage and re-init it.
+                // Recovers from the BLE-stuck-rotating-MAC failure mode.
+                rf_factory_reset_bonds();
+#endif
             }
             return false;
         case RGB_FX_NEXT:
@@ -173,7 +255,44 @@ bool kb_process_record(uint16_t keycode, bool key_pressed)
         case LNK_BT3:
         case LNK_24G:
             if (user_keyboard_state.conn_mode == KEYBOARD_CONN_MODE_RF) {
-                rf_set_link(kb_keycode_to_rf_mode(keycode));
+                if (key_pressed) {
+                    rf_mode_t mode = kb_keycode_to_rf_mode(keycode);
+                    dprint_str("rf link selected ");dprint_hex((uint8_t)mode);dprint_nl();
+                    rf_set_link(mode);
+                    user_settings.rf_link = (uint8_t)mode;
+                    settings_mark_dirty();
+                    // Optimistic indicator update: assume paired+connected
+                    // so the indicator stays solid until the next status
+                    // poll downgrades it.
+                    keyboard_state.rf_link   = (uint8_t)mode;
+                    keyboard_state.connected = 1;
+                    keyboard_state.paired    = 1;
+                    // Arm long-press → pairing.
+                    link_hold_keycode  = keycode;
+                    link_hold_ticks    = 0;
+                    link_pairing_armed = true;
+                } else {
+                    // Release — clear long-press tracker if it's for this key.
+                    if (link_hold_keycode == keycode) {
+                        link_hold_keycode  = 0;
+                        link_pairing_armed = false;
+                    }
+                }
+            }
+            return false;
+        case BAT_FLASH:
+            if (key_pressed) {
+                indicators_battery_flash();
+            }
+            return false;
+        case BAT_ON:
+            if (key_pressed) {
+                indicators_battery_on();
+            }
+            return false;
+        case BAT_OFF:
+            if (key_pressed) {
+                indicators_battery_off();
             }
             return false;
 #endif
@@ -224,18 +343,49 @@ void kb_send_extra(__xdata report_extra_t *report)
     }
 }
 
-uint16_t ticks = 0;
+__xdata uint16_t ticks = 0;
 
 void kb_update()
 {
 #ifdef RF_ENABLED
     if (user_keyboard_state.conn_mode == KEYBOARD_CONN_MODE_RF) {
-        if (ticks > 20000) {
-            EA = 0;
-            rf_update_keyboard_state(&keyboard_state);
-            ticks = 0;
-            EA    = 1;
+        // Long-press LNK_*: after the key has been held continuously for
+        // LINK_PAIRING_HOLD_TICKS (~3 s), enter pairing mode for that slot.
+        // Fires exactly once per hold.
+        if (link_pairing_armed && link_hold_keycode) {
+            if (link_hold_ticks < LINK_PAIRING_HOLD_TICKS) {
+                link_hold_ticks++;
+            } else {
+                rf_mode_t mode = kb_keycode_to_rf_mode(link_hold_keycode);
+                dprint_str("rf link pairing ");dprint_hex((uint8_t)mode);dprint_nl();
+                // Show the unpaired (fast blink) state immediately. The
+                // burst inside rf_set_link_pairing will overwrite this
+                // with the real status as soon as the BK3632 confirms.
+                keyboard_state.paired    = 0;
+                keyboard_state.connected = 0;
+                rf_set_link_pairing(mode, &keyboard_state);
+                link_pairing_armed = false;
+            }
         }
+
+        // The supervisor handles status polling + link reassertion at
+        // stock-matching cadence (~10 polls/s). It also detects a
+        // connection-lost edge and re-fires rf_set_link_mode(saved_mode, 0)
+        // to wake the BK3632 back into operational mode.
+        rf_link_supervisor(&keyboard_state);
+
+        // Stock-style send-pending retry. rf_send_report queues the
+        // 6KRO snapshot and attempts an immediate send; if the BK3632
+        // didn't ack, rf_pending stays set and we re-attempt here on
+        // every loop tick until ACK lands. Mirrors stock's
+        // rf_send_keys_if_needed gating on b0c8_state_byte == 0x10.
+        rf_send_pending_flush();
+
+        // Post-release blanking: if rf_send_kro_report just observed a
+        // release transition, drain the queued blank packets one per
+        // loop tick. Without this, a dropped release packet (BK3632
+        // unack or host RF drop) leaves the key latched on the host.
+        rf_blanking_tick();
     }
 #endif
     ticks++;
