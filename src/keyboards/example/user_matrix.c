@@ -16,5 +16,3 @@ uint8_t user_matrix_read_rows(void)
 {
     return 0xFF;
 }
-
-void user_matrix_sinks_off(void) {}

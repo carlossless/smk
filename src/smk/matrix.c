@@ -103,14 +103,14 @@ void process_key_state(uint8_t row, uint8_t col, bool pressed)
         return;
     } else if (IS_SYSTEM_KEYCODE(qcode)) {
         if (pressed) {
-            host_system_send(KEYCODE2SYSTEM(qcode));
+            host_system_send(keycode_to_system(qcode));
         } else {
             host_system_send(0);
         }
         return;
     } else if (IS_CONSUMER_KEYCODE(qcode)) {
         if (pressed) {
-            host_consumer_send(KEYCODE2CONSUMER(qcode));
+            host_consumer_send(keycode_to_consumer(qcode));
         } else {
             host_consumer_send(0);
         }

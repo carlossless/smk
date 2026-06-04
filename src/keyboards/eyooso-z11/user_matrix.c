@@ -57,8 +57,3 @@ uint8_t user_matrix_read_rows(void)
     // P7.1=R0, P7.2=R1, P7.3=R2, P5.3=R3, P5.4=R4
     return (uint8_t)(((P7 >> 1) & 0x07) | (P5 & 0x18) | 0xE0);
 }
-
-void user_matrix_sinks_off(void)
-{
-    // eyooso-z11 has no RGB lighting matrix to disable.
-}
