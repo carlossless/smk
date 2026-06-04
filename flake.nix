@@ -30,16 +30,9 @@
           # parser/lexer.
           nativeBuildInputs = with pkgs; [ bison flex ];
 
-          # SH68F90 is a proper uCsim CPU variant (-t sh68f90). This small patch
-          # only REGISTERS it (type enum + cpus_51[] row + sim51.cc factory case +
-          # objs.mk) -- no edits to shared s51 core logic. The actual CPU and
-          # peripheral model is the standalone sh68f90.cc / sh68f90cl.h copied in
-          # below.
+          # Register the SH68F90 as a uCsim CPU variant (-t sh68f90).
           patches = [ ./tools/ucsim/sh68f90-register.patch ];
 
-          # Drop in the SH68F90 variant sources, and generate cmdlex.cc by hand
-          # (uCsim's Makefile declares it as a target with no recipe, so flex never
-          # runs and an empty lexer slips through -> link fails on yylex/uc_yy_*).
           postPatch = ''
             cp ${./tools/ucsim/sh68f90.cc}  sim/ucsim/src/sims/s51.src/sh68f90.cc
             cp ${./tools/ucsim/sh68f90cl.h} sim/ucsim/src/sims/s51.src/sh68f90cl.h
