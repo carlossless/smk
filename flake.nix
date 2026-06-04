@@ -30,12 +30,19 @@
           # parser/lexer.
           nativeBuildInputs = with pkgs; [ bison flex ];
 
-          patches = [ ./tools/ucsim/sh68f90-usb-irq.patch ];
+          # SH68F90 is a proper uCsim CPU variant (-t sh68f90). This small patch
+          # only REGISTERS it (type enum + cpus_51[] row + sim51.cc factory case +
+          # objs.mk) -- no edits to shared s51 core logic. The actual CPU and
+          # peripheral model is the standalone sh68f90.cc / sh68f90cl.h copied in
+          # below.
+          patches = [ ./tools/ucsim/sh68f90-register.patch ];
 
-          # uCsim's Makefile declares cmdlex.cc as a target but gives it NO recipe,
-          # so flex never runs and an empty lexer slips through (link fails on
-          # yylex/uc_yy_*). Generate it by hand.
+          # Drop in the SH68F90 variant sources, and generate cmdlex.cc by hand
+          # (uCsim's Makefile declares it as a target with no recipe, so flex never
+          # runs and an empty lexer slips through -> link fails on yylex/uc_yy_*).
           postPatch = ''
+            cp ${./tools/ucsim/sh68f90.cc}  sim/ucsim/src/sims/s51.src/sh68f90.cc
+            cp ${./tools/ucsim/sh68f90cl.h} sim/ucsim/src/sims/s51.src/sh68f90cl.h
             flex -o sim/ucsim/src/core/cmd.src/cmdlex.cc \
                     sim/ucsim/src/core/cmd.src/cmdlex.l
           '';
@@ -73,10 +80,47 @@
 
           meta.description = "SDCC uCsim 8051 simulator patched with the SH68F90 USB interrupt source";
         };
+
+        # SDCC's source-level debugger. nixpkgs' sdcc build does NOT ship it, so we
+        # build it from the same 4.5.0 source -- this matters because sdcdb talks to
+        # uCsim over a socket and an older (4.2.0) sdcdb hangs against our 4.5.0
+        # ucsim variant. Only ./configure (for config.h) + the mcs51 debugger are
+        # built; the full compiler isn't needed.
+        sdcdb = pkgs.stdenv.mkDerivation {
+          pname = "sdcdb";
+          inherit (pkgs.sdcc) version src;
+          nativeBuildInputs = with pkgs; [ bison flex python3 pkg-config ];
+          buildInputs = with pkgs; [ boost zlib ];
+          # sdcdb's .cdb reader leaves the trailing newline on every record
+          # (so module names become "<name>\n" and no source loads), and its
+          # filename-search fallback spins forever on '_'-containing names.
+          # Both bite our 4.5.0 .cdb -> sdcdb hangs at startup without this.
+          patches = [ ./tools/ucsim/sdcdb-fix.patch ];
+          configurePhase = ''
+            runHook preConfigure
+            ./configure --disable-pic14-port --disable-pic16-port --disable-device-lib
+            runHook postConfigure
+          '';
+          buildPhase = ''
+            runHook preBuild
+            # sdcdb is 1999-era C; build with an older standard (its `typedef short
+            # bool` clashes with C23's `bool` keyword) and -fcommon for its
+            # tentative-definition globals.
+            make -C debugger/mcs51 CC="gcc -std=gnu99 -fcommon"
+            runHook postBuild
+          '';
+          installPhase = ''
+            runHook preInstall
+            mkdir -p $out/bin
+            cp bin/sdcdb $out/bin/
+            runHook postInstall
+          '';
+          meta.description = "SDCC source-level debugger (sdcdb), built from 4.5.0 source to match the uCsim variant";
+        };
       in
       {
         packages = {
-          inherit ucsim-sh68f90;
+          inherit ucsim-sh68f90 sdcdb;
         };
 
         devShells.default = pkgs.mkShell {

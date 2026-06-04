@@ -7,13 +7,15 @@
 #    include <stdint.h>
 
 #    define STACK_SENTINEL 0xAA
-// SP reset value; first push lands at STACK_BASE+1. After the printf/DSEG
-// shrink (printf_large → tiny dprint_* helpers, rf_* functions __reentrant,
-// rf_bt names → __code, ticks → __xdata, PWM ISR __using(1)), SDCC's
-// linker places SSEG at 0x43, giving 189 bytes of stack — up from 122
-// before the cleanup. STACK_BASE matches that so stack_peak()'s scan
-// returns sensible numbers.
-#    define STACK_BASE     0x42
+// The stack (SSEG) sits just above the data segment, so its start -- and thus
+// the usable size -- shifts whenever globals change. A hardcoded base silently
+// goes stale (it had drifted from 0x42 to 0x57 as data grew, over-reporting
+// usage by ~21 bytes), so derive it from the linker's stack-start symbol.
+// SDCC mangles the C name `_start__stack` to the asm symbol `__start__stack`.
+// SP resets to start-1 (the first push lands at `start`), so that is the base
+// stack_peak() measures bytes used against.
+extern uint8_t _start__stack;
+#    define STACK_BASE     ((uint8_t)((uint16_t)&_start__stack - 1u))
 #    define STACK_TOP      0xFF // top of the SH68F90A's 256-byte internal RAM
 
 // Fill the unused stack region (above the current SP, up to STACK_TOP) with

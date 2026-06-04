@@ -19,6 +19,7 @@ Override targets with env vars SMK_UCSIM (simulator) and SMK_FIRMWARE (.hex).
 import unittest
 
 from sim import Sim
+from devices import Air60Sim
 
 SIM = Sim()
 
@@ -44,17 +45,26 @@ class TestWorstCaseStack(unittest.TestCase):
     provable global maximum."""
 
     def test_deepest_path_reaches_end_without_overflow(self):
-        out = SIM.deepest_stack_run()
-        self.assertNotIn("Stack overflow", out,
+        kb = Air60Sim()
+        try:
+            kb.boot(usb=True)                 # stack_paint runs during boot
+            kb.matrix.press(1, 2)             # KC_A: real scan -> process_key_state -> EP1
+            reps = kb.scan_for_report()
+            kb.nest_usb_descriptor()          # deepest USB ISR nested over the main loop
+            peak = kb.stack_highwater()
+            stack_base = kb.stack_base
+            serr = kb.stderr_text()
+        finally:
+            kb.close()
+        self.assertNotIn("Stack overflow", serr,
                          "firmware must not overflow its stack on the deepest path")
-        self.assertIn(0x0004, [q for q, _ in SIM.key_events(out)],
-                      "the real key path (KC_A) must have run during the measurement")
-        self.assertTrue(SIM.in_packets(out),
-                        "the deep USB ISR must have run to completion")
-        peak = SIM.stack_highwater(out)
+        self.assertTrue(reps and reps[-1][2] == 0x04,
+                        f"the real key path (KC_A) must have run; EP1 reports: {reps}")
+        self.assertIn("EP0 IN", serr, "the deep USB ISR must have run to completion")
+        cap = Air60Sim.STACK_TOP - stack_base   # usable stack bytes for this build
         self.assertGreater(peak, 0, "stack high-water should be measurable")
-        self.assertLess(peak, 122, f"stack peak {peak} must stay within 122 bytes")
-        print(f"\n[worst-case stack] deepest reached = {peak}/122 bytes")
+        self.assertLess(peak, cap, f"stack peak {peak} must stay within {cap} bytes")
+        print(f"\n[worst-case stack] deepest reached = {peak}/{cap} bytes")
 
 
 class TestStackOverflow(unittest.TestCase):

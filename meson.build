@@ -126,6 +126,7 @@ endif
 
 if get_option('buildtype') == 'debug'
     cc_base_args += '-DDEBUG=1'
+    cc_base_args += '--debug'   # emit SDCC .cdb for source-level tests (tests/sim.py)
 
     debug_sink = get_option('debug_sink')
     if debug_sink == 'console' or debug_sink == 'both'
@@ -142,6 +143,9 @@ cc = find_program('sdcc', required : true)
 sdar = find_program('sdar', required : true)
 packihx = find_program('packihx', required : true)
 skbt = find_program('sinowealth-kb-tool', required : true)
+# Wraps the --debug firmware link so benign "Multiple definition" debug-record
+# errors (header static-inlines) don't fail the build; see the script header.
+debug_link = find_program('tools/sdcc_debug_link.sh')
 
 # Host-side generator that bakes per-device LED animation geometry into ROM tables
 # (see utils/led_geometry_gen.c). Compiled once with the host compiler at configure
@@ -253,11 +257,20 @@ foreach part : parts
         rel_main = compiler.process(src_main)
 
         ihx_smk_target_name = '@0@smk.ihx'.format(prefix)
+        ihx_link_cmd = [cc, cc_args, '-o', '@OUTPUT@', '@INPUT@', '-l' + lib_user.full_path()]
+        if get_option('buildtype') == 'debug'
+            # --debug emits the .cdb (consumed by tests/sim.py for source-level
+            # breakpoints) but makes sdld exit nonzero on benign "Multiple
+            # definition" debug-record collisions from header static-inlines;
+            # the .ihx/.cdb are still correct, so link through a wrapper that
+            # succeeds whenever the output was produced.
+            ihx_link_cmd = [debug_link, cc.full_path(), cc_args, '-o', '@OUTPUT@', '@INPUT@', '-l' + lib_user.full_path()]
+        endif
         ihx_smk = custom_target(ihx_smk_target_name,
             input : rel_main,
             output : ihx_smk_target_name,
             depends: [lib_user],
-            command : [cc, cc_args, '-o', '@OUTPUT@', '@INPUT@', '-l' + lib_user.full_path()],
+            command : ihx_link_cmd,
         )
 
         hex_smk_target_name = '@0@smk.hex'.format(prefix)

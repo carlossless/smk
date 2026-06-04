@@ -58,6 +58,35 @@ def load_symbols(map_path):
     return syms
 
 
+def load_lines(cdb_path):
+    """Parse SDCC's `.cdb` C-line records into {(filename, lineno): [addr, ...]}.
+
+    This is what gives us *source-level* breakpoints: a source file + line number
+    maps to one or more code addresses. Records look like:
+
+        L:C$main.c$102$1_0$75:2EC
+
+    i.e. `L:C$<file>$<line>$<level>_<block>$<block>:<code-address-hex>`. A single
+    line can map to several addresses (loop headers, multi-statement lines), so
+    we keep them all (sorted); `addr_of_line` takes the lowest by default.
+
+    The `.cdb` is emitted by SDCC's `--debug` (meson `buildtype=debug`) and sits
+    next to the `.hex`/`.map`; `--debug` does not change code generation, so the
+    addresses match the non-debug-named `.hex` from the same build.
+    """
+    pat = re.compile(r"^L:C\$([^$]+)\$(\d+)\$[0-9_]+\$[0-9A-Fa-f]+:([0-9A-Fa-f]+)")
+    lines = {}
+    with open(cdb_path) as f:
+        for line in f:
+            m = pat.match(line)
+            if m:
+                key = (m.group(1), int(m.group(2)))
+                lines.setdefault(key, []).append(int(m.group(3), 16))
+    for key in lines:
+        lines[key] = sorted(set(lines[key]))
+    return lines
+
+
 def read_intel_hex(hex_path):
     """Parse Intel HEX into a flat {addr: byte} dict (data records only)."""
     mem = {}
@@ -164,12 +193,6 @@ class Sim:
     ISP_MAGIC_ACC, ISP_MAGIC_B = 0x5A, 0xA5
     SLED_END = 0x900E  # break address at the end of the 16-byte NOP sled
 
-    # key-matrix staging for the SIE model: a "pressed" key whose row reads pull
-    # low while its column is being scanned (see cl_sh68f90_sie::read in the patch)
-    KEY_ENABLE = 0x1F00      # 1 = a key is held
-    KEY_COL = 0x1F01         # its column (0..15)
-    KEY_ROW = 0x1F02         # its row (0..4)
-
     STATE_DEFAULT, STATE_ADDRESSED, STATE_CONFIGURED = 0, 1, 2
 
     def __init__(self, firmware=None, sim=None):
@@ -184,11 +207,12 @@ class Sim:
 
     def _resolve_firmware_addresses(self):
         s = load_symbols(Path(self.firmware).with_suffix(".map"))
-        self.KB_REPORT = s["keyboard_report"]
+        # Source-line -> address map from the SDCC .cdb (for source-level
+        # breakpoints). Optional: only debug builds emit it, so tests that want
+        # line breakpoints should guard with `has_lines()`.
+        cdb = Path(self.firmware).with_suffix(".cdb")
+        self.lines = load_lines(cdb) if cdb.exists() else {}
         self.LED_STATE = s["keyboard_state"]      # struct, led_state is field 0
-        self.SEND_KB_REPORT = s["send_keyboard_report"]
-        self.MAIN_LOOP = s["kb_update_switches"]  # first call in main's while-loop
-        self.PROCESS_KEY_STATE = s["process_key_state"]
         self.USB_DEVICE_STATE = s["usb_device_state"]
         # POST_INIT can't be a single symbol -- it's the address after the LCALL
         # _init inside main(). find_post_init() walks main()'s prologue to find it.
@@ -204,14 +228,56 @@ class Sim:
             return f"patched simulator not runnable ({self.sim}); build it: nix build .#ucsim-sh68f90"
         return None
 
+    # --- source-level addressing (from the .cdb) --------------------------
+    def has_lines(self):
+        """True if the .cdb source-line map loaded (i.e. a debug build)."""
+        return bool(getattr(self, "lines", None))
+
+    def addr_of_line(self, filename, lineno, exact=False):
+        """Code address of a source line -- the lowest address it maps to, i.e.
+        where the line is first reached. `filename` is the basename as it appears
+        in the .cdb ('main.c', 'matrix.c', ...).
+
+        Not every line emits code (blanks, comments, braces, and statements the
+        compiler folds into a neighbour -- e.g. main.c:104 maps onto 103/105). By
+        default, as gdb does, the breakpoint moves forward to the next line in the
+        same file that *does* have code, and `actual_line` reports where it
+        landed. Pass exact=True to require the requested line itself. Raises
+        KeyError if no code is found."""
+        if (filename, lineno) in self.lines:
+            return self.lines[(filename, lineno)][0]
+        if not exact:
+            later = sorted(ln for (f, ln) in self.lines if f == filename and ln >= lineno)
+            if later:
+                return self.lines[(filename, later[0])][0]
+        raise KeyError(
+            f"no code at or after {filename}:{lineno} in "
+            f"{Path(self.firmware).with_suffix('.cdb').name} "
+            f"(unknown file, or past the last statement?)"
+        )
+
+    def actual_line(self, filename, lineno):
+        """The line a `break filename:lineno` actually lands on (>= lineno), after
+        gdb-style forward adjustment to the next line that has code."""
+        if (filename, lineno) in self.lines:
+            return lineno
+        later = sorted(ln for (f, ln) in self.lines if f == filename and ln >= lineno)
+        if not later:
+            raise KeyError(f"no code at or after {filename}:{lineno}")
+        return later[0]
+
+    def break_line(self, filename, lineno):
+        """A uCsim `break` command for a source line (use within a command list)."""
+        return f"break 0x{self.addr_of_line(filename, lineno):x}"
+
     def run(self, commands, timeout=30):
-        # -t 52: the SH68F90 is an 8052-class part (256 bytes internal RAM). The
-        # base 8051 (-t 51) has only 128 bytes, so the firmware's stack (SP grows
-        # to ~0x89) would corrupt -- which is exactly why booting from reset needs
+        # -t sh68f90: the SH68F90 uCsim CPU variant (8052 core + the chip's on-die
+        # peripherals: USB SIE, timers, flash ISP, GPIO, watchdog, interrupts). The
+        # plain 8052 (-t 52) lacks those, so booting from reset / USB tests need
         # this model.
         script = "\n".join([f'file "{self.firmware}"'] + commands + ["quit"]) + "\n"
         p = subprocess.run(
-            [self.sim, "-t", "52", "-S", "in=/dev/null"],
+            [self.sim, "-t", "sh68f90", "-S", "in=/dev/null"],
             input=script, capture_output=True, text=True, timeout=timeout,
         )
         return p.stdout + p.stderr
@@ -296,12 +362,6 @@ class Sim:
             "pc 0x9000",
         ]
 
-    def boot_to_main_loop(self):
-        """Boot from reset all the way through init + delays + kb/rf/indicator
-        setup to the main while-loop (relies on the modeled UART so the boot-time
-        dprintf returns). ~6s. Returns sim output (incl. UART banner)."""
-        return self.run(["reset", f"break 0x{self.MAIN_LOOP:x}", "run"], timeout=45)
-
     def boot_post_init_state(self):
         """Boot through real init; return usb_device_state right after init()."""
         cmds = [
@@ -324,54 +384,6 @@ class Sim:
         ]
         return self.run(cmds)
 
-    def deepest_stack_run(self):
-        """Boot through real init (the firmware's stack_paint fills the stack with
-        0xAA), then drive the deepest path reachable in sim and dump the painted
-        stack so the high-water can be read back. The deep path combines, on top of
-        the running main loop: a real key press (PWM ISR -> matrix_scan_step ->
-        matrix_task -> process_key_state -> send_keyboard_report -> EP1) AND the
-        deepest USB ISR (GET_DESCRIPTOR's descriptor handler) nested over it.
-
-        Note: each `run` between two MAIN_LOOP breakpoints is only ~1200 cycles --
-        far below the PWM threshold -- so we use *one* long run that breaks when
-        the firmware enters process_key_state (proving the scan path actually ran)
-        rather than per-iteration breaks that never let PWM fire."""
-        cmds = [
-            "reset",
-            self._set_xram(self.KEY_ENABLE, [0x01, 0x01, 0x02]),  # hold KC_A (col1,row2)
-            f"break 0x{self.MAIN_LOOP:x}",
-            "run",                                    # boot to main loop
-            "delete",
-            f"break 0x{self.PROCESS_KEY_STATE:x}",
-            "run",                                    # scan -> matrix_task -> process_key_state
-            "delete",
-            f"break 0x{self.MAIN_LOOP:x}",
-            "run",                                    # let dprintf KEY: + EP1 report finish
-            self._set_xram(self.EP0_OUT_BUF, get_descriptor(DESC_DEVICE)),
-            f"set mem sfr 0x{self.USBIF1:x} 0x{self.SETUPIF:02x}",
-            "run",                                    # USB ISR nests on top of main loop
-            "echo ===STACKDUMP===",
-            "dump iram 0x86 0xff",
-        ]
-        return self.run(cmds, timeout=60)
-
-    @staticmethod
-    def stack_highwater(output, base=0x85, sentinel=0xAA):
-        """Bytes of stack used at the peak: scan the painted stack dump (after the
-        ===STACKDUMP=== marker) for the highest address still overwritten."""
-        seg = output.split("===STACKDUMP===")[-1]
-        vals = {}
-        for line in seg.splitlines():
-            m = re.match(r"^0x([0-9a-fA-F]{2})\s+((?:[0-9a-fA-F]{2} )+)", line)
-            if m:
-                addr = int(m.group(1), 16)
-                for i, b in enumerate(m.group(2).split()):
-                    vals[addr + i] = int(b, 16)
-        for addr in range(0xFF, base, -1):
-            if vals.get(addr, sentinel) != sentinel:
-                return addr - base
-        return 0
-
     def overflow_stack(self, marker=0xAA):
         """Deliberately overflow the firmware's stack (base 0x85, 122 bytes
         0x86-0xFF) with a PUSH/SJMP loop. The push past 0xFF wraps the 8-bit SP
@@ -390,81 +402,6 @@ class Sim:
             "dump iram 0x00 0x00",
         ]
         return self.run(cmds)
-
-    def keyboard_report_6kro(self, keys):
-        """Boot through real init *to the main loop* (so kb_init() has run and
-        conn_mode=USB is committed -- kb_init is called from main() after init()
-        returns, so POST_INIT is too early), stage a keyboard_report with these
-        keycodes, then invoke send_keyboard_report() (6KRO/EP1 path); returns the
-        EP1 report the SIE captures. Byte 0 (modifiers) comes from separate HID
-        state and is not asserted here.
-
-        With kb_init done, iface0_protocol=BOOT (->6KRO path), and the modeled
-        SIE forces P5.5 high so conn_mode reads as USB, no manual state-poking."""
-        report = [0x00, 0x00] + (list(keys) + [0] * 6)[:6]  # mods, reserved, keys[6]
-        # invoke send_keyboard_report by faking a return frame on the firmware's
-        # actual stack: push 0x9000 (sled) at iram[base+1, base+2], set SP=base+2.
-        STACK_BASE = 0x85
-        cmds = [
-            "reset",
-            f"break 0x{self.MAIN_LOOP:x}",
-            "run",  # full boot through init() + kb_init/rf_init/indicators
-            "delete",
-            "set mem rom 0x9000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0",
-            "pc 0x9000",
-            self._set_xram(self.KB_REPORT, report),
-            f"set mem iram 0x{STACK_BASE + 1:x} 0x00",
-            f"set mem iram 0x{STACK_BASE + 2:x} 0x90",
-            f"set mem sfr 0x{self.SP_SFR:x} 0x{STACK_BASE + 2:x}",
-            f"pc 0x{self.SEND_KB_REPORT:x}",
-            "break 0x9000",
-            "run",
-        ]
-        return self.run(cmds, timeout=45)
-
-    def press_key(self, col, row, enable=True, settle_wallclock=2.0):
-        """Boot to the main loop, then stage a physical key at (col, row) in the
-        SIE matrix model. This drives the *real* key path end to end: the PWM ISR
-        calls matrix_scan_step(), the main loop's matrix_task() detects the change
-        and calls process_key_state() -- which logs `KEY: 0x<qcode>` and (in USB
-        mode) sends the HID report on EP1. No cold injection. Returns sim output
-        (parse with key_events() / ep1_report()).
-
-        Note: each `run` between two MAIN_LOOP breakpoints is only ~1200 cycles --
-        far below the PWM threshold -- so per-iteration breaks never let PWM fire.
-        Instead we do one long run that breaks when the firmware enters
-        process_key_state. With enable=False no transition is expected, so the run
-        is allowed to hit `settle_wallclock` seconds of subprocess timeout; partial
-        output is returned (it will not contain any KEY: lines)."""
-        cmds = [
-            "reset",
-            self._set_xram(self.KEY_ENABLE,
-                           [0x01 if enable else 0x00, col & 0xFF, row & 0xFF]),
-            f"break 0x{self.MAIN_LOOP:x}",
-            "run",                                    # boot to main loop
-            "delete",
-            f"break 0x{self.PROCESS_KEY_STATE:x}",
-            "run",                                    # wait for the key path to fire
-            "delete",
-            f"break 0x{self.MAIN_LOOP:x}",
-            "run",                                    # let dprintf KEY: + EP1 report finish
-        ]
-        if enable:
-            return self.run(cmds, timeout=30)
-        # No staged key -> process_key_state is never hit. Let the sim run for a
-        # bounded wall-clock window (enough simulated time for several full matrix
-        # scans) and accept the subprocess timeout; whatever was captured is
-        # what we assert against.
-        try:
-            return self.run(cmds, timeout=settle_wallclock)
-        except subprocess.TimeoutExpired as e:
-            stdout = e.stdout or ""
-            stderr = e.stderr or ""
-            if isinstance(stdout, bytes):
-                stdout = stdout.decode(errors="replace")
-            if isinstance(stderr, bytes):
-                stderr = stderr.decode(errors="replace")
-            return stdout + stderr
 
     def trigger_isp_jump(self, confirm=(0x05, 0x75), phase2_break=None):
         """Perform the SET_REPORT(ISP) control transfer that makes the firmware
@@ -515,14 +452,6 @@ class Sim:
         """The last EP1 (keyboard) report the SIE captured, as a byte list."""
         ms = re.findall(r"\[SIE\] EP1 IN \d+ bytes:((?: [0-9a-f]{2})*)", output)
         return [int(x, 16) for x in ms[-1].split()] if ms else []
-
-    @staticmethod
-    def key_events(output):
-        """Every `KEY: 0x<qcode> <label>` line process_key_state() logs, as
-        (qcode, label) tuples. NOTE: the firmware's label is inverted
-        (`pressed ? "UP" : "DOWN"`), so "UP" means it saw the key pressed."""
-        return [(int(m.group(1), 16), m.group(2))
-                for m in re.finditer(r"KEY: 0x([0-9a-fA-F]{4}) (\w+)", output)]
 
     @staticmethod
     def dumped_byte(output):
