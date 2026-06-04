@@ -44,12 +44,11 @@ void kb_init()
 #endif
 }
 
-// Slider debouncing. Stock fw (rf_signal_quality_probe at CODE:0x80a8)
-// samples the CONN_MODE and OS_MODE slider pins on every supervisor
-// tick (~260 Hz at stock's clock) and accumulates over a window before
-// committing a transition. We approximate that with a per-slider count
-// of consecutive disagreement: when the raw pin reads `committed` for
-// SLIDER_DEBOUNCE_ITERS iterations in a row, commit the new value.
+// Slider debouncing. Sample the CONN_MODE and OS_MODE slider pins and
+// accumulate over a window before committing a transition: a per-slider
+// count of consecutive disagreement, so when the raw pin reads the
+// uncommitted value for SLIDER_DEBOUNCE_ITERS iterations in a row, we
+// commit the new value.
 //
 // At our ~20 kHz main-loop rate, 256 iters ≈ 13 ms — short enough to
 // feel instantaneous, long enough to filter mechanical contact noise
@@ -73,19 +72,14 @@ void kb_update_switches()
                 dprint_str("USB_MODE\r\n");
 #ifdef RF_ENABLED
                 // Tell the BK3632 the host is now wired so it stops
-                // trying to forward keys wirelessly. Mirrors
-                // rf_signal_quality_probe's USB-entry branch
-                // (CODE:0x80a8) which fires rf_cmd_06(1) until ack.
+                // trying to forward keys wirelessly.
                 rf_apply_usb_mode();
 #endif
                 break;
             case KEYBOARD_CONN_MODE_RF:
                 dprint_str("RF_MODE\r\n");
 #ifdef RF_ENABLED
-                // Re-prime the BK3632 on the saved link slot. Mirrors
-                // the wireless-entry branch of rf_signal_quality_probe
-                // which fires rf_set_link_mode(saved_mode, 0) twice
-                // until ack.
+                // Re-prime the BK3632 on the saved link slot.
                 rf_set_link((rf_mode_t)user_settings.rf_link);
                 // Lazy-init: queue a clean baseline release so the host
                 // sees zero keys held after the transition, then the
@@ -166,10 +160,9 @@ static __xdata bool reset_mode_active;
 // command after a 3 s long-press. ~3 s at ~20 kHz tick rate = 60000 ticks.
 // One long-press = one rf_set_link_pairing call. The BK3632 advertises and
 // accepts pairings for its internal window (~30 s); after that, the user
-// long-presses again or selects a different slot. Closer to stock fw's
-// rf_pairing_burst (FUN_CODE_95e7) which also fires once per FN-key press
-// and doesn't periodically re-fire. Re-firing rotates the BK3632's BLE
-// advertising MAC and disrupts hosts mid-SMP, so we deliberately don't.
+// long-presses again or selects a different slot. We deliberately fire once
+// per FN-key press and don't periodically re-fire: re-firing rotates the
+// BK3632's BLE advertising MAC and disrupts hosts mid-SMP.
 #define LINK_PAIRING_HOLD_TICKS 60000
 static __xdata uint16_t link_hold_ticks   = 0;
 static __xdata uint16_t link_hold_keycode = 0;
@@ -369,16 +362,15 @@ void kb_update()
         }
 
         // The supervisor handles status polling + link reassertion at
-        // stock-matching cadence (~10 polls/s). It also detects a
-        // connection-lost edge and re-fires rf_set_link_mode(saved_mode, 0)
-        // to wake the BK3632 back into operational mode.
+        // ~10 polls/s. It also detects a connection-lost edge and
+        // re-asserts the saved link to wake the BK3632 back into
+        // operational mode.
         rf_link_supervisor(&keyboard_state);
 
-        // Stock-style send-pending retry. rf_send_report queues the
-        // 6KRO snapshot and attempts an immediate send; if the BK3632
-        // didn't ack, rf_pending stays set and we re-attempt here on
-        // every loop tick until ACK lands. Mirrors stock's
-        // rf_send_keys_if_needed gating on b0c8_state_byte == 0x10.
+        // Send-pending retry. rf_send_report queues the 6KRO snapshot
+        // and attempts an immediate send; if the BK3632 didn't ack,
+        // rf_pending stays set and we re-attempt here on every loop tick
+        // until ACK lands.
         rf_send_pending_flush();
 
         // Post-release blanking: if rf_send_kro_report just observed a
