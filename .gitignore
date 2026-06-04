@@ -9,4 +9,3 @@ build/
 
 # Python bytecode caches
 __pycache__/
-/result-sdcdb
