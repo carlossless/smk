@@ -90,6 +90,10 @@ static __xdata uint8_t led_ul_fb[3][LED_COLS];
 static __xdata uint8_t led_row;
 static __xdata uint8_t led_color;
 
+// Set for one tick at each frame wrap: the next scan step is a blanking tick
+// (all columns off, no sink) so the column lines discharge before the top row.
+static __xdata bool led_blank_pending;
+
 // Animation state. The framebuffers are regenerated one LED per ISR cycling through
 // the main rows then the underglow row (regen_row/regen_col). led_phase / ul_phase
 // shift their respective rainbow each time their portion of the sweep completes.
@@ -122,6 +126,7 @@ void        indicators_pwm_disable();
 static void led_regen_one();
 static void led_enable_sink();
 static void led_set_columns();
+static void led_columns_off();
 
 // Sets every field of user_settings to its factory default value.
 void indicators_apply_defaults()
@@ -191,6 +196,7 @@ void indicators_start()
 {
     led_row   = 0;
     led_color = 0;
+    led_blank_pending = false;
 
     led_phase = 0;
     ul_phase  = 0;
@@ -327,11 +333,11 @@ void indicators_pre_update()
     P5 &= ~(RGB_R2B_P5_7);
     P6 &= ~(RGB_R0G_P6_1 | RGB_R1G_P6_2 | RGB_R2G_P6_3 | RGB_R3G_P6_4 | RGB_R4G_P6_5 | RGB_R1B_P6_6 | RGB_R1R_P6_7);
 
-    // PWM channels stay enabled across ticks — stock never tears down the
-    // PWM hardware between substeps. Disabling+re-enabling around every
-    // duty write made the column GPIO latch leak through (LEDs full-on
-    // during the disable window) and produced visible flicker.
-    // indicators_pwm_disable() removed intentionally.
+    // PWM channels stay enabled across ticks — tearing them down and
+    // re-enabling around every substep restarts the PWM period each tick and
+    // produces visible flicker (esp. while brightness changes). Column-charge
+    // carry-over between subframes is handled instead by a dedicated blanking
+    // tick in indicators_update_step() that needs no PWM teardown.
 }
 
 bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
@@ -343,14 +349,26 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
     // computation over many interrupts instead of one expensive burst.
     led_regen_one();
 
+    // Blanking tick. Once per frame (right after the wrap, i.e. after the
+    // bright underglow row and the matrix scan that follows it) we hold every
+    // column at zero duty with NO sink for one tick, letting the column lines
+    // settle to off before the top row lights. Without it, charge from the
+    // bright underglow-blue subframe bled into the row-0 red LEDs on the same
+    // columns — a faint red ghost across the top row, visible once the main
+    // backlight was dimmed (the main rows go dark while the underglow stays
+    // bright on its own brightness). PWM stays enabled, so no flicker.
+    if (led_blank_pending) {
+        led_blank_pending = false;
+        led_columns_off();
+        return false; // top row lights next tick, on settled columns
+    }
+
     // Main rows scan only when the main effect is on. The UL row always scans so the
     // left-side status indicator stays visible regardless of UL effect.
     //
     // Order matters for flicker: write the 16 column duties BEFORE enabling
     // the row sink. Stock fw does duties-first / sink-last so the new row
-    // never gets driven with the previous row's framebuffer. Our previous
-    // order (sink first) lit each row with the prior row's values for a
-    // few µs every substep — visible as flicker / colour bleed.
+    // never gets driven with the previous row's framebuffer.
     if (led_row < LED_ROWS) {
         if (user_settings.led_effect < FX_OFF) {
             led_set_columns();
@@ -365,8 +383,9 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
     if (++led_color >= 3) {
         led_color = 0;
         if (++led_row >= LED_SCAN_ROWS) {
-            led_row        = 0;
-            frame_wrapped  = true;
+            led_row           = 0;
+            led_blank_pending = true; // discharge columns before row 0 next frame
+            frame_wrapped     = true;
         }
     }
 
@@ -712,4 +731,29 @@ void indicators_pwm_disable()
     PWM40CON = (uint8_t)(PWM_CLK_DIV);
     PWM41CON = 0;
     PWM42CON = 0;
+}
+
+// Drive every LED column to zero duty (fully off) without touching any row
+// sink. Used for the once-per-frame blanking tick: the columns sit at the
+// off level for a whole tick so their parasitic charge drains before the top
+// row is lit, killing the underglow-blue → row-0-red ghost. PWM stays
+// enabled, so unlike a park/disable this introduces no flicker.
+static void led_columns_off()
+{
+    SET_PWM_DUTY_2(LED_PWM_C0, 0);
+    SET_PWM_DUTY_2(LED_PWM_C1, 0);
+    SET_PWM_DUTY_2(LED_PWM_C2, 0);
+    SET_PWM_DUTY_2(LED_PWM_C3, 0);
+    SET_PWM_DUTY_2(LED_PWM_C4, 0);
+    SET_PWM_DUTY_2(LED_PWM_C5, 0);
+    SET_PWM_DUTY_2(LED_PWM_C6, 0);
+    SET_PWM_DUTY_2(LED_PWM_C7, 0);
+    SET_PWM_DUTY_2(LED_PWM_C8, 0);
+    SET_PWM_DUTY_2(LED_PWM_C9, 0);
+    SET_PWM_DUTY_2(LED_PWM_C10, 0);
+    SET_PWM_DUTY_2(LED_PWM_C11, 0);
+    SET_PWM_DUTY_2(LED_PWM_C12, 0);
+    SET_PWM_DUTY_2(LED_PWM_C13, 0);
+    SET_PWM_DUTY_2(LED_PWM_C14, 0);
+    SET_PWM_DUTY_2(LED_PWM_C15, 0);
 }
