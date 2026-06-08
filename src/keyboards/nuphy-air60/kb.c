@@ -4,8 +4,7 @@
 #include "kbdef.h"
 #include "keyboard.h"
 #include "settings.h"
-#include "debug.h"
-#include "console.h" // for dprint_str / dprint_hex / dprint_nl
+#include "debug.h" // dprintf
 #include "report.h"
 #include "usb.h"
 
@@ -69,7 +68,7 @@ void kb_update_switches()
         user_keyboard_state.conn_mode = raw_conn;
         switch (user_keyboard_state.conn_mode) {
             case KEYBOARD_CONN_MODE_USB:
-                dprint_str("USB_MODE\r\n");
+                dprintf("USB_MODE\r\n");
 #ifdef RF_ENABLED
                 // Tell the BK3632 the host is now wired so it stops
                 // trying to forward keys wirelessly.
@@ -77,7 +76,7 @@ void kb_update_switches()
 #endif
                 break;
             case KEYBOARD_CONN_MODE_RF:
-                dprint_str("RF_MODE\r\n");
+                dprintf("RF_MODE\r\n");
 #ifdef RF_ENABLED
                 // Re-prime the BK3632 on the saved link slot.
                 rf_set_link((rf_mode_t)user_settings.rf_link);
@@ -99,13 +98,13 @@ void kb_update_switches()
         user_keyboard_state.os_mode = raw_os;
         switch (user_keyboard_state.os_mode) {
             case KEYBOARD_OS_MODE_MAC:
-                dprint_str("MAC_MODE\r\n");
+                dprintf("MAC_MODE\r\n");
 #ifdef RF_ENABLED
                 rf_set_mac_mode_compat(true);
 #endif
                 break;
             case KEYBOARD_OS_MODE_WIN:
-                dprint_str("WIN_MODE\r\n");
+                dprintf("WIN_MODE\r\n");
 #ifdef RF_ENABLED
                 rf_set_mac_mode_compat(false);
 #endif
@@ -250,7 +249,7 @@ bool kb_process_record(uint16_t keycode, bool key_pressed)
             if (user_keyboard_state.conn_mode == KEYBOARD_CONN_MODE_RF) {
                 if (key_pressed) {
                     rf_mode_t mode = kb_keycode_to_rf_mode(keycode);
-                    dprint_str("rf link selected ");dprint_hex((uint8_t)mode);dprint_nl();
+                    dprintf("rf link selected %02x\r\n", mode);
                     rf_set_link(mode);
                     user_settings.rf_link = (uint8_t)mode;
                     settings_mark_dirty();
@@ -350,7 +349,7 @@ void kb_update()
                 link_hold_ticks++;
             } else {
                 rf_mode_t mode = kb_keycode_to_rf_mode(link_hold_keycode);
-                dprint_str("rf link pairing ");dprint_hex((uint8_t)mode);dprint_nl();
+                dprintf("rf link pairing %02x\r\n", mode);
                 // Show the unpaired (fast blink) state immediately. The
                 // burst inside rf_set_link_pairing will overwrite this
                 // with the real status as soon as the BK3632 confirms.

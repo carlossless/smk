@@ -1,8 +1,7 @@
 #include "rf_controller.h"
 #include <stdint.h>
 #include "delay.h"
-#include "debug.h"
-#include "console.h" // for dprint_str / dprint_hex
+#include "debug.h" // dprintf
 #include "bb_spi.h" // FIXME: should be conditional?
 #include "sh68f90a.h" // for EA
 
@@ -312,9 +311,7 @@ void rf_update_keyboard_state(keyboard_state_t *keyboard)
     uint8_t old_rf_link = keyboard->rf_link;
     keyboard->rf_link   = ((status_bytes[1] & ((1 << 5) | (1 << 6))) >> 5);
     if (old_rf_link != keyboard->rf_link) {
-        dprint_str("rf link changed ");
-        dprint_hex((uint8_t)keyboard->rf_link);
-        dprint_nl();
+        dprintf("rf link changed %02x\r\n", keyboard->rf_link);
     }
 }
 

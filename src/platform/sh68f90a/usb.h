@@ -15,6 +15,20 @@ void    usb_send_nkro(__xdata report_nkro_t *report);
 void    usb_send_extra(__xdata report_extra_t *report);
 uint8_t usb_device_state_get_protocol();
 
+// Counts down (in 1 ms USB SOF ticks) since the last SETUP packet. The USB ISR
+// reloads it on every SETUP and decrements it on every SOF, so it stays > 0 for
+// as long as the host is actively running control transfers (enumeration + HID
+// driver attach) and reaches 0 once the bus has been quiet for the reload
+// window. main() holds the backlight dark until this first hits 0, so the
+// one-time enumeration traffic that disrupts the LED scan lands while nothing is
+// lit. Zero on battery (no SOF/SETUP ever), so wireless boots light immediately.
+extern __xdata uint16_t usb_enum_active_ticks;
+
+// Latches true on the first SETUP packet (cleared in usb_init). Lets main()
+// distinguish "USB is enumerating, wait for it to finish" from "no USB host
+// here (battery / power-only), light up after a short detect window".
+extern __xdata bool usb_enum_seen;
+
 #if DEBUG == 1
 bool usb_is_configured();
 #endif // DEBUG

@@ -3,6 +3,7 @@
 #include "pwm.h"
 #include "settings.h"
 #include "keyboard.h"
+#include <string.h>
 #ifdef RF_ENABLED
 #    include "rf_controller.h"
 #endif
@@ -90,17 +91,27 @@ static __xdata uint8_t led_ul_fb[3][LED_COLS];
 static __xdata uint8_t led_row;
 static __xdata uint8_t led_color;
 
-// Set for one tick at each frame wrap: the next scan step is a blanking tick
-// (all columns off, no sink) so the column lines discharge before the top row.
-static __xdata bool led_blank_pending;
-
-// Animation state. The framebuffers are regenerated one LED per ISR cycling through
-// the main rows then the underglow row (regen_row/regen_col). led_phase / ul_phase
-// shift their respective rainbow each time their portion of the sweep completes.
+// Animation state. The framebuffers are regenerated one LED at a time in the
+// main loop (indicators_render → led_regen_one) cycling through the main rows
+// then the underglow row (regen_row/regen_col). led_phase / ul_phase shift
+// their respective rainbow on a fixed cadence driven by anim_ctr in the scan
+// ISR — not by the (free-running) render cursor.
 static __xdata uint8_t led_phase;
 static __xdata uint8_t ul_phase;
 static __xdata uint8_t regen_row;
 static __xdata uint8_t regen_col;
+
+// Animation clock, advanced one step per scanned subframe in the ISR. Drives
+// the phase / status-counter cadence independently of how fast the main-loop
+// render walks the framebuffer.
+static __xdata uint8_t anim_ctr;
+
+// Set by the ISR when the phase advances; the main-loop render regenerates a
+// whole consistent frame on each set and clears it. Decouples the frame rate
+// from the (very uneven, in wireless mode) main-loop iteration rate — without
+// it a slow loop refreshes only a cell or two per pass and the animation crawls
+// in line-by-line, with different parts of the frame at different phases.
+static volatile __xdata bool render_dirty;
 
 // FN+[ momentary battery indicator: counts down once per UL sweep; while non-zero
 // the right-side UL LEDs show the battery colour regardless of the persistent
@@ -125,8 +136,7 @@ void        indicators_pwm_disable();
 // (now public — declared in indicators.h)
 static void led_regen_one();
 static void led_enable_sink();
-static void led_set_columns();
-static void led_columns_off();
+static bool led_set_columns();
 
 // Sets every field of user_settings to its factory default value.
 void indicators_apply_defaults()
@@ -192,11 +202,24 @@ void indicators_validate_settings()
     }
 }
 
+// Zero the LED framebuffers before the Timer-2 scan ISR starts streaming them.
+// Power-on xdata is NOT guaranteed clear on a cold boot (plugging in USB), so
+// without this the scan blits uninitialised garbage to the LEDs for the brief
+// window between EA=1 and the first foreground render — a one-time, random-row
+// flash that only shows on a cold boot (battery boots are usually warm and keep
+// a valid last frame, which is why the blip was USB-only). Must run before EA=1.
+void indicators_init()
+{
+    memset(led_fb, 0, sizeof(led_fb));
+    memset(led_ul_fb, 0, sizeof(led_ul_fb));
+}
+
 void indicators_start()
 {
     led_row   = 0;
     led_color = 0;
-    led_blank_pending = false;
+    anim_ctr  = 0;
+    render_dirty = true; // paint an initial frame
 
     led_phase = 0;
     ul_phase  = 0;
@@ -333,11 +356,34 @@ void indicators_pre_update()
     P5 &= ~(RGB_R2B_P5_7);
     P6 &= ~(RGB_R0G_P6_1 | RGB_R1G_P6_2 | RGB_R2G_P6_3 | RGB_R3G_P6_4 | RGB_R4G_P6_5 | RGB_R1B_P6_6 | RGB_R1R_P6_7);
 
-    // PWM channels stay enabled across ticks — tearing them down and
-    // re-enabling around every substep restarts the PWM period each tick and
-    // produces visible flicker (esp. while brightness changes). Column-charge
-    // carry-over between subframes is handled instead by a dedicated blanking
-    // tick in indicators_update_step() that needs no PWM teardown.
+    // The per-subframe PWM park + re-enable now lives in indicators_update_step()
+    // (matching stock's isr_timer2_pwm_anim). We only drop the sinks here so the
+    // park that follows happens with no row selected — the LED then re-lights
+    // cleanly when update_step re-enables the PWM as its last step.
+}
+
+// Foreground LED render, called from the main loop. Stock renders its whole
+// effect frame in the main loop and lets the Timer-2 ISR only stream the duty
+// framebuffer out to the PWM channels; we mirror that split — the rainbow /
+// status maths run here, out of the scan ISR.
+//
+// We regenerate the ENTIRE framebuffer in one pass, and only when the ISR has
+// advanced the phase (render_dirty). That keeps every frame internally
+// consistent (all cells at one phase) and pins the frame rate to the ISR's
+// phase cadence (~50 Hz) instead of the main-loop iteration rate — which in
+// wireless mode is dominated by RF work and far too slow/uneven to drive a
+// cell-at-a-time render.
+void indicators_render()
+{
+    if (!render_dirty) {
+        return;
+    }
+    render_dirty = false; // cleared first: a phase bump mid-render re-arms it
+
+    // One full sweep of the regen cursor = every (row,color,col) cell once.
+    for (uint8_t i = 0; i < (uint8_t)(LED_SCAN_ROWS * LED_COLS); i++) {
+        led_regen_one();
+    }
 }
 
 bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
@@ -345,47 +391,67 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
     keyboard;
     current_step;
 
-    // Regenerate one LED of the framebuffer per ISR (cheap), spreading the rainbow
-    // computation over many interrupts instead of one expensive burst.
-    led_regen_one();
-
-    // Blanking tick. Once per frame (right after the wrap, i.e. after the
-    // bright underglow row and the matrix scan that follows it) we hold every
-    // column at zero duty with NO sink for one tick, letting the column lines
-    // settle to off before the top row lights. Without it, charge from the
-    // bright underglow-blue subframe bled into the row-0 red LEDs on the same
-    // columns — a faint red ghost across the top row, visible once the main
-    // backlight was dimmed (the main rows go dark while the underglow stays
-    // bright on its own brightness). PWM stays enabled, so no flicker.
-    if (led_blank_pending) {
-        led_blank_pending = false;
-        led_columns_off();
-        return false; // top row lights next tick, on settled columns
+    // Animation clock. The framebuffer is now regenerated in the main loop
+    // (indicators_render → led_regen_one), so advance the rainbow phase and the
+    // status/battery counters here, on the scan's fixed per-subframe cadence,
+    // instead of off the (now free-running) render cursor. anim_ctr counts one
+    // step per scanned subframe; the thresholds reproduce the old sweep timing
+    // exactly (main sweep = LED_ROWS*LED_COLS subframes, full sweep including
+    // the UL row = LED_SCAN_ROWS*LED_COLS), so the animation speed is unchanged
+    // even though the render no longer drives it.
+    if (++anim_ctr >= (uint8_t)(LED_SCAN_ROWS * LED_COLS)) {
+        anim_ctr = 0;
+        ul_phase = (uint8_t)(ul_phase + user_settings.ul_speed);
+        if (battery_flash_sweeps) {
+            battery_flash_sweeps--;
+        }
+        status_pulse_counter++;
+        render_dirty = true; // UL/status advanced — repaint the frame
+    } else if (anim_ctr == (uint8_t)(LED_ROWS * LED_COLS)) {
+        led_phase    = (uint8_t)(led_phase + user_settings.led_speed);
+        render_dirty = true; // main effect advanced — repaint the frame
     }
 
-    // Main rows scan only when the main effect is on. The UL row always scans so the
-    // left-side status indicator stays visible regardless of UL effect.
-    //
-    // Order matters for flicker: write the 16 column duties BEFORE enabling
-    // the row sink. Stock fw does duties-first / sink-last so the new row
-    // never gets driven with the previous row's framebuffer.
+    // Per-subframe PWM park — stock's isr_timer2_pwm_anim LED branch, in order.
+    // The sinks were already dropped (indicators_pre_update); now PARK every
+    // column PWM, load this subframe's 16 duties and raise its one row sink while
+    // the columns are OFF, then RE-ENABLE the PWM as the very last step. The LED
+    // only lights at that re-enable, which buys two things:
+    //   * a scan delayed/frozen by a long USB ISR leaves the column parked dark
+    //     instead of holding a row over-bright (the USB-only boot blip), and
+    //   * the duty-0 re-enable can't glow, because DUTY2 is already loaded (0 for
+    //     off columns) before the module comes back on — re-arming with stale
+    //     duties is what made the earlier park attempt "slightly on".
+    // Parking every subframe also discharges the columns far more thoroughly than
+    // the old once-per-frame blanking tick, so that's gone (it only covered row 0).
+    indicators_pwm_disable();
+
+    // Main rows scan only when the main effect is on. The UL row always scans so
+    // the left-side status indicator stays visible regardless of UL effect.
+    bool lit = false;
     if (led_row < LED_ROWS) {
         if (user_settings.led_effect < FX_OFF) {
-            led_set_columns();
-            led_enable_sink();
+            lit = led_set_columns(); // load 16 duties while parked
         }
     } else {
-        led_set_columns();
-        led_enable_sink();
+        lit = led_set_columns();
+    }
+
+    // Only raise the sink and re-arm the PWM when this subframe has something to
+    // show. An all-dark subframe (e.g. brightness at 0) stays parked, so the
+    // module-enable transient can't leak a faint glow. Mirrors stock skipping
+    // its led_pwm_module_enable when the row is empty.
+    if (lit) {
+        led_enable_sink();       // raise this subframe's sink while parked
+        indicators_pwm_enable(); // re-enable last — the selected row lights now
     }
 
     bool frame_wrapped = false;
     if (++led_color >= 3) {
         led_color = 0;
         if (++led_row >= LED_SCAN_ROWS) {
-            led_row           = 0;
-            led_blank_pending = true; // discharge columns before row 0 next frame
-            frame_wrapped     = true;
+            led_row       = 0;
+            frame_wrapped = true;
         }
     }
 
@@ -443,71 +509,25 @@ static void led_regen_one()
         // if main is off, leave led_fb stale (the scanner skips that section)
     } else {
         // -------- UNDERGLOW cell --------
-        if (user_settings.ul_effect == FX_SOLID) {
-            led_ul_fb[0][regen_col] = user_settings.ul_brightness;
-            led_ul_fb[1][regen_col] = user_settings.ul_brightness;
-            led_ul_fb[2][regen_col] = user_settings.ul_brightness;
-        } else if (user_settings.ul_effect < FX_OFF) {
-            uint8_t h;
-            switch (user_settings.ul_effect) {
-                case FX_HORIZONTAL:
-                    h = (uint8_t)(col_hue[regen_col] + ul_phase);
-                    break;
-                case FX_VERTICAL:
-                    // UL is one strip, so vertical = whole strip cycling together
-                    h = ul_phase;
-                    break;
-                case FX_RADIAL:
-                default: {
-                    // distance from the strip centre, scaled so the wheel spans
-                    // from centre to either end
-                    uint8_t r = (regen_col < (LED_COLS / 2)) ? (uint8_t)((LED_COLS / 2 - 1) - regen_col) : (uint8_t)(regen_col - LED_COLS / 2);
-                    h         = (uint8_t)((uint8_t)(r * 36) + ul_phase);
-                    break;
-                }
-            }
-
-            if (h < 85) {
-                led_ul_fb[0][regen_col] = SCALE_UL_BRI(255 - h * 3);
-                led_ul_fb[1][regen_col] = 0;
-                led_ul_fb[2][regen_col] = SCALE_UL_BRI(h * 3);
-            } else if (h < 170) {
-                h                       = (uint8_t)(h - 85);
-                led_ul_fb[0][regen_col] = 0;
-                led_ul_fb[1][regen_col] = SCALE_UL_BRI(h * 3);
-                led_ul_fb[2][regen_col] = SCALE_UL_BRI(255 - h * 3);
-            } else {
-                h                       = (uint8_t)(h - 170);
-                led_ul_fb[0][regen_col] = SCALE_UL_BRI(h * 3);
-                led_ul_fb[1][regen_col] = SCALE_UL_BRI(255 - h * 3);
-                led_ul_fb[2][regen_col] = 0;
-            }
-        } else {
-            // UL off: clear so stale effect doesn't leak (the UL row always scans for status)
-            led_ul_fb[0][regen_col] = 0;
-            led_ul_fb[1][regen_col] = 0;
-            led_ul_fb[2][regen_col] = 0;
-        }
-
-        // Status indicator on the left-side UL LEDs. Overrides the UL effect so the
-        // mode is visible regardless of UL state.
-        //   caps lock      -> grayish green (highest priority)
-        //   wired (USB)    -> yellow
-        //   2.4G wireless  -> green
-        //   bluetooth      -> blue
+        // Resolve this UL cell's FINAL colour once, then write the three
+        // channels in one shot. Priority: left-half connection/caps status,
+        // then (right half) the battery indicator, else the underglow effect.
+        // Writing the cell twice — effect first, then a status/battery override
+        // — would let the scan ISR (which now blits from the main-loop-rendered
+        // framebuffer) sample the intermediate effect colour and flash it: a
+        // visible blink, most obvious on the solid-red battery LEDs.
+        uint8_t r, g, b;
         if (regen_col < UL_STATUS_COLS) {
+            // Left side: status, always overriding the effect.
+            //   caps lock -> grayish green; wired (USB) -> yellow;
+            //   2.4G -> green; bluetooth -> blue (RF state modulates brightness).
             if (keyboard_state.led_state & (1 << 1)) {
-                led_ul_fb[0][regen_col] = SCALE_UL_BRI(50);
-                led_ul_fb[1][regen_col] = SCALE_UL_BRI(120);
-                led_ul_fb[2][regen_col] = SCALE_UL_BRI(50);
+                r = 50; g = 120; b = 50;
             } else if (CONN_MODE_SWITCH) {
-                led_ul_fb[0][regen_col] = SCALE_UL_BRI(255);
-                led_ul_fb[1][regen_col] = SCALE_UL_BRI(180);
-                led_ul_fb[2][regen_col] = 0;
-#ifdef RF_ENABLED
+                r = 255; g = 180; b = 0;
             } else {
-                // Pick base colour: 2.4G = green, BT = blue.
-                uint8_t r = 0, g = 0, b = 0;
+#ifdef RF_ENABLED
+                r = 0; g = 0; b = 0;
                 if (keyboard_state.rf_link == RF_MODE_2_4G) {
                     g = 255;
                 } else {
@@ -515,16 +535,14 @@ static void led_regen_one()
                 }
 
                 // Modulate brightness on RF connection state.
-                //   !paired              -> fast blink (~9 Hz, 50% duty)
-                //   paired, !connected   -> smooth breathing (~1.1 Hz)
-                //   paired,  connected   -> solid (status_scale = 255)
+                //   !paired            -> fast blink (~9 Hz, 50% duty)
+                //   paired, !connected -> smooth breathing (~1.1 Hz)
+                //   paired,  connected -> solid
                 uint8_t status_scale = 255;
                 if (!keyboard_state.paired) {
-                    // Toggle every 4 counts (~9 Hz @ 73 Hz sweep rate).
                     status_scale = (status_pulse_counter & 0x04) ? 255 : 0;
                 } else if (!keyboard_state.connected) {
-                    // 64-count cycle (~0.87 s, ~1.1 Hz) using full 32-entry LUT
-                    // with a triangular fold at p=31/32. Was 128-count / ~0.6 Hz.
+                    // 64-count cycle (~0.87 s) using the 32-entry LUT, folded.
                     uint8_t p   = status_pulse_counter & 0x3F;       // 0..63
                     uint8_t idx = (p & 0x20) ? (uint8_t)(0x3F - p)
                                               : p;                    // 0..31, mirrored
@@ -533,28 +551,17 @@ static void led_regen_one()
                 r = (uint8_t)(((uint16_t)r * status_scale) >> 8);
                 g = (uint8_t)(((uint16_t)g * status_scale) >> 8);
                 b = (uint8_t)(((uint16_t)b * status_scale) >> 8);
-
-                led_ul_fb[0][regen_col] = SCALE_UL_BRI(r);
-                led_ul_fb[1][regen_col] = SCALE_UL_BRI(g);
-                led_ul_fb[2][regen_col] = SCALE_UL_BRI(b);
 #else
-            } else {
-                led_ul_fb[0][regen_col] = 0;
-                led_ul_fb[1][regen_col] = 0;
-                led_ul_fb[2][regen_col] = 0;
+                r = 0; g = 0; b = 0;
 #endif
             }
         }
 #ifdef RF_ENABLED
-        // Right-side UL battery indicator. Active either continuously (FN+]
-        // sets user_settings.battery_indicator_on) or for a brief flash on
-        // FN+[ (battery_flash_sweeps counts down per sweep). Colour mapping
-        // for battery_level (0..7, ~14% per step):
-        //   low_power flag OR level <= 1  -> red    (<20%)
-        //   level >= 6                    -> green  (>80%)
-        //   else                          -> yellow (20-80%)
+        // Right side: battery indicator, continuous (FN+] sets
+        // battery_indicator_on) or a momentary FN+[ flash (battery_flash_sweeps).
+        // Colour by battery_level (0..7, ~14%/step):
+        //   low_power or level <= 1 -> red; level >= 6 -> green; else yellow.
         else if (user_settings.battery_indicator_on || battery_flash_sweeps) {
-            uint8_t r, g, b;
             if (keyboard_state.low_power || keyboard_state.battery_level <= 1) {
                 r = 255; g = 0;   b = 0;
             } else if (keyboard_state.battery_level >= 6) {
@@ -562,29 +569,59 @@ static void led_regen_one()
             } else {
                 r = 255; g = 180; b = 0;
             }
-            led_ul_fb[0][regen_col] = SCALE_UL_BRI(r);
-            led_ul_fb[1][regen_col] = SCALE_UL_BRI(g);
-            led_ul_fb[2][regen_col] = SCALE_UL_BRI(b);
         }
 #endif
+        else {
+            // Right side, no battery overlay: the underglow effect itself.
+            if (user_settings.ul_effect == FX_SOLID) {
+                r = 255; g = 255; b = 255;
+            } else if (user_settings.ul_effect < FX_OFF) {
+                uint8_t h;
+                switch (user_settings.ul_effect) {
+                    case FX_HORIZONTAL:
+                        h = (uint8_t)(col_hue[regen_col] + ul_phase);
+                        break;
+                    case FX_VERTICAL:
+                        // UL is one strip, so vertical = whole strip cycling together
+                        h = ul_phase;
+                        break;
+                    case FX_RADIAL:
+                    default: {
+                        // distance from the strip centre, scaled so the wheel
+                        // spans from centre to either end
+                        uint8_t d = (regen_col < (LED_COLS / 2)) ? (uint8_t)((LED_COLS / 2 - 1) - regen_col) : (uint8_t)(regen_col - LED_COLS / 2);
+                        h         = (uint8_t)((uint8_t)(d * 36) + ul_phase);
+                        break;
+                    }
+                }
+                if (h < 85) {
+                    r = (uint8_t)(255 - h * 3); g = 0; b = (uint8_t)(h * 3);
+                } else if (h < 170) {
+                    h = (uint8_t)(h - 85);
+                    r = 0; g = (uint8_t)(h * 3); b = (uint8_t)(255 - h * 3);
+                } else {
+                    h = (uint8_t)(h - 170);
+                    r = (uint8_t)(h * 3); g = (uint8_t)(255 - h * 3); b = 0;
+                }
+            } else {
+                r = 0; g = 0; b = 0; // UL effect off
+            }
+        }
+
+        led_ul_fb[0][regen_col] = SCALE_UL_BRI(r);
+        led_ul_fb[1][regen_col] = SCALE_UL_BRI(g);
+        led_ul_fb[2][regen_col] = SCALE_UL_BRI(b);
     }
 
     // Cursor advance: main rows 0..LED_ROWS-1 then the UL row, then back to 0.
-    // Each region bumps its own phase when its sweep completes.
+    // This only walks the framebuffer regeneration cursor — the animation
+    // phase and status counters are advanced separately, on a fixed time base
+    // in the scan ISR (indicators_update_step), so the render can free-run in
+    // the main loop without the animation speeding up with it.
     if (++regen_col >= LED_COLS) {
         regen_col = 0;
-        regen_row++;
-        if (regen_row == LED_UL_ROW) {
-            // just finished the main sweep
-            led_phase = (uint8_t)(led_phase + user_settings.led_speed);
-        } else if (regen_row >= LED_SCAN_ROWS) {
-            // just finished the UL sweep
-            ul_phase  = (uint8_t)(ul_phase + user_settings.ul_speed);
+        if (++regen_row >= LED_SCAN_ROWS) {
             regen_row = 0;
-            if (battery_flash_sweeps) {
-                battery_flash_sweeps--;
-            }
-            status_pulse_counter++;
         }
     }
 }
@@ -643,27 +680,33 @@ static void led_enable_sink()
     }
 }
 
-static void led_set_columns()
+// Load this subframe's 16 column duties from the framebuffer. Returns true if
+// any column is non-zero, i.e. this row-colour has something to light — the
+// caller skips the sink + PWM re-enable when it returns false, so an all-dark
+// subframe stays parked (no module-enable transient → no zero-brightness glow).
+static bool led_set_columns()
 {
     // underglow uses its own framebuffer; key rows use the main one
     __xdata uint8_t *fb = (led_row == LED_UL_ROW) ? led_ul_fb[led_color] : led_fb[led_row][led_color];
 
-    SET_PWM_DUTY_2(LED_PWM_C0, LED_DUTY(fb[0]));
-    SET_PWM_DUTY_2(LED_PWM_C1, LED_DUTY(fb[1]));
-    SET_PWM_DUTY_2(LED_PWM_C2, LED_DUTY(fb[2]));
-    SET_PWM_DUTY_2(LED_PWM_C3, LED_DUTY(fb[3]));
-    SET_PWM_DUTY_2(LED_PWM_C4, LED_DUTY(fb[4]));
-    SET_PWM_DUTY_2(LED_PWM_C5, LED_DUTY(fb[5]));
-    SET_PWM_DUTY_2(LED_PWM_C6, LED_DUTY(fb[6]));
-    SET_PWM_DUTY_2(LED_PWM_C7, LED_DUTY(fb[7]));
-    SET_PWM_DUTY_2(LED_PWM_C8, LED_DUTY(fb[8]));
-    SET_PWM_DUTY_2(LED_PWM_C9, LED_DUTY(fb[9]));
-    SET_PWM_DUTY_2(LED_PWM_C10, LED_DUTY(fb[10]));
-    SET_PWM_DUTY_2(LED_PWM_C11, LED_DUTY(fb[11]));
-    SET_PWM_DUTY_2(LED_PWM_C12, LED_DUTY(fb[12]));
-    SET_PWM_DUTY_2(LED_PWM_C13, LED_DUTY(fb[13]));
-    SET_PWM_DUTY_2(LED_PWM_C14, LED_DUTY(fb[14]));
-    SET_PWM_DUTY_2(LED_PWM_C15, LED_DUTY(fb[15]));
+    uint8_t any = 0;
+    SET_PWM_DUTY_2(LED_PWM_C0, LED_DUTY(fb[0]));   any = (uint8_t)(any | fb[0]);
+    SET_PWM_DUTY_2(LED_PWM_C1, LED_DUTY(fb[1]));   any = (uint8_t)(any | fb[1]);
+    SET_PWM_DUTY_2(LED_PWM_C2, LED_DUTY(fb[2]));   any = (uint8_t)(any | fb[2]);
+    SET_PWM_DUTY_2(LED_PWM_C3, LED_DUTY(fb[3]));   any = (uint8_t)(any | fb[3]);
+    SET_PWM_DUTY_2(LED_PWM_C4, LED_DUTY(fb[4]));   any = (uint8_t)(any | fb[4]);
+    SET_PWM_DUTY_2(LED_PWM_C5, LED_DUTY(fb[5]));   any = (uint8_t)(any | fb[5]);
+    SET_PWM_DUTY_2(LED_PWM_C6, LED_DUTY(fb[6]));   any = (uint8_t)(any | fb[6]);
+    SET_PWM_DUTY_2(LED_PWM_C7, LED_DUTY(fb[7]));   any = (uint8_t)(any | fb[7]);
+    SET_PWM_DUTY_2(LED_PWM_C8, LED_DUTY(fb[8]));   any = (uint8_t)(any | fb[8]);
+    SET_PWM_DUTY_2(LED_PWM_C9, LED_DUTY(fb[9]));   any = (uint8_t)(any | fb[9]);
+    SET_PWM_DUTY_2(LED_PWM_C10, LED_DUTY(fb[10])); any = (uint8_t)(any | fb[10]);
+    SET_PWM_DUTY_2(LED_PWM_C11, LED_DUTY(fb[11])); any = (uint8_t)(any | fb[11]);
+    SET_PWM_DUTY_2(LED_PWM_C12, LED_DUTY(fb[12])); any = (uint8_t)(any | fb[12]);
+    SET_PWM_DUTY_2(LED_PWM_C13, LED_DUTY(fb[13])); any = (uint8_t)(any | fb[13]);
+    SET_PWM_DUTY_2(LED_PWM_C14, LED_DUTY(fb[14])); any = (uint8_t)(any | fb[14]);
+    SET_PWM_DUTY_2(LED_PWM_C15, LED_DUTY(fb[15])); any = (uint8_t)(any | fb[15]);
+    return any != 0;
 }
 
 void indicators_pwm_enable()
@@ -709,51 +752,15 @@ void indicators_pwm_enable()
 
 void indicators_pwm_disable()
 {
-    // TODO: try abstracting individual banks away
-    PWM00CON = (uint8_t)(PWM_CLK_DIV);
-    PWM01CON = 0;
-    PWM02CON = 0;
-    PWM03CON = 0;
-    PWM04CON = 0;
-    PWM05CON = 0;
-
-    PWM10CON = (uint8_t)(PWM_CLK_DIV);
-    PWM11CON = 0;
-    PWM12CON = 0;
-    PWM13CON = 0;
-    PWM14CON = 0;
-    PWM15CON = 0;
-
-    PWM20CON = (uint8_t)(PWM_CLK_DIV);
-    // PWM24CON = 0;
-    PWM25CON = 0;
-
-    PWM40CON = (uint8_t)(PWM_CLK_DIV);
-    PWM41CON = 0;
-    PWM42CON = 0;
+    // Stock's led_pwm_disable_all, verbatim: every LED-column PWM channel CON = 2
+    // (EN=0, output parked at idle; PWM_CLK_DIV == 2 leaves the clock-div bits).
+    // Used both for the matrix-scan hand-off (columns revert to GPIO) and the
+    // per-subframe park in indicators_update_step. Parking *all* channels — not
+    // just the bank masters — is what lets the per-subframe re-enable come back
+    // glitch-free (the slaves were left at 0 before, which glowed on re-arm).
+    PWM00CON = 2; PWM01CON = 2; PWM02CON = 2; PWM03CON = 2; PWM04CON = 2; PWM05CON = 2;
+    PWM10CON = 2; PWM11CON = 2; PWM12CON = 2; PWM13CON = 2; PWM14CON = 2; PWM15CON = 2;
+    PWM20CON = 2; PWM24CON = 2; PWM25CON = 2;
+    PWM40CON = 2; PWM41CON = 2; PWM42CON = 2;
 }
 
-// Drive every LED column to zero duty (fully off) without touching any row
-// sink. Used for the once-per-frame blanking tick: the columns sit at the
-// off level for a whole tick so their parasitic charge drains before the top
-// row is lit, killing the underglow-blue → row-0-red ghost. PWM stays
-// enabled, so unlike a park/disable this introduces no flicker.
-static void led_columns_off()
-{
-    SET_PWM_DUTY_2(LED_PWM_C0, 0);
-    SET_PWM_DUTY_2(LED_PWM_C1, 0);
-    SET_PWM_DUTY_2(LED_PWM_C2, 0);
-    SET_PWM_DUTY_2(LED_PWM_C3, 0);
-    SET_PWM_DUTY_2(LED_PWM_C4, 0);
-    SET_PWM_DUTY_2(LED_PWM_C5, 0);
-    SET_PWM_DUTY_2(LED_PWM_C6, 0);
-    SET_PWM_DUTY_2(LED_PWM_C7, 0);
-    SET_PWM_DUTY_2(LED_PWM_C8, 0);
-    SET_PWM_DUTY_2(LED_PWM_C9, 0);
-    SET_PWM_DUTY_2(LED_PWM_C10, 0);
-    SET_PWM_DUTY_2(LED_PWM_C11, 0);
-    SET_PWM_DUTY_2(LED_PWM_C12, 0);
-    SET_PWM_DUTY_2(LED_PWM_C13, 0);
-    SET_PWM_DUTY_2(LED_PWM_C14, 0);
-    SET_PWM_DUTY_2(LED_PWM_C15, 0);
-}

@@ -52,3 +52,9 @@ void settings_mark_dirty(void);
 // task calls coalesce into one flash write, which is what makes brightness-
 // key auto-repeat / quick chord sequences not produce per-press flicker.
 void settings_task(void);
+
+#if DEBUG == 1
+// Print the current user_settings to the debug console. Called on load and
+// whenever settings_task() flushes a change.
+void settings_dump(void);
+#endif

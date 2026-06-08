@@ -3,7 +3,7 @@
 #if DEBUG == 1
 
 #    include "sh68f90a.h" // SP
-#    include "console.h"  // dprint_str / dprint_hex / dprint_nl
+#    include "debug.h"    // dprintf
 #    include <stdint.h>
 
 #    define STACK_SENTINEL 0xAA
@@ -53,9 +53,7 @@ void stack_task(void)
     uint8_t peak = stack_peak();
     if (peak > reported) {
         reported = peak;
-        dprint_str("SPpk ");
-        dprint_hex(peak);
-        dprint_nl();
+        dprintf("SPpk %02x\r\n", peak);
     }
 }
 

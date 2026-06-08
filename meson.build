@@ -51,7 +51,9 @@ src_smk = [
 src_user = [
     'src/user/user_init.c',
     'src/user/layout_process_record.c',
+    'src/user/indicators_init.c',
     'src/user/indicators_start.c',
+    'src/user/indicators_render.c',
     'src/user/indicators_pre_update.c',
     'src/user/indicators_update_step.c',
     'src/user/indicators_post_update.c',
@@ -154,6 +156,16 @@ host_cc = find_program('cc', 'gcc', required : true)
 gen_led_geometry = join_paths(meson.current_build_dir(), 'led_geometry_gen')
 run_command(host_cc, '-O2', '-o', gen_led_geometry, join_paths(meson.current_source_dir(), 'utils/led_geometry_gen.c'), check : true)
 
+# Host-side debug tool: prints SMK's HID console output (report id 7) from
+# DEBUG builds. Built with the build-machine compiler, independent of the
+# sdcc firmware cross-build above.
+executable(
+    'smk-console',
+    'tools/smk-console.c',
+    native : true,
+    install : false,
+)
+
 dir_base = meson.current_source_dir()
 
 cc_incs = []
@@ -194,6 +206,10 @@ foreach part : parts
             '-DWATCHDOG_ENABLE=@0@'.format(options['watchdog_enable']),
             '-DUSB_VID=@0@'.format(options['vendor_id']),
             '-DUSB_PID=@0@'.format(options['product_id']),
+            # build-time identity, as ready-to-use string literals (names have
+            # hyphens, so quote rather than rely on token stringizing)
+            '-DKEYBOARD_NAME="@0@"'.format(keyboard),
+            '-DLAYOUT_NAME="@0@"'.format(layout),
         ]
 
         wireless = options.get('wireless', '')

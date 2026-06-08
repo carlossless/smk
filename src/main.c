@@ -38,6 +38,11 @@ void init()
     keyboard_init();
     usb_init();
 
+    // Zero the LED framebuffers before EA=1 starts the Timer-2 scan ISR — cold
+    // (USB plug-in) boots don't guarantee cleared xdata, and the scan would
+    // otherwise stream that garbage to the LEDs until the first render.
+    indicators_init();
+
     // Timer 2 drives the matrix scan + LED PWM animation in a single
     // alternating ISR (1 matrix scan : 21 LED ticks), mirroring stock fw.
     // INT4 is not used — stock only uses it for sleep wake, which we
@@ -59,10 +64,9 @@ void main()
     stack_paint();
 #endif
 
-    dprint_str("SMK v" TOSTRING(SMK_VERSION) "\r\n");
-    dprint_str("DEVICE vId:" TOSTRING(USB_VID) " pId:" TOSTRING(USB_PID) "\n\r");
-
-    delay_ms(1000);
+    dprintf("SMK v" TOSTRING(SMK_VERSION) "\r\n");
+    dprintf("KB " KEYBOARD_NAME " / " LAYOUT_NAME "\r\n");
+    dprintf("DEVICE vId:" TOSTRING(USB_VID) " pId:" TOSTRING(USB_PID) "\n\r");
 
     kb_init();
 
@@ -78,6 +82,34 @@ void main()
         indicators_apply_defaults();
     }
     indicators_validate_settings();
+#if DEBUG == 1
+    settings_dump(); // report the settings the keyboard came up with
+#endif
+
+    // Hold the backlight dark until USB has finished enumerating. The boot blip
+    // is the LED scan being starved by enumeration control-transfer traffic while
+    // the panel is lit, over-brightening whatever row is mid-scan. The framebuffer
+    // was zeroed in init() and nothing renders until indicators_start(), so the
+    // scan runs dark here; delay_ms is a busy-wait (interrupts stay on) so the
+    // scan and USB ISRs keep running.
+    //
+    //   - USB present: usb_enum_seen latches on the first SETUP; we then wait for
+    //     usb_enum_active_ticks to hit 0 (no SETUP for ~500 ms = enumeration and
+    //     the HID-driver attach are done), and light up right after.
+    //   - Battery / USB-power-only: no SETUP ever, so light up after a short
+    //     detect window.
+    //   - Hard cap so a pathological host can't keep the backlight off forever.
+    for (uint16_t i = 0; i < 4000; i++) {
+        CLR_WDT();
+        if (usb_enum_seen) {
+            if (usb_enum_active_ticks == 0) {
+                break; // enumerated and gone quiet
+            }
+        } else if (i >= 500) {
+            break; // no enumeration seen — not on a USB host
+        }
+        delay_ms(1);
+    }
 
     // Enable PWM and interrupt (driving matrix scan).
     indicators_start();
@@ -97,14 +129,19 @@ void main()
     keyboard_state.paired    = 1;
 #endif
 
-    delay_ms(1000);
-
     while (1) {
         CLR_WDT();
 
         kb_update_switches();
         kb_update();
         matrix_task();
+
+        // Foreground LED render: regenerate the effect framebuffer here, out of
+        // the Timer-2 scan ISR (which only streams the framebuffer to the PWM).
+        // The animation phase is clocked in the ISR, so this free-runs at the
+        // loop rate without affecting animation speed. No-op on LED-less boards.
+        //
+        indicators_render();
 
         // Stock-style deferred settings save: handlers (brightness, effect,
         // rf_link, …) just flip a dirty bit; the flush happens here, once

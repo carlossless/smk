@@ -6,6 +6,7 @@
 #include "debug.h"
 #include "utils.h"
 #include "usbhidreport.h"
+#include "console.h"
 #include "keyboard.h"
 #include "delay.h"
 #include <stdint.h>
@@ -34,6 +35,7 @@ typedef enum {
     USB_EP0_STATE_RECV_STATUS = 0x02,
     USB_EP0_STATE_LED         = 0x04,
     USB_EP0_STATE_ISP         = 0x05,
+    USB_EP0_STATE_CONSOLE     = 0x06,
 } usb_ep0_state_t;
 
 const uint8_t hid_report_desc_keyboard[] = {
@@ -350,6 +352,15 @@ __bit                      usb_remote_wakeup;
 uint8_t __xdata            idle_time;
 usb_ep0_state_t __xdata    usb_ep0_state;
 
+// See usb.h: reloaded on each SETUP, decremented on each SOF; main() keeps the
+// backlight dark until enumeration has been seen and then gone quiet, so the
+// boot scan-blip lands on a dark frame. ~500 ms quiet window after the last
+// control transfer. usb_enum_seen latches the first SETUP so the gate isn't
+// defeated by the boot race (quiet before enumeration has even started).
+__xdata uint16_t usb_enum_active_ticks;
+__xdata bool     usb_enum_seen;
+#define USB_ENUM_ACTIVE_RELOAD 500
+
 void usb_init()
 {
     usb_device_state     = USB_DEVICE_STATE_DEFAULT;
@@ -363,6 +374,12 @@ void usb_init()
 
     ep0_xfer_bytes_left = 0;
     ep0_xfer_src        = 0;
+
+    // Reset the boot LED gate state here (runs at boot and on every bus reset).
+    // Cold-boot xdata isn't guaranteed zero, so explicit init keeps a garbage
+    // value from making main() think enumeration already finished.
+    usb_enum_active_ticks = 0;
+    usb_enum_seen         = false;
 
     USBADDR = 0;
     USBIE1  = (_OVERIE | _SETUPIE | _SOFIA | _RESMIE | _SUSPIE | _PBRSTIE);
@@ -609,6 +626,11 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
     if (temp_usbif1 != 0x00) {
         if (temp_usbif1 & _SOFIF) {
             USBIF1 &= ~_SOFIF;
+            // 1 ms bus heartbeat — use it as the clock that ages out the
+            // "USB still busy" window set by each SETUP (see usb_enum_active_ticks).
+            if (usb_enum_active_ticks) {
+                usb_enum_active_ticks--;
+            }
         } else {
             // why is this being cleared and why in this fashion?
             USBIF1 &= ~(_SETUPIF);      // Clear SETUPIF
@@ -619,6 +641,10 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
                 usb_init();
             } else if (temp_usbif1 & _SETUPIF) {
                 USBIF1 &= ~_SETUPIF;
+                // Host is running control transfers — keep the "USB busy" window
+                // alive so the backlight stays dark through enumeration + HID attach.
+                usb_enum_active_ticks = USB_ENUM_ACTIVE_RELOAD;
+                usb_enum_seen         = true;
                 usb_setup_irq();
             } else if (temp_usbif1 & _RESMIF) { // RESMIF
                 USBIF1 &= ~_RESMIF;
@@ -930,14 +956,20 @@ static void usb_get_descriptor_handler(__xdata struct usb_req_setup *req)
     } else if (type == USB_DESC_CLASS_REPORT) {
         uint8_t iface_index = req->wIndex;
 
+        // Stream the report descriptor straight out of __code instead of
+        // memcpy-ing the whole thing into `scratch` first. That build copy ran
+        // inside the USB ISR; for the ~100+ byte `extra` descriptor it was long
+        // enough to starve the equal-priority Timer-2 LED scan while it held a
+        // row sink — a one-shot blip when the HID driver fetches the report
+        // descriptor (right after SET_CONFIGURATION, once the backlight is up).
+        // The EP0 streamer copies 8 bytes per IN-IRQ through a generic pointer,
+        // which reads __code fine (same conversion APPEND was already doing).
         if (iface_index == 0) {
+            addr   = (uint8_t *)hid_report_desc_keyboard;
             length = sizeof(hid_report_desc_keyboard);
-            APPEND(&hid_report_desc_keyboard, length);
-            addr = scratch;
         } else if (iface_index == 1) {
+            addr   = (uint8_t *)hid_report_desc_extra;
             length = sizeof(hid_report_desc_extra);
-            APPEND(&hid_report_desc_extra, length);
-            addr = scratch;
         } else {
             STALL_EP0();
             return;
@@ -1014,6 +1046,15 @@ static void usb_hid_set_report_handler(__xdata struct usb_req_setup *req)
                 usb_ep0_state = USB_EP0_STATE_ISP;
                 SET_EP0_OUT_RDY;
             }
+#if DEBUG == 1
+            // Host console tool's attach handshake: SET_REPORT(Feature, CONSOLE)
+            // carries a (don't-care) payload so there is an OUT data stage to
+            // accept; usb_ep0_out_irq() then flips the console "attached" flag.
+            else if ((req->wValue & 0xff) == REPORT_ID_CONSOLE) {
+                usb_ep0_state = USB_EP0_STATE_CONSOLE;
+                SET_EP0_OUT_RDY;
+            }
+#endif
 
             break;
 
@@ -1079,6 +1120,15 @@ void usb_ep0_out_irq()
         if (EP0_OUT_BUF[0] == 0x05 && EP0_OUT_BUF[1] == 0x75) {
             isp_jump();
         }
+#if DEBUG == 1
+    } else if (usb_ep0_state == USB_EP0_STATE_CONSOLE) {
+        usb_ep0_state = 0;
+
+        console_notify_attached(); // host tool is listening; start draining
+
+        CLEAR_EP0_CNT;
+        SET_EP0_IN_RDY;
+#endif
     } else {
         usb_ep0_state = 0;
         CLEAR_EP0_CNT;

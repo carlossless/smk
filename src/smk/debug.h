@@ -1,15 +1,14 @@
 #pragma once
 
-#include <stdio.h>
+#include "console.h"
 
-// Tried routing through `printf_small` to save DSEG. Net loss: printf_small
-// is marked _REENTRANT and parks its locals in ISEG instead, ballooning
-// ISEG from 6 to 44 bytes and pushing SSEG (stack) *down* by ~14 bytes.
-// `printf_large` is paradoxically better for our memory model because its
-// non-reentrant statics overlay into DSEG/OSEG (which SDCC then folds via
-// the call-graph), and ISEG stays small. Sticking with default printf.
+// Routes to our own tiny console_printf(), NOT SDCC's printf. Neither
+// printf_large (link-fails: OSEG overflow in internal RAM) nor printf_small
+// (_REENTRANT, balloons ISEG 6->44 bytes) fits this firmware's internal-RAM
+// ceiling; see project memory. console_printf keeps its scratch in __xdata.
+// Subset only: %% %c %s %d %u %x %X with an optional '0' flag + 1 width digit.
 
-#define dprintf(...)                    \
-    do {                                \
-        if (DEBUG) printf(__VA_ARGS__); \
+#define dprintf(...)                            \
+    do {                                        \
+        if (DEBUG) console_printf(__VA_ARGS__); \
     } while (0)
