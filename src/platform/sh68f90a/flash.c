@@ -2,6 +2,15 @@
 #include "sh68f90a.h"
 #include <stdbool.h>
 
+// Board LED hooks (declared in src/user/indicators.h): indicators_pre_update()
+// drops every RGB row sink; indicators_pwm_disable() parks every LED column PWM
+// channel. Forward-declared rather than #included so this platform file stays
+// decoupled from the LED layer; the symbols always resolve — to the board's
+// implementation, or the no-op defaults on boards without an LED scan. See
+// ssp_run() for why the erase path needs them.
+void indicators_pre_update(void);
+void indicators_pwm_disable(void);
+
 // On-chip flash is 128 x 512-byte sectors (64K). The bootloader occupies the top 4K
 // (0xF000-0xFFFF), and the flasher stores the app's reset-vector redirect at 0xEFFC
 // (sector 119) which the bootloader uses to enter the app - so sector 119 must NEVER
@@ -47,6 +56,24 @@ static void ssp_run(uint16_t addr, uint8_t op, uint8_t data)
         return;
     }
     __critical {
+        // A sector erase auto-IDLEs the CPU for ~5 ms with interrupts off, so the
+        // Timer2 LED-scan ISR is frozen mid-subframe with a row sink raised and the
+        // columns driving — that row gets DC drive for the whole erase, a bright
+        // blip on whatever row was active. Blank here, *inside* the EA=0 window so
+        // the scan ISR can't re-arm anything between the blank and the stall.
+        //
+        // We drop the row sinks AND park the columns. Stock parks columns only
+        // (led_pwm_disable_all() in rf_config_load_and_reset) and that suffices for
+        // it — its parked column pins float/pull low. On smk a parked column still
+        // sources enough to light a raised sink, so column-park alone left a blip;
+        // dropping the sinks removes the current path entirely (no enabled sink ->
+        // no row conducts, whatever the columns do). Erase only: program ops are
+        // tens of µs, far too short to see. No un-blank needed — the scan ISR
+        // rebuilds sinks + columns from the duty registers on its next subframe.
+        if (op == SSP_ERASE) {
+            indicators_pre_update();  // drop every row sink
+            indicators_pwm_disable(); // park every column PWM
+        }
         XPAGE     = (uint8_t)(addr >> 8);
         IB_OFFSET = (uint8_t)(addr & 0xFFu);
         IB_DATA   = data;
