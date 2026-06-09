@@ -25,6 +25,36 @@ void user_matrix_cols_high_all(void)
     P5 |= KB_C_P5_MASK;
 }
 
+// Column direction control. PxCR bit set = output, clear = input (high-Z);
+// the column pins carry no pull-up (see user_init.c), so input is a true
+// float. Mirrors stock: drive only during the sweep, release to high-Z at
+// rest so a parked PWM column can't source. (PxCR shares bit positions with
+// the Px data masks.)
+void user_matrix_cols_output(void)
+{
+    P1CR |= KB_C_P1_MASK;
+    P2CR |= KB_C_P2_MASK;
+    P3CR |= KB_C_P3_MASK;
+    P5CR |= KB_C_P5_MASK;
+}
+
+void user_matrix_cols_highz(void)
+{
+    // Clear pull-control (PxPCR) then direction (PxCR) per port, matching stock's
+    // matrix-end release (P1PCR&=0xCF;P1CR&=0xCF; P2PCR&=0xC0;P2CR&=0xC0; ...).
+    // The columns carry no pull-up (user_init.c doesn't set their PxPCR), so the
+    // PCR clears are a no-op in practice — kept for stock parity and to guarantee
+    // a true float even if a pull is ever enabled on these pins.
+    P1PCR &= (uint8_t)~KB_C_P1_MASK;
+    P1CR  &= (uint8_t)~KB_C_P1_MASK;
+    P2PCR &= (uint8_t)~KB_C_P2_MASK;
+    P2CR  &= (uint8_t)~KB_C_P2_MASK;
+    P3PCR &= (uint8_t)~KB_C_P3_MASK;
+    P3CR  &= (uint8_t)~KB_C_P3_MASK;
+    P5PCR &= (uint8_t)~KB_C_P5_MASK;
+    P5CR  &= (uint8_t)~KB_C_P5_MASK;
+}
+
 void user_matrix_col_low(uint8_t col)
 {
     switch (col) {
