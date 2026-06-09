@@ -16,6 +16,15 @@
 // are 21 LED substeps per frame, and one of every 22 ticks is matrix).
 void timer2_init(void);
 
+// Pause / resume the scan ISR (masks the Timer 2 interrupt; the timer keeps
+// counting). Used to keep the LED columns quiescent across a multi-millisecond
+// blocking flash write: with the scan running it would re-arm the column PWM
+// between flash ops, undoing a pre-save park before the erase's interrupts-off
+// stall (-> a bright "blip" on whatever row was active). The matrix scan also
+// pauses, but only for the ~5 ms save — keys are re-sampled on resume.
+void timer2_scan_pause(void);
+void timer2_scan_resume(void);
+
 // Prototype must live in a header that main.c includes, otherwise SDCC
 // won't emit the vector slot.
 void timer2_interrupt_handler(void) __interrupt(_INT_TIMER2);

@@ -122,12 +122,12 @@ void process_key_state(uint8_t row, uint8_t col, bool pressed)
 
 // Called from the Timer 2 ISR. Disables the LED column PWM (so the col
 // pins are GPIO-driven, not PWM-driven), turns off every LED row sink
-// so leakage current through the matrix doesn't bias the row reads,
-// drives the cols as outputs and HIGH, then for each of the 16 cols drops
-// it LOW, samples rows twice ~10 µs apart, and only commits the result if
-// both samples agree. Releases the cols back to INPUT/high-Z at the end and
+// so leakage current through the matrix doesn't bias the row reads, runs
+// the board's per-sweep pre-hook, drives the cols HIGH, then for each of the
+// 16 cols drops it LOW, samples rows twice ~10 µs apart, and only commits the
+// result if both samples agree. Runs the board's per-sweep post-hook and
 // re-enables PWM. Mirrors the matrix-phase branch of stock fw's
-// isr_timer2_pwm_anim, including its column DIRECTION toggle.
+// isr_timer2_pwm_anim.
 void matrix_scan_full(void)
 {
     indicators_pwm_disable();
@@ -138,14 +138,15 @@ void matrix_scan_full(void)
     // the resulting current biases adjacent row traces.
     user_matrix_sinks_off();
 
-    // Drive the columns as outputs for the sweep. They idle as inputs
-    // (high-Z) between sweeps — see the cols_highz() release below — so
-    // cols_output() must precede cols_high_all() or the HIGH wouldn't take.
-    user_matrix_cols_output();
-    user_matrix_cols_high_all();
+    // Per-sweep board hook: prepare the column pins before we drive them — e.g.
+    // nuphy-air60 switches its muxed columns from their high-Z rest state to
+    // output, so it must run before cols_deselect_all() takes effect. No-op on
+    // boards whose columns are permanently outputs.
+    user_matrix_scan_pre();
+    user_matrix_cols_deselect_all();
 
     for (uint8_t col = 0; col < MATRIX_COLS; col++) {
-        user_matrix_col_low(col);
+        user_matrix_col_select(col);
 
         // Settle. Row pin RC (pull-up + trace cap) is ~1 µs; stock's
         // PCA-timer + delay_us(0,1) totals ~3-4 µs. We use 10 µs as a
@@ -160,17 +161,15 @@ void matrix_scan_full(void)
             matrix[col] = ~sample1;
         }
 
-        user_matrix_col_high(col);
+        user_matrix_col_deselect(col);
     }
 
-    // Release the columns to INPUT/high-Z (stock does the same at the end of
-    // its matrix subframe). This is what makes a parked PWM column non-
-    // sourcing: when the LED PWM is later disabled — per-subframe, or for the
-    // ~5 ms flash-erase stall — the pins float instead of holding a row
-    // bright. The PWM peripheral still drives them while enabled. This is why
-    // the flash-erase blank (flash.c) only needs to park the PWM, with no
-    // row-sink drop, exactly like stock's led_pwm_disable_all.
-    user_matrix_cols_highz();
+    // Per-sweep board hook: restore the column pins after the sweep — e.g.
+    // nuphy-air60 releases its columns to input/high-Z so that when the LED PWM
+    // is later parked (per-subframe, or for the ~5 ms settings-save) the pins
+    // float instead of holding a row bright. No-op on boards that keep their
+    // columns driven.
+    user_matrix_scan_post();
 
     indicators_pwm_enable();
 

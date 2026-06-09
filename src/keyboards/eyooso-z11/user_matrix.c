@@ -5,14 +5,14 @@
 #define KB_C_P2_MASK (uint8_t)(KB_C2_P2_0 | KB_C3_P2_1 | KB_C4_P2_2 | KB_C5_P2_3 | KB_C6_P2_4 | KB_C7_P2_5)
 #define KB_C_P3_MASK (uint8_t)(KB_C8_P3_0 | KB_C9_P3_1 | KB_C10_P3_2 | KB_C11_P3_3 | KB_C12_P3_4 | KB_C13_P3_5)
 
-void user_matrix_cols_high_all(void)
+void user_matrix_cols_deselect_all(void)
 {
     P1 |= KB_C_P1_MASK;
     P2 |= KB_C_P2_MASK;
     P3 |= KB_C_P3_MASK;
 }
 
-void user_matrix_col_low(uint8_t col)
+void user_matrix_col_select(uint8_t col)
 {
     switch (col) {
         case 0:  KB_C0  = 0; break;
@@ -32,7 +32,7 @@ void user_matrix_col_low(uint8_t col)
     }
 }
 
-void user_matrix_col_high(uint8_t col)
+void user_matrix_col_deselect(uint8_t col)
 {
     switch (col) {
         case 0:  KB_C0  = 1; break;

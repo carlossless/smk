@@ -62,6 +62,10 @@ src_user = [
     'src/user/indicators_pwm_enable.c',
     'src/user/indicators_pwm_disable.c',
     'src/user/user_matrix_sinks_off.c',
+    'src/user/user_matrix_scan_pre.c',
+    'src/user/user_matrix_scan_post.c',
+    'src/user/settings_save_pre.c',
+    'src/user/settings_save_post.c',
 
     'src/kb/kb_init.c',
     'src/kb/kb_process_record.c',

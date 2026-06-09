@@ -71,18 +71,24 @@ const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______, _______, _______,                            _______,                   _______, _______, RGB_FX_PREV, RGB_BRI_DN, RGB_FX_NEXT
     ),
 
-    /* Keymap _FL: (Base Layer) Function Layer
+    /* Keymap _WIN_FL / _MAC_FL: Function Layer (hold Fn)
      * ,------------------------------------------------------------.
      * | ~ | F1| F2| F3| F4| F5| F6| F7| F8| F9|F10|F11|F12|    Del |
      * |------------------------------------------------------------|
-     * |     |BT1|BT2|BT3|24G|   |   |   |   |   |   |   |   |      |
+     * |Rst  |BT1|BT2|BT3|24G|   |   |   |   |   |   |BFl|BOn|   BOf|
      * |------------------------------------------------------------|
      * |       |   |   |   |   |   |   |   |   |   |   |   |        |
      * |------------------------------------------------------------|
-     * |        |   |   |   |   |   |   |   |   |   |   |   |   |   |
+     * |        |   |   |   |FRs|   |   |   |Sp-|Sp+| UL|   |Br+|   |
      * |------------------------------------------------------------|
-     * |    |    |    |                         |   |   |   |   |   |
+     * |    |    |    |                         |   |   |Fx-|Br-|Fx+|
      * `------------------------------------------------------------'
+     * Rst = reset (hold)   BT1/BT2/BT3 = Bluetooth slots   24G = 2.4 GHz
+     * BFl/BOn/BOf = battery indicator flash / on / off     FRs = factory reset
+     * Sp-/Sp+ = animation speed   UL = underglow mode   Br-/Br+ = brightness
+     * Fx-/Fx+ = effect prev / next
+     * (Win F-row shown; on Mac the top row is brightness / Mission Control /
+     *  Spotlight / media-transport / volume instead of F1-F12.)
      */
     [_WIN_FL] = LAYOUT_60(
         KC_GRV,  KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,   KC_F7,   KC_F8,   KC_F9,   KC_F10,  KC_F11,  KC_F12,  KC_DEL,

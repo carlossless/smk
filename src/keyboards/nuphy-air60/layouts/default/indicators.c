@@ -2,6 +2,7 @@
 #include "kbdef.h"
 #include "pwm.h"
 #include "settings.h"
+#include "timer2.h"
 #include "keyboard.h"
 #include <string.h>
 #ifdef RF_ENABLED
@@ -748,6 +749,24 @@ void indicators_pwm_enable()
     PWM40CON = (uint8_t)(PWM_MODE_ENABLE_BIT | PWM_SS_BIT | PWM_CLK_DIV);
     PWM41CON = PWM_SS_BIT;
     PWM42CON = PWM_SS_BIT;
+}
+
+// Settings-save quiesce hooks (declared in settings.h). The ~5 ms sector erase
+// stalls the CPU with interrupts off; the scan ISR would re-arm the column PWM
+// between flash ops, so we pause the scan and park the columns for the whole
+// write. With the PWM parked the muxed column pins revert to their input/high-Z
+// GPIO rest state (matrix.c releases them after every sweep) and float — no
+// source — so the frozen scan can't hold a row bright. Restore on the way out.
+void settings_save_pre(void)
+{
+    timer2_scan_pause();
+    indicators_pwm_disable();
+}
+
+void settings_save_post(void)
+{
+    indicators_pwm_enable();
+    timer2_scan_resume();
 }
 
 void indicators_pwm_disable()

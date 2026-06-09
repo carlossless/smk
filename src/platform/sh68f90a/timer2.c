@@ -39,6 +39,16 @@ void timer2_init(void)
     TR2 = 1;
 }
 
+void timer2_scan_pause(void)
+{
+    ET2 = 0;
+}
+
+void timer2_scan_resume(void)
+{
+    ET2 = 1;
+}
+
 // Phase: 0 = next fire runs a full matrix scan, 1 = next fire runs an LED
 // substep. The LED substep counter (anim_tick_counter) is owned by the
 // indicators module; we just call its step function and let it advance.

@@ -30,7 +30,11 @@ bool settings_load(void)
 
 void settings_save(void)
 {
+    // Quiesce the board's LED drivers around the write (no-op on LED-less
+    // boards) so the ~5 ms erase stall can't freeze a lit row bright.
+    settings_save_pre();
     flash_settings_save((const __xdata uint8_t *)&user_settings, (uint8_t)sizeof(user_settings));
+    settings_save_post();
     // Anyone calling settings_save() directly has just flushed, so the
     // dirty flag is no longer meaningful — clear it so the next
     // settings_task() doesn't re-do the same write.
@@ -61,5 +65,7 @@ void settings_task(void)
 #if DEBUG == 1
     settings_dump(); // report the coalesced change
 #endif
+    settings_save_pre();
     flash_settings_save((const __xdata uint8_t *)&user_settings, (uint8_t)sizeof(user_settings));
+    settings_save_post();
 }

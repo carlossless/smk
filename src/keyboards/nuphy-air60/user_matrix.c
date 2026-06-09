@@ -17,7 +17,8 @@
 #define KB_C_P3_MASK (uint8_t)(KB_C8_P3_0 | KB_C7_P3_1 | KB_C6_P3_2 | KB_C5_P3_3 | KB_C4_P3_4 | KB_C3_P3_5)
 #define KB_C_P5_MASK (uint8_t)(KB_C0_P5_0 | KB_C1_P5_1 | KB_C2_P5_2)
 
-void user_matrix_cols_high_all(void)
+// Air60 columns are active-LOW: idle (deselected) = HIGH, selected = LOW.
+void user_matrix_cols_deselect_all(void)
 {
     P1 |= KB_C_P1_MASK;
     P2 |= KB_C_P2_MASK;
@@ -25,12 +26,12 @@ void user_matrix_cols_high_all(void)
     P5 |= KB_C_P5_MASK;
 }
 
-// Column direction control. PxCR bit set = output, clear = input (high-Z);
-// the column pins carry no pull-up (see user_init.c), so input is a true
-// float. Mirrors stock: drive only during the sweep, release to high-Z at
-// rest so a parked PWM column can't source. (PxCR shares bit positions with
-// the Px data masks.)
-void user_matrix_cols_output(void)
+// Per-sweep hooks (matrix.c). PxCR bit set = output, clear = input (high-Z);
+// the column pins carry no pull-up (see user_init.c), so input is a true float.
+// Mirrors stock: drive the columns only during the sweep (scan_pre) and release
+// them to high-Z at rest (scan_post) so a parked PWM column can't source. (PxCR
+// shares bit positions with the Px data masks.)
+void user_matrix_scan_pre(void)
 {
     P1CR |= KB_C_P1_MASK;
     P2CR |= KB_C_P2_MASK;
@@ -38,7 +39,7 @@ void user_matrix_cols_output(void)
     P5CR |= KB_C_P5_MASK;
 }
 
-void user_matrix_cols_highz(void)
+void user_matrix_scan_post(void)
 {
     // Clear pull-control (PxPCR) then direction (PxCR) per port, matching stock's
     // matrix-end release (P1PCR&=0xCF;P1CR&=0xCF; P2PCR&=0xC0;P2CR&=0xC0; ...).
@@ -55,7 +56,7 @@ void user_matrix_cols_highz(void)
     P5CR  &= (uint8_t)~KB_C_P5_MASK;
 }
 
-void user_matrix_col_low(uint8_t col)
+void user_matrix_col_select(uint8_t col) // active-low: drive LOW
 {
     switch (col) {
         case 0:  KB_C0  = 0; break;
@@ -77,7 +78,7 @@ void user_matrix_col_low(uint8_t col)
     }
 }
 
-void user_matrix_col_high(uint8_t col)
+void user_matrix_col_deselect(uint8_t col) // active-low: drive HIGH (idle)
 {
     switch (col) {
         case 0:  KB_C0  = 1; break;

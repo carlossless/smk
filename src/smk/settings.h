@@ -53,6 +53,16 @@ void settings_mark_dirty(void);
 // key auto-repeat / quick chord sequences not produce per-press flicker.
 void settings_task(void);
 
+// Board hooks fired immediately before / after a settings flash write
+// (settings_save / settings_task). A board with an LED scan overrides these to
+// quiesce its drivers for the duration: the ~5 ms sector erase stalls the CPU
+// with interrupts off, which would otherwise freeze a lit LED row bright (a
+// "blip"). The pre hook must keep the LEDs quiet across the whole write (e.g.
+// pause the scan + park the columns), since the scan ISR would otherwise re-arm
+// the PWM between flash ops. Default no-op (src/user/); real impl in the layout.
+void settings_save_pre(void);
+void settings_save_post(void);
+
 #if DEBUG == 1
 // Print the current user_settings to the debug console. Called on load and
 // whenever settings_task() flushes a change.

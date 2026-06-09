@@ -2,16 +2,6 @@
 #include "sh68f90a.h"
 #include <stdbool.h>
 
-// Board LED hooks (declared in src/user/indicators.h): indicators_pwm_disable()
-// parks every LED column PWM channel, indicators_pwm_enable() re-enables them.
-// They are smk's verbatim equivalents of stock's led_pwm_disable_all() /
-// led_pwm_module_enable() (identical PWM CON values). Forward-declared rather
-// than #included so this platform file stays decoupled from the LED layer; the
-// symbols always resolve — to the board's implementation, or the no-op defaults
-// on boards without an LED scan. See ssp_run() for why the erase path needs them.
-void indicators_pwm_disable(void);
-void indicators_pwm_enable(void);
-
 // On-chip flash is 128 x 512-byte sectors (64K). The bootloader occupies the top 4K
 // (0xF000-0xFFFF), and the flasher stores the app's reset-vector redirect at 0xEFFC
 // (sector 119) which the bootloader uses to enter the app - so sector 119 must NEVER
@@ -56,21 +46,11 @@ static void ssp_run(uint16_t addr, uint8_t op, uint8_t data)
     if (addr < CFG_ADDR || addr >= CFG_END) {
         return;
     }
+    // A sector erase auto-IDLEs the CPU for ~5 ms with interrupts off. Any LED
+    // blanking needed to hide that stall is handled one layer up, around the
+    // whole write (settings_save_pre/post), so this platform driver stays LED-
+    // agnostic.
     __critical {
-        // A sector erase auto-IDLEs the CPU for ~5 ms with interrupts off, freezing
-        // the Timer2 LED-scan ISR mid-subframe. The PWM keeps DRIVING the columns
-        // through that stall (the erase IDLE does NOT tristate the PWM outputs —
-        // verified on hardware), so a row that was lit gets held bright the whole
-        // erase. Wrap the erase exactly as stock does in rf_config_load_and_reset:
-        //   led_pwm_disable_all()  -> erase -> led_pwm_module_enable()
-        // all inside the EA=0 window. Parking the PWM lets the column pins revert to
-        // their input/high-Z GPIO rest state (matrix.c releases them after every
-        // sweep, as stock's matrix subframe does), so they float instead of sourcing
-        // — no blip, no row-sink touching. The re-enable restores the columns just
-        // like stock. Erase only: program ops are tens of µs, far too short to see.
-        if (op == SSP_ERASE) {
-            indicators_pwm_disable(); // stock led_pwm_disable_all(): park columns -> float high-Z
-        }
         XPAGE     = (uint8_t)(addr >> 8);
         IB_OFFSET = (uint8_t)(addr & 0xFFu);
         IB_DATA   = data;
@@ -89,9 +69,6 @@ static void ssp_run(uint16_t addr, uint8_t op, uint8_t data)
         __endasm;
         // clang-format on
         XPAGE = 0;
-        if (op == SSP_ERASE) {
-            indicators_pwm_enable(); // stock led_pwm_module_enable(): re-enable columns after erase
-        }
     }
 }
 
