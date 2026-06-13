@@ -360,10 +360,9 @@ void kb_update()
             }
         }
 
-        // The supervisor handles status polling + link reassertion at
-        // ~10 polls/s. It also detects a connection-lost edge and
-        // re-asserts the saved link to wake the BK3632 back into
-        // operational mode.
+        // The supervisor handles status polling at ~10 polls/s and, like
+        // stock, re-asserts the commanded link on every poll while the
+        // BK3632 reports a dead or mismatched link.
         rf_link_supervisor(&keyboard_state);
 
         // Send-pending retry. rf_send_report queues the 6KRO snapshot

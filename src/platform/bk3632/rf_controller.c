@@ -279,7 +279,7 @@ void rf_send_extra(__xdata report_extra_t *report)
     }
 }
 
-void rf_update_keyboard_state(keyboard_state_t *keyboard)
+bool rf_update_keyboard_state(keyboard_state_t *keyboard)
 {
     __xdata uint8_t status_bytes[2];
 
@@ -288,17 +288,25 @@ void rf_update_keyboard_state(keyboard_state_t *keyboard)
     // therefore keeps running through the send and only pauses for the
     // ~600 µs receive — invisible.
     //
-    // If the BK3632 was asleep / didn't ack (status_bytes[0] bit 7 not set,
-    // or rf_get_status returned false on bad magic / checksum), we just skip
-    // this poll. rf_get_status sends rf_wake_nudge on its way out so the next
-    // poll cycle starts with the BK3632 already nudged awake.
-    bool ok = rf_get_status(status_bytes);
-
-    if (!ok || !(status_bytes[0] & 0x80)) {
-        return; // no fresh status — leave keyboard_state untouched
+    // On bad magic / checksum we skip the poll; rf_get_status sends
+    // rf_wake_nudge on its way out so the next poll cycle starts with the
+    // BK3632 already nudged awake.
+    if (!rf_get_status(status_bytes)) {
+        return false; // no fresh status — leave keyboard_state untouched
     }
 
-    // status_bytes[0]: bits 0-2 = battery level (0..7), bit 7 = ack flag (already checked)
+    // status_bytes[0] bit 7 is the BK3632's "awake" marker (stock's XRAM
+    // 0x05bb). Stock (rf_read_bk3632_status_apply, CODE:9108) validates a
+    // frame on magic + checksum alone and still applies it when this bit is
+    // clear — the bit only triggers a CMD_0C wake-nudge. We used to discard
+    // such frames, which froze the displayed link state at whatever the last
+    // accepted poll said (e.g. paired=0 captured mid-reconnect after a power
+    // cycle) while the keyboard kept working.
+    if (!(status_bytes[0] & 0x80)) {
+        rf_wake_nudge();
+    }
+
+    // status_bytes[0]: bits 0-2 = battery level (0..7), bit 7 = awake marker
     keyboard->battery_level = status_bytes[0] & 0x07;
 
     // status_bytes[1]: bits 0-2 = num/caps/scroll LEDs, bit 3 = connected,
@@ -313,42 +321,44 @@ void rf_update_keyboard_state(keyboard_state_t *keyboard)
     if (old_rf_link != keyboard->rf_link) {
         dprintf("rf link changed %02x\r\n", keyboard->rf_link);
     }
+
+    return true;
 }
 
-// Periodic supervisor — mirrors stock's rf_link_supervisor (FUN_CODE_986f at
-// CODE:986f) which runs every main-loop iteration but throttles its body to
-// once per 0x13 (19) supervisor ticks via a counter. Stock's body:
-//   1. stuck_key_repeat_decrement (LED tick, not RF-relevant here)
-//   2. rf_signal_quality_probe (FUN_CODE_80a8) — wireless/USB mode-transition
-//      guard. Re-fires rf_set_link_mode(saved_mode, 0) x2 on wireless entry,
-//      rf_cmd_06(1) x2 on USB entry. We don't switch modes mid-run (smk's
-//      conn_mode is set by the physical slider in kb.c), so we don't need
-//      the full transition guard — but we DO want the periodic
-//      rf_set_link_mode(saved_mode, 0) re-fire as a keep-alive that re-asserts
-//      the BK3632's link state when it drifts (which it does after a pair).
-//   3. rf_pairing_burst — drains pending pairing-request flags
-//   4. status-byte → flag copy + LED status indicator
-//   5. F8_5 / F8_7 alternation (USB-suspend debounce)
-//
-// Our equivalent: just the status poll + the periodic link reassertion.
-// Detection of a paired→unpaired transition (link dropped by host) fires a
-// re-assertion to wake the BK3632 back into operational state on the saved
-// link.
+// Periodic supervisor — smk's equivalent of stock's status supervision.
+// Stock rate-limits a CMD_0A status query in its main loop
+// (rf_init_and_main_loop, CODE:7716) and applies each reply in
+// rf_read_bk3632_status_apply (CODE:9108), whose tail re-fires
+// rf_set_link_mode(saved_mode, 0) on EVERY valid reply while the BK3632
+// reports neither connected nor paired, or reports a link mode other than
+// the commanded one. That continuous kick is what snaps the chip's status
+// reporting back to paired+connected after a power cycle where it re-links
+// to the dongle on its own — without it the keyboard types fine but the
+// status byte keeps saying unpaired and the indicator blinks as if pairing.
 //
 // Throttling: kb_update fires this every tick (~50 µs on Air60); body runs
 // once every RF_SUPERVISOR_TICK_INTERVAL ticks. With ticks ~50 µs each and
-// the interval at 2000, the body runs ~10x per second — about the same
-// rhythm as stock's 0x13 supervisor counter against its main loop.
+// the interval at 2000, the body runs ~10x per second — about the rhythm
+// of stock's rate-limited status query.
 #define RF_SUPERVISOR_TICK_INTERVAL 2000u
-// After this many status polls without `connected` we fire one rf_reassert_link
-// keep-alive. At ~10 polls/s that's ~3 s between reassertions on a stuck
-// link — fast enough for the user to feel the recovery, slow enough to not
-// interfere with an in-progress SMP/GATT setup.
-#define RF_SUPERVISOR_REASSERT_POLLS 30u
+// Keep-alive suppression window after rf_set_link_pairing returns without
+// pair-complete: the BK3632 is still advertising and a CMD_01 would abort
+// the host's pairing handshake mid-flight. Stock gets the same effect by
+// suppressing status queries entirely while its pairing flag is up (the
+// _9_7 gate in the main loop at CODE:7716); we keep polling so the
+// indicator stays live and suppress just the keep-alive. At ~10 polls/s
+// this is ~60 s, comfortably covering the BK3632's advertising window.
+#define RF_PAIRING_WINDOW_POLLS 600u
 
-static __xdata uint16_t supervisor_ticks       = 0;
-static __xdata uint8_t  supervisor_lost_polls  = 0;
-static __xdata uint8_t  supervisor_was_paired  = 0;
+// Link mode last commanded by us (stock's XRAM 0x039e) — the re-assert
+// target. keyboard->rf_link can't serve here: it mirrors whatever mode the
+// BK3632 *reports*, and the whole point is to correct the chip when the
+// two disagree.
+static __xdata uint8_t  commanded_link       = RF_MODE_2_4G;
+static __xdata uint16_t pairing_window_polls = 0;
+
+static __xdata uint16_t supervisor_ticks      = 0;
+static __xdata uint8_t  supervisor_was_paired = 0;
 
 void rf_link_supervisor(keyboard_state_t *keyboard)
 {
@@ -360,7 +370,11 @@ void rf_link_supervisor(keyboard_state_t *keyboard)
 
     supervisor_was_paired = keyboard->paired;
 
-    rf_update_keyboard_state(keyboard);
+    if (!rf_update_keyboard_state(keyboard)) {
+        // No fresh frame — don't fire link commands off stale state. Stock
+        // likewise only reaches its CMD_01 tail on a checksum-valid reply.
+        return;
+    }
 
     // Pair-state edge detection. When the link transitions back to "paired",
     // re-assert the link mode (no pairing flag) so the BK3632 fully drops
@@ -369,32 +383,28 @@ void rf_link_supervisor(keyboard_state_t *keyboard)
     // burst window closed (its post-pair reassert handles the in-window
     // case).
     if (keyboard->paired && !supervisor_was_paired) {
-        rf_reassert_link((rf_mode_t)keyboard->rf_link);
-        supervisor_lost_polls = 0;
+        pairing_window_polls = 0;
+        rf_reassert_link((rf_mode_t)commanded_link);
         return;
     }
 
-    // Connection-lost detection: when the BK3632 reports !connected for
-    // RF_SUPERVISOR_REASSERT_POLLS consecutive polls, fire a single
-    // rf_reassert_link to wake it back up. Don't fire while a pairing
-    // burst is in progress — kb.c's link_pairing_active flag suppresses
-    // the supervisor entirely in that window.
-    if (keyboard->connected) {
-        supervisor_lost_polls = 0;
-    } else {
-        if (supervisor_lost_polls < 0xff) {
-            supervisor_lost_polls++;
-        }
-        if (supervisor_lost_polls == RF_SUPERVISOR_REASSERT_POLLS) {
-            // One re-assert per threshold crossing. Counter keeps
-            // climbing past the threshold so we don't spam.
-            rf_reassert_link((rf_mode_t)keyboard->rf_link);
-        }
+    if (pairing_window_polls != 0) {
+        pairing_window_polls--;
+        return;
+    }
+
+    // Stock keep-alive (CODE:9108 tail): one CMD_01(commanded, 0) per valid
+    // poll while the link is dead (neither connected nor paired) or the
+    // BK3632 reports the wrong mode.
+    if ((!keyboard->connected && !keyboard->paired) ||
+        (keyboard->rf_link != commanded_link)) {
+        rf_set_link_mode(commanded_link, 0);
     }
 }
 
 void rf_set_link(rf_mode_t link)
 {
+    commanded_link = (uint8_t)link;
     // Sent twice for reliability, with a brief gap — stock does the same in
     // its mode-application path.
     rf_set_link_mode(link, 0);
@@ -463,6 +473,8 @@ static __xdata uint8_t pairing_paired_now;
 
 void rf_set_link_pairing(rf_mode_t link, __xdata keyboard_state_t *keyboard)
 {
+    commanded_link = (uint8_t)link;
+
     // Pairing trigger: send ONCE. Stock's pairing path also sends once
     // (it only retries the cmd on SPI no-ack, up to 10x). Sending it
     // twice the way rf_set_link does is harmful here — the second
@@ -512,6 +524,13 @@ void rf_set_link_pairing(rf_mode_t link, __xdata keyboard_state_t *keyboard)
     if (pairing_paired_now) {
         delay_ms(50);
         rf_reassert_link(link);
+    } else {
+        // Pairing didn't complete inside the burst — the BK3632 is still
+        // advertising and the host may bond at any point. Hold the
+        // supervisor's keep-alive off so it doesn't fire CMD_01 into the
+        // handshake; the supervisor's paired-edge (or the window expiring)
+        // closes it.
+        pairing_window_polls = RF_PAIRING_WINDOW_POLLS;
     }
 }
 

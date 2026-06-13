@@ -16,7 +16,12 @@ void rf_init();
 void rf_send_report(__xdata report_keyboard_t *report);
 void rf_send_nkro(__xdata report_nkro_t *report);
 void rf_send_extra(__xdata report_extra_t *report);
-void rf_update_keyboard_state(keyboard_state_t *keyboard);
+// Poll the BK3632 once and apply the status frame to `keyboard`. Returns
+// true when a fresh, checksum-valid frame was applied. Mirrors stock's
+// rf_read_bk3632_status_apply (CODE:9108): a frame is valid on magic +
+// checksum alone; status byte 0 bit 7 is the chip's "awake" marker and only
+// triggers a wake-nudge — it does not invalidate the frame.
+bool rf_update_keyboard_state(keyboard_state_t *keyboard);
 void rf_set_link(rf_mode_t link);
 // Switch to `link` and tell the BK3632 to start advertising / accepting new
 // pairings on that slot. Triggered by a 3-second hold of the link key.
@@ -28,16 +33,18 @@ void rf_set_link_pairing(rf_mode_t link, __xdata keyboard_state_t *keyboard);
 // path when BLE pairing keeps failing (BK3632 stuck in rotating-MAC mode).
 void rf_factory_reset_bonds(void);
 // Periodic supervisor — call from the main loop on every tick. Internally
-// rate-limits to roughly the cadence stock fw uses (~100 ms). Stock's
-// equivalent is rf_link_supervisor (FUN_CODE_986f) at CODE:986f, which runs
-// off a 0x13-tick counter inside the main loop. Performs status polling,
-// keeps the BK3632's saved link mode primed (mirrors stock's FUN_CODE_80a8
-// transition guard), and consumes any pending pairing event.
+// rate-limits to roughly the cadence stock fw uses (~100 ms). Mirrors the
+// CMD_01 tail of stock's rf_read_bk3632_status_apply (CODE:9108): on every
+// valid status poll, while the BK3632 reports neither connected nor paired
+// (or a link mode other than the one we commanded), re-fire
+// set_link(commanded, 0) to kick it back into operational state. This is
+// what clears the bogus "pairing blink" after a power cycle where the chip
+// re-links to the dongle on its own but keeps reporting unpaired.
+// Suppressed while a pairing started by rf_set_link_pairing is pending.
 void rf_link_supervisor(keyboard_state_t *keyboard);
 // Re-fire saved link mode (no pairing flag) — used to re-prime the BK3632
-// after pair-complete and as a periodic keep-alive nudge from the
-// supervisor. Stock's mode_detect fires this twice in a row; we do the
-// same here.
+// after pair-complete. Stock's mode_detect fires this twice in a row; we
+// do the same here.
 void rf_reassert_link(rf_mode_t link);
 
 // Tell the BK3632 the host is now USB-driven (the keyboard switched to
