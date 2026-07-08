@@ -2,6 +2,8 @@
 
 #include "sh68f90a.h"
 #include "keycodes.h"
+#include <stdint.h>
+#include <stdbool.h>
 
 #define MATRIX_ROWS 5
 #define MATRIX_COLS 16
@@ -121,6 +123,10 @@
 // Config Switch Pin Bits
 #define CONN_MODE_SWITCH_P5_5 _P5_5 // 1 - USB, 0 - RF
 #define OS_MODE_SWITCH_P5_6   _P5_6 // 1 - MAC, 0 - WIN
+
+// OS_MODE_SWITCH slider → base keymap layer. Defined in layouts/default/layout.c
+// (which owns the layer enum); kb.c feeds the result to set_default_layer().
+uint8_t layout_os_base_layer(bool is_mac);
 
 #define RF_BB_SPI_CS   P7_4
 #define RF_BB_SPI_SCK  P4_7

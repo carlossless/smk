@@ -3,6 +3,7 @@
 #include "keycodes.h"
 #include "kbdef.h"
 #include "keyboard.h"
+#include "layout.h"
 #include "settings.h"
 #include "debug.h" // dprintf
 #include "report.h"
@@ -33,6 +34,11 @@ void kb_init()
 {
     user_keyboard_state.conn_mode = CONN_MODE_SWITCH;
     user_keyboard_state.os_mode   = OS_MODE_SWITCH;
+
+    // Select the Win/Mac base keymap from the initial slider read so the
+    // very first keypress already uses the right modifier layout, rather
+    // than waiting for the first kb_update_switches transition.
+    set_default_layer(layout_os_base_layer(user_keyboard_state.os_mode == KEYBOARD_OS_MODE_MAC));
 
 #ifdef RF_ENABLED
     // Prime the BK3632's Mac-compat byte9 override from the initial
@@ -96,6 +102,8 @@ void kb_update_switches()
     } else if (++os_debounce >= SLIDER_DEBOUNCE_ITERS) {
         os_debounce               = 0;
         user_keyboard_state.os_mode = raw_os;
+        // Switch the base keymap (Win/Mac modifier layout) to match the slider.
+        set_default_layer(layout_os_base_layer(user_keyboard_state.os_mode == KEYBOARD_OS_MODE_MAC));
         switch (user_keyboard_state.os_mode) {
             case KEYBOARD_OS_MODE_MAC:
                 dprintf("MAC_MODE\r\n");

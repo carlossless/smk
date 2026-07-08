@@ -25,9 +25,16 @@ volatile bool matrix_updated;
 
 uint8_t action_layer;
 
+// Base layer the matrix resolves keys against when no momentary (MO) layer is
+// held. Defaults to 0; a keyboard can retarget it at runtime (e.g. the
+// nuphy-air60 points it at _MAC_BL / _WIN_BL from the OS_MODE_SWITCH slider).
+// __xdata: internal RAM is at its ceiling — keep new state off it.
+__xdata uint8_t default_layer;
+
 void matrix_init()
 {
     action_layer   = 0;
+    default_layer  = 0;
     matrix_updated = false;
 
     for (int i = 0; i < MATRIX_COLS; i++) {
@@ -41,9 +48,14 @@ matrix_col_t matrix_get_col(uint8_t col)
     return matrix[col];
 }
 
+void set_default_layer(uint8_t layer)
+{
+    default_layer = layer;
+}
+
 void process_key_state(uint8_t row, uint8_t col, bool pressed)
 {
-    uint16_t qcode = keymaps[0][row][col];
+    uint16_t qcode = keymaps[default_layer][row][col];
 
     // TEMP: dprintf disabled to test the stack-overflow theory. process_key_state
     // already runs ~5 frames deep from main loop, and dprintf -> printf adds a
