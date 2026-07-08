@@ -562,7 +562,10 @@ static void led_regen_one()
         // battery_indicator_on) or a momentary FN+[ flash (battery_flash_sweeps).
         // Colour by battery_level (0..7, ~14%/step):
         //   low_power or level <= 1 -> red; level >= 6 -> green; else yellow.
-        else if (user_settings.battery_indicator_on || battery_flash_sweeps) {
+        // Suppressed on USB (CONN_MODE_SWITCH == 1): battery status is only
+        // polled from the BK3632 in RF mode, so battery_level is stale (0) when
+        // wired — showing it would just render a permanent (bogus) red.
+        else if (!CONN_MODE_SWITCH && (user_settings.battery_indicator_on || battery_flash_sweeps)) {
             if (keyboard_state.low_power || keyboard_state.battery_level <= 1) {
                 r = 255; g = 0;   b = 0;
             } else if (keyboard_state.battery_level >= 6) {
