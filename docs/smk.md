@@ -4,6 +4,7 @@
 - [x] Key Scan
     - [ ] Debouncing
 - [x] Indicators (Backlight)
+- [x] Sleep
 - [x] USB HID
     - [x] ISP Command
     - [x] USB Keyboard
