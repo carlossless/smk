@@ -20,4 +20,10 @@
         SET_PWM_DUTY_2(pwm, duty2);     \
     } while (0)
 
+// __using(N) shelved. SDCC's rule: an ISR with __using(N) may only call
+// functions also tagged __using(N) (or that touch no registers). This ISR
+// calls into matrix_scan_step → indicators_update_step → … (all bank-0
+// functions), which corrupted register state and produced stuck/chattering
+// keys + a broken USB second-interface enumeration. Pushing R0–R7 on every
+// fire is the safe path; we have stack headroom for it.
 void pwm_interrupt_handler() __interrupt(_INT_PWM0);
