@@ -6,6 +6,7 @@
 #include "debug.h"
 #include "utils.h"
 #include "usbhidreport.h"
+#include "console.h"
 #include "keyboard.h"
 #include "delay.h"
 #include <stdint.h>
@@ -34,6 +35,7 @@ typedef enum {
     USB_EP0_STATE_RECV_STATUS = 0x02,
     USB_EP0_STATE_LED         = 0x04,
     USB_EP0_STATE_ISP         = 0x05,
+    USB_EP0_STATE_CONSOLE     = 0x06,
 } usb_ep0_state_t;
 
 const uint8_t hid_report_desc_keyboard[] = {
@@ -347,8 +349,23 @@ uint8_t __xdata            active_configuration;
 uint8_t __xdata            interface0_protocol;
 uint8_t __xdata            interface1_protocol;
 __bit                      usb_remote_wakeup;
-uint8_t __xdata            idle_time;
-usb_ep0_state_t __xdata    usb_ep0_state;
+// Set when the host suspends the bus (SUSPIF: no SOF for >3 ms), cleared the
+// instant bus activity resumes (SOF) or on a bus reset. The sleep feature reads
+// this to decide when USB-mode sleep is safe — self-suspending while the host is
+// actively polling would break the link, so we only drop into the USB-suspend
+// Power-Down once the host has parked the bus itself.
+__bit                   usb_suspended;
+uint8_t __xdata         idle_time;
+usb_ep0_state_t __xdata usb_ep0_state;
+
+// See usb.h: reloaded on each SETUP, decremented on each SOF; main() keeps the
+// backlight dark until enumeration has been seen and then gone quiet, so the
+// boot scan-blip lands on a dark frame. ~500 ms quiet window after the last
+// control transfer. usb_enum_seen latches the first SETUP so the gate isn't
+// defeated by the boot race (quiet before enumeration has even started).
+__xdata uint16_t usb_enum_active_ticks;
+__xdata bool     usb_enum_seen;
+#define USB_ENUM_ACTIVE_RELOAD 500
 
 void usb_init()
 {
@@ -358,11 +375,18 @@ void usb_init()
     interface0_protocol  = 0;
     interface1_protocol  = 0;
     usb_remote_wakeup    = 0;
+    usb_suspended        = 0;
     usb_ep0_state        = USB_EP0_STATE_DEFAULT;
     idle_time            = 0;
 
     ep0_xfer_bytes_left = 0;
     ep0_xfer_src        = 0;
+
+    // Reset the boot LED gate state here (runs at boot and on every bus reset).
+    // Cold-boot xdata isn't guaranteed zero, so explicit init keeps a garbage
+    // value from making main() think enumeration already finished.
+    usb_enum_active_ticks = 0;
+    usb_enum_seen         = false;
 
     USBADDR = 0;
     USBIE1  = (_OVERIE | _SETUPIE | _SOFIA | _RESMIE | _SUSPIE | _PBRSTIE);
@@ -371,8 +395,40 @@ void usb_init()
     IEN1 |= _EUSB;
 }
 
+// Tear down the USB device state — the counterpart to usb_init(). Used by the
+// RF-sleep path: the regulator-off sleep drops the USB PHY (the host sees a
+// disconnect), so we reset the device-state machine to DEFAULT (not configured)
+// and disable the module + its interrupt. With the device marked un-configured,
+// the configured-gate in usb_send_* blocks any send until the host
+// re-enumerates and re-configures us on wake; usb_init() then brings it all
+// back up.
+void usb_deinit()
+{
+    usb_device_state     = USB_DEVICE_STATE_DEFAULT;
+    received_usb_addr    = 0;
+    active_configuration = 0;
+    interface0_protocol  = 0;
+    interface1_protocol  = 0;
+    usb_remote_wakeup    = 0;
+    usb_suspended        = 0;
+    usb_ep0_state        = USB_EP0_STATE_DEFAULT;
+    idle_time            = 0;
+
+    USBADDR = 0;
+    USBCON &= ~(_ENUSB | _SW1CON | _SW2CON); // drop the module-enable bits
+    IEN1 &= ~_EUSB;                          // disable the USB interrupt
+}
+
 void usb_send_report(__xdata report_keyboard_t *report)
 {
+    // Don't touch the endpoint until the host has configured us. Before
+    // SET_CONFIGURATION (incl. the re-enumeration window after a sleep wake) the
+    // host isn't reading EP1, so a write is lost AND the IEP1RDY wait below would
+    // spin its full ~10 ms timeout, stalling the main loop on every keypress.
+    if (usb_device_state != USB_DEVICE_STATE_CONFIGURED) {
+        return;
+    }
+
     uint8_t timeout = 0;
     while (timeout < 255 && EP1CON & _IEP1RDY) {
         delay_us(40);
@@ -387,6 +443,10 @@ void usb_send_report(__xdata report_keyboard_t *report)
 
 void usb_send_nkro(__xdata report_nkro_t *report)
 {
+    if (usb_device_state != USB_DEVICE_STATE_CONFIGURED) {
+        return; // not enumerated/configured — see usb_send_report
+    }
+
     uint8_t timeout = 0;
     while (timeout < 255 && EP2CON & _IEP2RDY) {
         delay_us(40);
@@ -401,6 +461,10 @@ void usb_send_nkro(__xdata report_nkro_t *report)
 
 void usb_send_extra(__xdata report_extra_t *report)
 {
+    if (usb_device_state != USB_DEVICE_STATE_CONFIGURED) {
+        return; // not enumerated/configured — see usb_send_report
+    }
+
     uint8_t timeout = 0;
     while (timeout < 255 && EP2CON & _IEP2RDY) {
         delay_us(40);
@@ -429,9 +493,12 @@ static void usb_setup_irq()
 {
     usb_req_setup_x req;
 
-    EA = 0;
-    get_ep0_out_buffer((uint8_t *)&req);
-    EA = 1;
+    // __critical (save+restore EA) instead of CLR/SETB so a nested entry
+    // (already EA=0) doesn't get interrupts silently re-enabled on return.
+    __critical
+    {
+        get_ep0_out_buffer((uint8_t *)&req);
+    }
 
     uint8_t type    = req.bmRequestType;
     uint8_t request = req.bRequest;
@@ -601,14 +668,31 @@ static void usb_setup_irq()
 
 void usb_interrupt_handler() __interrupt(_INT_USB)
 {
+    // Save and restore INSCON and FLASHCON around the entire USB handler. The
+    // handler reads descriptors out of __code (the EP0 streamer and the descriptor
+    // memcpy), and preserving the instruction/flash-controller banking registers
+    // keeps a USB IRQ that lands mid-instruction-fetch — or over any main-loop
+    // code/flash access — from corrupting the interrupted path's banking state.
+    // SDCC's __interrupt prologue saves the standard registers but NOT these two
+    // SFRs. usb_interrupt_handler() has no early returns, so restoring at the tail
+    // covers every path.
+    uint8_t saved_inscon   = INSCON;
+    uint8_t saved_flashcon = FLASHCON;
+
     uint8_t temp_usbif1 = USBIF1;
     uint8_t temp_usbif2 = USBIF2;
 
     if (temp_usbif1 != 0x00) {
         if (temp_usbif1 & _SOFIF) {
             USBIF1 &= ~_SOFIF;
+            // 1 ms bus heartbeat — use it as the clock that ages out the
+            // "USB still busy" window set by each SETUP (see usb_enum_active_ticks).
+            if (usb_enum_active_ticks) {
+                usb_enum_active_ticks--;
+            }
+            // Any SOF means the host is driving the bus again — not suspended.
+            usb_suspended = 0;
         } else {
-            // why is this being cleared and why in this fashion?
             USBIF1 &= ~(_SETUPIF);      // Clear SETUPIF
             USBIF1 &= ~(_OVERIF | _OW); // SETUP OVERIF & OW
 
@@ -617,11 +701,21 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
                 usb_init();
             } else if (temp_usbif1 & _SETUPIF) {
                 USBIF1 &= ~_SETUPIF;
+                // Host is running control transfers — keep the "USB busy" window
+                // alive so the backlight stays dark through enumeration + HID attach.
+                usb_enum_active_ticks = USB_ENUM_ACTIVE_RELOAD;
+                usb_enum_seen         = true;
                 usb_setup_irq();
             } else if (temp_usbif1 & _RESMIF) { // RESMIF
                 USBIF1 &= ~_RESMIF;
             } else if (temp_usbif1 & _SUSPIF) { // SUSPIF
                 USBIF1 &= ~_SUSPIF;
+                // Host parked the bus (>3 ms idle). Only treat it as a real
+                // suspend once we're a configured device — spurious SUSPIF
+                // during enumeration shouldn't arm USB sleep.
+                if (usb_device_state == USB_DEVICE_STATE_CONFIGURED) {
+                    usb_suspended = 1;
+                }
             } else if (temp_usbif1 & _USBRSTIF) { // BUSRSTIF
                 USBIF1 &= ~_USBRSTIF;
 
@@ -657,6 +751,10 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
             usb_ep0_in_irq();
         }
     }
+
+    // Restore the banking SFRs the handler may have disturbed (see top).
+    FLASHCON = saved_flashcon;
+    INSCON   = saved_inscon;
 }
 
 // request handlers
@@ -928,14 +1026,20 @@ static void usb_get_descriptor_handler(__xdata struct usb_req_setup *req)
     } else if (type == USB_DESC_CLASS_REPORT) {
         uint8_t iface_index = req->wIndex;
 
+        // Stream the report descriptor straight out of __code instead of
+        // memcpy-ing the whole thing into `scratch` first. That copy ran inside the
+        // USB ISR; for the ~100+ byte `extra` descriptor it was long enough to
+        // starve the equal-priority Timer-2 LED scan while it held a row sink — a
+        // one-shot blip when the HID driver fetches the report descriptor (right
+        // after SET_CONFIGURATION, once the backlight is up). The EP0 streamer
+        // copies 8 bytes per IN-IRQ through a generic pointer, which reads __code
+        // fine.
         if (iface_index == 0) {
+            addr   = (uint8_t *)hid_report_desc_keyboard;
             length = sizeof(hid_report_desc_keyboard);
-            APPEND(&hid_report_desc_keyboard, length);
-            addr = scratch;
         } else if (iface_index == 1) {
+            addr   = (uint8_t *)hid_report_desc_extra;
             length = sizeof(hid_report_desc_extra);
-            APPEND(&hid_report_desc_extra, length);
-            addr = scratch;
         } else {
             STALL_EP0();
             return;
@@ -1012,6 +1116,15 @@ static void usb_hid_set_report_handler(__xdata struct usb_req_setup *req)
                 usb_ep0_state = USB_EP0_STATE_ISP;
                 SET_EP0_OUT_RDY;
             }
+#if DEBUG == 1
+            // Host console tool's attach handshake: SET_REPORT(Feature, CONSOLE)
+            // carries a (don't-care) payload so there is an OUT data stage to
+            // accept; usb_ep0_out_irq() then flips the console "attached" flag.
+            else if ((req->wValue & 0xff) == REPORT_ID_CONSOLE) {
+                usb_ep0_state = USB_EP0_STATE_CONSOLE;
+                SET_EP0_OUT_RDY;
+            }
+#endif
 
             break;
 
@@ -1077,6 +1190,15 @@ void usb_ep0_out_irq()
         if (EP0_OUT_BUF[0] == 0x05 && EP0_OUT_BUF[1] == 0x75) {
             isp_jump();
         }
+#if DEBUG == 1
+    } else if (usb_ep0_state == USB_EP0_STATE_CONSOLE) {
+        usb_ep0_state = 0;
+
+        console_notify_attached(); // host tool is listening; start draining
+
+        CLEAR_EP0_CNT;
+        SET_EP0_IN_RDY;
+#endif
     } else {
         usb_ep0_state = 0;
         CLEAR_EP0_CNT;

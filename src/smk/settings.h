@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 
 // Persistent user settings, stored as one blob in flash (see settings.c / flash.h).
 //
@@ -16,13 +17,52 @@ typedef struct {
     uint8_t ul_effect;
     uint8_t ul_brightness;
     uint8_t ul_speed;
+    // 1 = right-side underglow LEDs continuously show battery level color
+    // (red <20%, yellow 20-80%, green >80%; red also when low_power is set).
+    // 0 = right-side underglow follows the regular UL effect.
+    uint8_t battery_indicator_on;
+    // Last RF link mode selected by the user (RF_MODE_2_4G / BT1 / BT2 / BT3).
+    // Re-applied on boot so the keyboard comes back on the host it was last on.
+    uint8_t rf_link;
 } user_settings_t;
 
 extern __xdata user_settings_t user_settings;
 
-// Overwrites `user_settings` with the persisted values if a valid record exists;
-// otherwise leaves it untouched. Set defaults into `user_settings` before calling.
-void settings_load(void);
+// Overwrites `user_settings` with the persisted values if a valid record
+// exists. Returns true on success; on false the caller is responsible for
+// seeding sensible defaults (the in-RAM struct is left untouched on failure).
+bool settings_load(void);
 
-// Persists the current `user_settings` (no-op if it already matches what's stored).
+// Persists the current `user_settings` immediately (no-op if it already
+// matches what's stored). The actual sector erase stalls the CPU for ~5 ms
+// — long enough to visibly freeze the LED scan on one row — so prefer
+// settings_mark_dirty() + settings_task() over calling this directly from
+// hot paths like the brightness/effect keycode handlers.
 void settings_save(void);
+
+// Mark user_settings as changed; the next settings_task() call will flush
+// to flash. Cheap (just sets a bit), so safe to call from every settings-
+// mutating handler.
+void settings_mark_dirty(void);
+
+// Main-loop hook: if settings are dirty, run the flash write and clear the
+// dirty flag. Call from the main loop. Multiple dirty marks between two
+// task calls coalesce into one flash write, which is what makes brightness-
+// key auto-repeat / quick chord sequences not produce per-press flicker.
+void settings_task(void);
+
+// Board hooks fired immediately before / after a settings flash write
+// (settings_save / settings_task). A board with an LED scan overrides these to
+// quiesce its drivers for the duration: the ~5 ms sector erase stalls the CPU
+// with interrupts off, which would otherwise freeze a lit LED row bright (a
+// "blip"). The pre hook must keep the LEDs quiet across the whole write (e.g.
+// pause the scan + park the columns), since the scan ISR would otherwise re-arm
+// the PWM between flash ops. Default no-op (src/user/); real impl in the layout.
+void settings_save_pre(void);
+void settings_save_post(void);
+
+#if DEBUG == 1
+// Print the current user_settings to the debug console. Called on load and
+// whenever settings_task() flushes a change.
+void settings_dump(void);
+#endif
