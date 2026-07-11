@@ -4,6 +4,7 @@
 - [x] Key Scan
     - [ ] Debouncing
 - [x] Indicators (Backlight)
+- [x] Sleep (inactivity → SH68F90A Power-Down, INT4/USB wake; default on, opt-in per board)
 - [x] USB HID
     - [x] ISP Command
     - [x] USB Keyboard
