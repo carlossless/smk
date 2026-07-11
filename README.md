@@ -40,7 +40,7 @@ If setting up prerequisites without nix, you will need the following tools insta
 * [sdcc](https://sdcc.sourceforge.net/) >= 4.3.0
 * [meson](https://mesonbuild.com/) >= 0.53
 * [ninja](https://ninja-build.org/) >= 1.11.1
-* [sinowealth-kb-tool](https://github.com/carlossless/sinowealth-kb-tool) latest version - required only for flashing
+* [sinowisp](https://github.com/carlossless/sinowisp) latest version - required only for flashing
 
 ### Building & Flashing
 
@@ -49,7 +49,7 @@ Once all prerequisites are set up, you can build and flash firmware for a specif
 ```sh
 meson setup build # configure meson build dir
 meson compile -C build nuphy-air60_default_smk.hex # build firmware for nuphy-air60 with the default layout
-meson compile -C build nuphy-air60_default_flash # write firmware to the device via sinowealth-kb-tool
+meson compile -C build nuphy-air60_default_flash # write firmware to the device via sinowisp
 ```
 
 ## Acknowledgements
