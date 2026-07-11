@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 
 // Persistent user settings, stored as one blob in flash (see settings.c / flash.h).
 //
@@ -16,13 +17,23 @@ typedef struct {
     uint8_t ul_effect;
     uint8_t ul_brightness;
     uint8_t ul_speed;
+    uint8_t battery_indicator_on;
+    uint8_t rf_link;
 } user_settings_t;
 
 extern __xdata user_settings_t user_settings;
 
-// Overwrites `user_settings` with the persisted values if a valid record exists;
-// otherwise leaves it untouched. Set defaults into `user_settings` before calling.
-void settings_load(void);
+bool settings_load(void);
 
-// Persists the current `user_settings` (no-op if it already matches what's stored).
 void settings_save(void);
+
+void settings_mark_dirty(void);
+
+void settings_task(void);
+
+void settings_save_pre(void);
+void settings_save_post(void);
+
+#if DEBUG == 1
+void settings_dump(void);
+#endif
