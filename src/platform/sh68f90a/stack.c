@@ -7,12 +7,10 @@
 #    include <stdint.h>
 
 #    define STACK_SENTINEL 0xAA
-// The stack (SSEG) sits just above the data segment, so its start -- and thus
-// the usable size -- shifts whenever globals change. A hardcoded base silently
-// goes stale, so derive it from the linker's stack-start symbol. SDCC mangles
-// the C name `_start__stack` to the asm symbol `__start__stack`. SP resets to
-// start-1 (the first push lands at `start`), so that is the base stack_peak()
-// measures bytes used against.
+// The stack (SSEG) sits just above the data segment, so its start shifts
+// whenever globals change; derive the base from the linker's stack-start symbol
+// rather than hardcoding it. SP resets to start-1, so that is the base
+// stack_peak() measures against.
 extern uint8_t _start__stack;
 #    define STACK_BASE ((uint8_t)((uint16_t)&_start__stack - 1u))
 #    define STACK_TOP  0xFF // top of the SH68F90A's 256-byte internal RAM

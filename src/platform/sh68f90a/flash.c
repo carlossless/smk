@@ -2,11 +2,10 @@
 #include "sh68f90a.h"
 #include <stdbool.h>
 
-// On-chip flash is 128 x 512-byte sectors (64K). The bootloader occupies the top 4K
-// (0xF000-0xFFFF), and the flasher stores the app's reset-vector redirect at 0xEFFC
-// (sector 119) which the bootloader uses to enter the app - so sector 119 must NEVER
-// be erased. We use the sector just below it, and cap the linker (--code-size 0xEC00)
-// so no program code is ever placed here.
+// On-chip flash is 128 x 512-byte sectors (64K). The bootloader occupies the top
+// 4K (0xF000-0xFFFF) and the app's reset-vector redirect lives at 0xEFFC
+// (sector 119), so sector 119 must NEVER be erased. Settings go in sector 118
+// just below, and the linker (--code-size 0xEC00) keeps program code out of it.
 #define CFG_ADDR   0xEC00u               // flash sector 118 (0xEC00..0xEDFF)
 #define CFG_SIZE   512u                  // SH68F90A flash sector size
 #define CFG_END    (CFG_ADDR + CFG_SIZE) // first address past the settings sector
@@ -30,22 +29,18 @@ static uint8_t flash_read(uint16_t addr)
     return *p;
 }
 
-// SSP unlock + trigger. IB_CON2..5 must be written 0x05,0x0A,0x09,0x06 in order with
-// no intervening writes; the 4 NOPs cover the auto-IDLE while the flash op runs.
-// __critical (save+restore EA) instead of CLR/SETB so callers that already run
-// with EA=0 don't get interrupts silently re-enabled on return.
+// SSP unlock + trigger. IB_CON2..5 must be written 0x05,0x0A,0x09,0x06 in order
+// with no intervening writes; the NOPs cover the auto-IDLE while the op runs.
+// __critical (save+restore EA) so callers already running EA=0 don't get
+// interrupts silently re-enabled on return.
 static void ssp_run(uint16_t addr, uint8_t op, uint8_t data)
 {
-    // Address gate — refuses any SSP op outside the settings sector, so a
-    // stack-corrupted addr or caller bug can never put SSP_ERASE over sector 119
-    // (boot redirect) or the bootloader at 0xF000+.
+    // Address gate: refuse any SSP op outside the settings sector, so a corrupted
+    // addr can never erase sector 119 (boot redirect) or the bootloader.
     if (addr < CFG_ADDR || addr >= CFG_END) {
         return;
     }
-    // A sector erase auto-IDLEs the CPU for ~5 ms with interrupts off. Any LED
-    // blanking needed to hide that stall is handled one layer up, around the
-    // whole write (settings_save_pre/post), so this platform driver stays LED-
-    // agnostic.
+    // A sector erase auto-IDLEs the CPU for ~5 ms with interrupts off.
     __critical
     {
         XPAGE     = (uint8_t)(addr >> 8);
@@ -85,7 +80,7 @@ bool flash_settings_load(__xdata uint8_t *dst, uint8_t len)
         return false;
     }
     if (flash_read(CFG_ADDR + 2) != len) {
-        return false; // a different-sized record (e.g. struct changed) - ignore it
+        return false; // different-sized record (struct changed) — ignore
     }
 
     uint8_t sum = 0;
@@ -96,7 +91,7 @@ bool flash_settings_load(__xdata uint8_t *dst, uint8_t len)
         return false; // checksum mismatch
     }
 
-    // valid: commit to dst only now, so a bad record never corrupts the caller's data
+    // Commit to dst only now, so a bad record never corrupts the caller's data.
     for (uint8_t i = 0; i < len; i++) {
         dst[i] = flash_read((uint16_t)(CFG_ADDR + CFG_HDR + i));
     }
@@ -105,14 +100,11 @@ bool flash_settings_load(__xdata uint8_t *dst, uint8_t len)
 
 void flash_settings_save(const __xdata uint8_t *src, uint8_t len)
 {
-    // No runtime length check here: `len` is uint8_t, so max payload is 255
-    // and the total record (CFG_HDR + len + 1) caps at 259 bytes — already
-    // well inside the 512-byte sector. The compile-time assertion in
-    // settings.c (paired with sizeof(user_settings_t)) is what actually
-    // enforces the bound; if the struct ever grows past the limit, the
-    // build fails before we can flash a binary that would overrun.
+    // No runtime length check: `len` is uint8_t so the record caps at 259 bytes,
+    // well inside the 512-byte sector. The compile-time assertion in settings.c
+    // enforces the bound if the struct ever grows.
 
-    // skip the write entirely if the stored record already matches (avoids wear)
+    // Skip the write if the stored record already matches (avoids wear).
     bool same = flash_read(CFG_ADDR) == CFG_MAGIC0 && flash_read(CFG_ADDR + 1) == CFG_MAGIC1 && flash_read(CFG_ADDR + 2) == len;
     if (same) {
         for (uint8_t i = 0; i < len; i++) {
@@ -126,9 +118,8 @@ void flash_settings_save(const __xdata uint8_t *src, uint8_t len)
         return;
     }
 
-    // The SH68F90A only programs bytes right after a sector erase (a sector can't
-    // be programmed again until erased), so each change rewrites the whole record:
-    // erase, then magic + length + payload + checksum.
+    // A sector can only be programmed after an erase, so each change rewrites the
+    // whole record: erase, then magic + length + payload + checksum.
     flash_erase_config();
     flash_program(CFG_ADDR + 0, CFG_MAGIC0);
     flash_program(CFG_ADDR + 1, CFG_MAGIC1);

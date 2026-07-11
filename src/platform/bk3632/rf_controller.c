@@ -1,9 +1,9 @@
 #include "rf_controller.h"
 #include <stdint.h>
 #include "delay.h"
-#include "debug.h"    // dprintf
-#include "bb_spi.h"   // FIXME: should be conditional?
-#include "sh68f90a.h" // for EA
+#include "debug.h"
+#include "bb_spi.h" // FIXME: should be conditional?
+#include "sh68f90a.h"
 
 #define MAGIC_BYTE 0xaa
 #define CMD_REPORT 0x02
@@ -19,32 +19,19 @@ typedef enum {
 } rf_set_name_t;
 
 // Arrays (not pointers) so the data lives entirely in __code; a
-// `__code const char *` would put the pointer itself in DSEG, eating iRAM
-// we want for the stack.
+// `__code const char *` would put the pointer itself in DSEG, eating iRAM.
 static const __code char rf_bt5_name[] = "SMK BT5.0";
 static const __code char rf_bt3_name[] = "SMK BT3.0";
 
 __xdata uint8_t rf_tx_buf[32];
 
-// Tracks whether the previous CMD_REPORT packet carried any key activity
-// (used to detect release transitions for blanking) and how many
-// post-release blanking packets are still queued. Defined here at file
-// scope so both rf_send_kro_report (which sets them) and
-// rf_blanking_tick (which drains the counter) can reach them without
-// forward-declare gymnastics.
 static __xdata uint8_t kro_prev_active;
 static __xdata uint8_t blanking_pending;
 static __xdata bool    blanking_active;
 
-// byte9 override flags.
-//
-//   mac_mode_compat: when 1, byte9 is unconditionally 0 ("active"
-//     marker). macOS's HID handling needs every packet flagged active —
-//     when byte9 = 1 (idle), the BK3632 dedupes the packet and the host
-//     misses release events. Driven by the OS_MODE_SWITCH slider (P5.6).
-//
-//   byte9_disable: when 1, the byte9 = 1 (idle) branch is skipped.
-//     Exposed for future use, not currently driven.
+// byte9 override flags. mac_mode_compat forces byte9 to 0 ("active"); macOS
+// needs every packet flagged active, else the BK3632 dedupes idle packets and
+// the host misses releases. byte9_disable skips only the idle branch.
 static __xdata bool mac_mode_compat;
 static __xdata bool byte9_disable;
 
@@ -58,11 +45,6 @@ void rf_byte9_set_disable(bool on)
     byte9_disable = on;
 }
 
-// Compute rf_tx_buf[9] from the CURRENT packet's activity:
-//
-//   base: byte9 = (curr_active == 0) ? 1 : 0
-//   if (byte9_disable):    byte9 stays 0 even on idle
-//   if (mac_mode_compat):  byte9 stays 0 always
 static uint8_t compute_byte9(bool curr_active)
 {
     if (mac_mode_compat) return 0;
@@ -75,19 +57,14 @@ bool rf_get_status(uint8_t status_bytes[2]);
 void rf_set_link_mode(uint8_t mode, uint8_t pairing);
 bool rf_send_kro_report(uint8_t *buffer);
 void rf_send_nkro_report(__xdata uint8_t mods, __xdata uint8_t *nkro_buffer);
-// BK3632 BT state-management command (internal — public callers go through
-// rf_factory_reset_bonds).
-//   arg=2: wipe all BT bonds (factory-reset the BK3632's pairing storage);
-//          must be followed by rf_init to reload the BT names the wipe clears.
-//   arg=3: separate "rebind/reconnect" branch, semantics not nailed down.
-//          smk doesn't use this.
+// BT state-management command (internal — public callers go through
+// rf_factory_reset_bonds). arg=2 wipes all BT bonds and must be followed by
+// rf_init to reload the BT names the wipe clears.
 void rf_cmd_03(uint8_t param);
-// Commit/apply settings — "finalise the pending config" signal to the BK3632.
-// Only meaningful immediately after a rf_set_bt_name.
+// Commit the pending config. Only meaningful immediately after rf_set_bt_name.
 void rf_cmd_04();
 void rf_send_consumer_system(uint16_t consumer, uint16_t system);
-// USB-mode signal (arg=1 when the keyboard is in wired mode). Exact protocol
-// unclear.
+// USB-mode signal (arg=1 when the keyboard is in wired mode).
 void    rf_cmd_06(uint8_t param);
 void    rf_prepare_sleep(uint8_t param);
 void    rf_set_bt_name(uint8_t type, char *name);
@@ -101,9 +78,8 @@ void rf_init()
 {
     __xdata uint8_t status_bytes[2];
 
-    // 6 × delay_ms(255) before talking to the BK3632: it takes ~1.5 s after
-    // VCC stabilizes to be ready for SPI, and talking to it before then
-    // results in dropped commands.
+    // The BK3632 takes ~1.5 s after VCC stabilizes to be ready for SPI;
+    // commands sent before then are dropped.
     delay_ms(255);
     delay_ms(255);
     delay_ms(255);
@@ -111,9 +87,8 @@ void rf_init()
     delay_ms(255);
     delay_ms(255);
 
-    // Wait for the BK3632 to be ready: up to 10 attempts of wake-nudge +
-    // status query, decreasing delay each pass. Break when the BK3632
-    // reports the ack flag set in status byte 0.
+    // Up to 10 wake-nudge + status-query attempts, decreasing delay each pass.
+    // Break when status byte 0 reports the ack flag set.
     for (uint8_t tries = 10; tries > 0; tries--) {
         rf_wake_nudge();
         delay_ms(tries);
@@ -122,28 +97,23 @@ void rf_init()
         }
     }
 
-    // Register both BT names: SET_BT5 -> 50 ms -> SET_BT3 -> 5 ms.
-    // The 50 ms gap gives the BK3632 enough time to fully commit the BT5
-    // name before the BT3 packet arrives. With < ~50 ms here, the BT3
-    // commit silently fails and the chip falls back to its default name
-    // ("Air60 BT3.0"). rf_set_bt_name internally does the 20 ms
-    // SET -> COMMIT delay.
+    // Register both BT names. The 50 ms gap lets the BK3632 fully commit the
+    // BT5 name before the BT3 packet arrives; with < ~50 ms the BT3 commit
+    // silently fails and the chip falls back to its default name.
     rf_set_bt_name(RF_SET_NAME_BT5, rf_bt5_name);
     delay_ms(50);
     rf_set_bt_name(RF_SET_NAME_BT3, rf_bt3_name);
     delay_ms(5);
 
-    // The BK3632 needs a follow-up SPI packet within milliseconds of the BT3
-    // commit to actually persist the BT3 name slot — without it the second
-    // commit silently drops. main() later calls rf_set_link again with the
-    // saved link from flash, so this default call is just to flush the commit.
+    // A follow-up SPI packet within milliseconds of the BT3 commit is needed to
+    // persist the BT3 name slot — without it the commit silently drops. main()
+    // re-calls rf_set_link with the saved link, so this just flushes the commit.
     rf_set_link(RF_MODE_2_4G);
 }
 
-// Re-fire rf_set_link_mode(mode, 0) twice with a small gap. The double-fire
-// is what locks the BK3632 into the requested link slot — a single shot is
-// sometimes silently dropped if the chip is mid-state-transition
-// (advertising → connected → bonded).
+// Fire rf_set_link_mode(mode, 0) twice with a small gap. The double-fire locks
+// the BK3632 into the requested link slot — a single shot is sometimes dropped
+// if the chip is mid-state-transition (advertising → connected → bonded).
 void rf_reassert_link(rf_mode_t link)
 {
     rf_set_link_mode((uint8_t)link, 0);
@@ -151,36 +121,29 @@ void rf_reassert_link(rf_mode_t link)
     rf_set_link_mode((uint8_t)link, 0);
 }
 
-// "Wipe all BT bonds" / factory reset. This is destructive: it tears down
-// BLE advertising and any committed BT names, so we must re-run rf_init
-// afterwards to reload them. Recovers a BK3632 that's accumulated bad BLE
-// state across repeated failed pairings (which manifests as rotating-MAC
-// advertising that the host can't pair against because SMP keeps timing out).
+// Wipe all BT bonds / factory reset. Destructive: tears down BLE advertising
+// and committed BT names, so rf_init must re-run afterwards. Recovers a BK3632
+// that's accumulated bad BLE state across repeated failed pairings (rotating-MAC
+// advertising the host can't pair against because SMP keeps timing out).
 void rf_factory_reset_bonds(void)
 {
-    // 1. Wipe all stored bonds in the BK3632.
-    rf_cmd_03(2);
+    rf_cmd_03(2); // wipe stored bonds
     delay_ms(200);
-    // 2. Force a BK3632 internal-state reset by putting it to sleep then
-    //    waking, re-running its own state machine from scratch.
+    // Sleep/wake forces the BK3632 to re-run its state machine from scratch.
     rf_prepare_sleep(0);
     delay_ms(100);
     rf_wake_from_sleep();
     delay_ms(200);
-    // 3. Reload BT names (the wipe + sleep cycle clears them).
-    rf_init();
+    rf_init(); // reload BT names cleared by the wipe + sleep cycle
     delay_ms(200);
 }
 
 __xdata uint8_t kro6buffer[6];
 
-// Send queue. When rf_send_report is called from the matrix dispatch path,
-// it stashes the 6KRO snapshot here and tries to send immediately. If the
-// immediate send fails (BK3632 unresponsive after RF_SEND_MAX_ATTEMPTS
-// retries), rf_pending stays set; the next pass through kb_update fires
-// rf_send_pending_flush which retries from the same buffer. Each new
-// matrix event overwrites the buffer with the latest state so retries
-// always converge to the current truth.
+// Send queue. rf_send_report stashes the 6KRO snapshot here and sends
+// immediately; if the send fails (unresponsive after RF_SEND_MAX_ATTEMPTS),
+// rf_pending stays set and rf_send_pending_flush retries from the same buffer.
+// Each new matrix event overwrites the buffer, so retries converge to current.
 static __xdata uint8_t rf_pending_buf[6];
 static __xdata bool    rf_pending;
 
@@ -200,9 +163,7 @@ void rf_send_report(__xdata report_keyboard_t *report)
 void rf_send_pending_flush(void)
 {
     if (!rf_pending) return;
-    // rf_send_kro_report itself uses rf_send_or_retry; if every retry
-    // returns no-ACK we leave rf_pending set so kb_update's next call
-    // re-enters.
+    // Leave rf_pending set on no-ACK so kb_update's next call re-enters.
     if (rf_send_kro_report(rf_pending_buf)) {
         rf_pending = false;
     }
@@ -218,8 +179,7 @@ void rf_send_nkro(__xdata report_nkro_t *report)
     }
 
     if (blank) {
-        // NKRO release: re-use the 6-byte cmd-02 buffer with all keys zero;
-        // rf_send_kro_report's state machine writes the right rf_tx_buf[9].
+        // NKRO release: re-use the 6-byte cmd-02 buffer with all keys zero.
         for (__xdata int i = 0; i < 6; i++) {
             kro6buffer[i] = 0;
         }
@@ -245,23 +205,14 @@ bool rf_update_keyboard_state(keyboard_state_t *keyboard)
 {
     __xdata uint8_t status_bytes[2];
 
-    // Single-shot status query. rf_query_status (send) runs with EA enabled;
-    // rf_fetch_4 brackets just its receive burst with EA=0. The LED scan
-    // therefore keeps running through the send and only pauses for the
-    // ~600 µs receive — invisible.
-    //
-    // On bad magic / checksum we skip the poll; rf_get_status sends
-    // rf_wake_nudge on its way out so the next poll cycle starts with the
-    // BK3632 already nudged awake.
     if (!rf_get_status(status_bytes)) {
         return false; // no fresh status — leave keyboard_state untouched
     }
 
-    // status_bytes[0] bit 7 is the BK3632's "awake" marker. A frame is valid
-    // on magic + checksum alone and is still applied when this bit is clear;
-    // the bit only triggers a wake-nudge. Discarding such frames would freeze
-    // the displayed link state (e.g. paired=0 captured mid-reconnect after a
-    // power cycle) while the keyboard kept working.
+    // Bit 7 is the "awake" marker. A frame is valid on magic + checksum alone
+    // and is still applied when this bit is clear; the bit only triggers a
+    // wake-nudge. Discarding such frames would freeze the displayed link state
+    // (e.g. paired=0 captured mid-reconnect) while the keyboard kept working.
     if (!(status_bytes[0] & 0x80)) {
         rf_wake_nudge();
     }
@@ -287,26 +238,20 @@ bool rf_update_keyboard_state(keyboard_state_t *keyboard)
 
 // Periodic status supervisor. On every valid reply, re-fire
 // rf_set_link_mode(commanded, 0) while the BK3632 reports neither connected
-// nor paired, or reports a link mode other than the commanded one. That
-// continuous kick snaps the chip's status reporting back to paired+connected
-// after a power cycle where it re-links to the dongle on its own — without it
-// the keyboard types fine but the status byte keeps saying unpaired and the
-// indicator blinks as if pairing.
-//
-// Throttling: kb_update fires this every tick (~50 µs on Air60); body runs
-// once every RF_SUPERVISOR_TICK_INTERVAL ticks. At interval 2000 the body
-// runs ~10x per second.
+// nor paired, or a link mode other than commanded. This snaps the chip's
+// status reporting back to paired+connected after a power cycle where it
+// re-links on its own but keeps reporting unpaired (indicator blinks as if
+// pairing). Body runs once every RF_SUPERVISOR_TICK_INTERVAL ticks (~10x/s).
 #define RF_SUPERVISOR_TICK_INTERVAL 2000u
 // Keep-alive suppression window after rf_set_link_pairing returns without
-// pair-complete: the BK3632 is still advertising and a CMD_01 would abort
-// the host's pairing handshake mid-flight. We keep polling so the indicator
-// stays live and suppress just the keep-alive. At ~10 polls/s this is ~60 s,
-// comfortably covering the BK3632's advertising window.
+// pair-complete: the BK3632 is still advertising and a CMD_01 would abort the
+// host's pairing handshake. Keep polling (indicator stays live), suppress just
+// the keep-alive. At ~10 polls/s this is ~60 s, covering the advertising window.
 #define RF_PAIRING_WINDOW_POLLS 600u
 
 // Link mode last commanded by us — the re-assert target. keyboard->rf_link
-// can't serve here: it mirrors whatever mode the BK3632 *reports*, and the
-// whole point is to correct the chip when the two disagree.
+// can't serve here: it mirrors what the BK3632 *reports*, and the point is to
+// correct the chip when the two disagree.
 static __xdata uint8_t  commanded_link       = RF_MODE_2_4G;
 static __xdata uint16_t pairing_window_polls = 0;
 
@@ -328,12 +273,9 @@ void rf_link_supervisor(keyboard_state_t *keyboard)
         return;
     }
 
-    // Pair-state edge detection. When the link transitions back to "paired",
-    // re-assert the link mode (no pairing flag) so the BK3632 fully drops
-    // its advertising state and switches into operational/notification mode.
-    // Covers the case where pairing completes after rf_set_link_pairing's
-    // burst window closed (its post-pair reassert handles the in-window
-    // case).
+    // Pair-state edge: on the transition back to "paired", re-assert the link
+    // (no pairing flag) so the BK3632 drops advertising and goes operational.
+    // Covers pairing completing after rf_set_link_pairing's burst window closed.
     if (keyboard->paired && !supervisor_was_paired) {
         pairing_window_polls = 0;
         rf_reassert_link((rf_mode_t)commanded_link);
@@ -363,7 +305,7 @@ void rf_set_link(rf_mode_t link)
 
 void rf_apply_usb_mode(void)
 {
-    // Two sends with a brief delay, matching the rf_set_link dance.
+    // Two sends with a brief delay for reliability.
     rf_cmd_06(1);
     delay_ms(20);
     rf_cmd_06(1);
@@ -373,15 +315,12 @@ static __xdata bool lazy_init_pending;
 
 void rf_kbd_lazy_state_init(void)
 {
-    // Queue a one-shot "fresh baseline" send the next time
-    // rf_send_kro_report runs (it zeroes the report on entry when this
-    // flag is set).
+    // Queue a one-shot fresh-baseline send (rf_send_kro_report zeroes the
+    // report on entry when this flag is set).
     lazy_init_pending = true;
-    // Resetting kro_prev_active = 0 means the next "all-zero baseline"
-    // packet doesn't look like a release transition (prev=0, curr=0 →
-    // no blanking queued), and cancelling any in-flight blanking
-    // prevents leftover phantom/blank packets from a previous release
-    // sequence colliding with the fresh baseline.
+    // prev=0 so the baseline packet doesn't look like a release transition,
+    // and cancel any in-flight blanking so leftover packets from a prior
+    // release don't collide with the fresh baseline.
     kro_prev_active  = 0;
     blanking_pending = 0;
 }
@@ -402,16 +341,15 @@ void rf_blanking_tick(void)
 
     blanking_pending--;
 
-    // Suppress re-scheduling while we drive the sequence — the phantom
-    // packets are "active" and would otherwise trip the cancel path.
+    // Suppress re-scheduling while we drive the sequence — the phantom packets
+    // are "active" and would otherwise trip the cancel path.
     blanking_active = true;
     rf_send_kro_report(buf);
     blanking_active = false;
 }
 
-// Module-static scratch for rf_set_link_pairing. Pushing the loop's locals
-// to xdata so SDCC's OSEG packer doesn't run out of internal-RAM slots when
-// rf_set_link_pairing inlines its callees.
+// Module-static scratch for rf_set_link_pairing — keeps the loop's locals out
+// of internal RAM so SDCC's OSEG packer doesn't run out of slots.
 static __xdata uint8_t pairing_status_bytes[2];
 static __xdata uint8_t pairing_paired_now;
 
@@ -419,16 +357,13 @@ void rf_set_link_pairing(rf_mode_t link, __xdata keyboard_state_t *keyboard)
 {
     commanded_link = (uint8_t)link;
 
-    // Pairing trigger: send ONCE. Sending it twice the way rf_set_link does
-    // is harmful here — the second rf_cmd_01(mode, 1) re-enters pairing mode
-    // just as the host is mid-handshake, causing the BK3632 to abort the
-    // connection.
+    // Pairing trigger: send ONCE. A second rf_cmd_01(mode, 1) re-enters pairing
+    // mode mid-handshake and makes the BK3632 abort the connection.
     rf_set_link_mode(link, 1);
 
-    // Post-pairing burst: ~100 ms to let the BK3632 enter advertising, then
-    // up to 10 iterations of wake → 10 ms → status check.
-    // Breaks as soon as `paired` flips so the indicator clears quickly and
-    // the BK3632 isn't left waiting for status reads it expects.
+    // Post-pairing burst: ~100 ms to let the BK3632 enter advertising, then up
+    // to 10 iterations of wake → 10 ms → status check. Breaks as soon as
+    // `paired` flips so the indicator clears quickly.
     pairing_paired_now = 0;
     delay_ms(100);
     for (uint8_t tries = 10; tries > 0; tries--) {
@@ -449,26 +384,19 @@ void rf_set_link_pairing(rf_mode_t link, __xdata keyboard_state_t *keyboard)
         delay_ms(20);
     }
 
-    // Post-pair re-assertion. The pairing-flag variant (rf_cmd_01(mode, 1))
-    // leaves the BK3632 in its "advertising/pairing" state machine — even
-    // after a host has bonded, the BLE stack doesn't necessarily flip to
-    // "operational, GATT notifications enabled" until it receives a follow-up
-    // rf_cmd_01(mode, 0) (the non-pairing variant) telling it to drop pairing
-    // mode and go fully operational on this link.
-    //
-    // This is the missing signal that otherwise prevents BT5 HID
-    // notifications from reaching the host even though SMP bonding completes
-    // cleanly. Fire it ONLY after pair-complete observed — firing too early
-    // aborts mid-SMP.
+    // Post-pair re-assertion. After a host bonds, the BK3632's BLE stack won't
+    // flip to operational (GATT notifications enabled) until it receives a
+    // non-pairing rf_cmd_01(mode, 0). Without this, BT5 HID notifications never
+    // reach the host even though SMP bonding completes cleanly. Fire it ONLY
+    // after pair-complete — firing too early aborts mid-SMP.
     if (pairing_paired_now) {
         delay_ms(50);
         rf_reassert_link(link);
     } else {
-        // Pairing didn't complete inside the burst — the BK3632 is still
-        // advertising and the host may bond at any point. Hold the
-        // supervisor's keep-alive off so it doesn't fire CMD_01 into the
-        // handshake; the supervisor's paired-edge (or the window expiring)
-        // closes it.
+        // Pairing didn't complete in the burst — the BK3632 is still advertising
+        // and the host may bond later. Hold off the supervisor's keep-alive so
+        // it doesn't fire CMD_01 into the handshake; the paired-edge (or the
+        // window expiring) closes it.
         pairing_window_polls = RF_PAIRING_WINDOW_POLLS;
     }
 }
@@ -481,8 +409,8 @@ bool rf_get_status(uint8_t status_bytes[2])
     delay_us(100);
     rf_fetch_4();
 
-    // Missing or corrupt reply: nudge the BK3632 awake with rf_wake_nudge so the
-    // next status poll has a better chance of getting through.
+    // Missing or corrupt reply: nudge the BK3632 awake so the next poll has a
+    // better chance of getting through.
     if (rf_tx_buf[0] != 0xBB) {
         rf_wake_nudge();
         return false;
@@ -494,16 +422,11 @@ bool rf_get_status(uint8_t status_bytes[2])
         return false;
     }
 
-    // rf_tx_buf[2] - 0x07 - 3 high power bits
+    // [2]: bits 0-2 = battery level, bit 7 = awake marker
     status_bytes[0] = rf_tx_buf[2];
-
-    // rf_tx_buf[3] & (1 << 0)              - num lock (0 - off, 1 - on)
-    // rf_tx_buf[3] & (1 << 1)              - caps lock (0 - off, 1 - on)
-    // rf_tx_buf[3] & (1 << 2)              - scroll lock (0 - off, 1 - on)
-    // rf_tx_buf[3] & (1 << 3)              - connection status (0 - disconnected, 1 - connected)
-    // rf_tx_buf[3] & (1 << 4)              - pairing status (0 - not paired, 1 - paired)
-    // rf_tx_buf[3] & ((1 << 5) | (1 << 6)) - rf mode (0 - 2.4G, 1 - BT1, 2 - BT2, 3 - BT3)
-    // rf_tx_buf[3] & (1 << 7)              - low power bit
+    // [3]: bit 0 = num lock, bit 1 = caps lock, bit 2 = scroll lock,
+    //      bit 3 = connected, bit 4 = paired, bits 5-6 = rf mode
+    //      (0=2.4G, 1=BT1, 2=BT2, 3=BT3), bit 7 = low power
     status_bytes[1] = rf_tx_buf[3];
 
     return true;
@@ -516,24 +439,14 @@ void rf_fetch_4()
     rf_tx_buf[2] = 0xff;
     rf_tx_buf[3] = 0xff;
 
-    // Receive variant: ~60 µs EA=0 around the byte loop so MISO sampling
-    // has deterministic SCK timing. No ACK poll on the RX path.
     bb_spi_recv(rf_tx_buf, 4);
 }
 
-// Retry on no-ACK until the BK3632 acknowledges, looping in-place.
-//
-// DO NOT call rf_wake_nudge between attempts. rf_wake_nudge constructs
-// its 6-byte CMD_0C packet into rf_tx_buf — the same buffer the caller
-// is trying to send. If we wake-nudge mid-retry, the next attempt sends
-// a buffer whose first 6 bytes are the wake-nudge prefix and the rest
-// is the tail of the original report. The BK3632 sees a corrupted
-// packet, won't forward the event to the host, and the key gets stuck
-// on the host.
-//
-// Capped at RF_SEND_MAX_ATTEMPTS so a permanently-dead BK3632 doesn't
-// brick the main loop. At ~400 µs per SPI burst the worst-case block
-// is ~5 × 400 µs = 2 ms — well within main-loop tolerance.
+// Retry on no-ACK, looping in-place. DO NOT call rf_wake_nudge between
+// attempts: it builds its packet into rf_tx_buf — the same buffer being sent —
+// so a mid-retry nudge corrupts the report, the BK3632 drops it, and the key
+// gets stuck on the host. Capped at RF_SEND_MAX_ATTEMPTS (~2 ms worst case) so
+// a dead BK3632 doesn't brick the main loop.
 #define RF_SEND_MAX_ATTEMPTS 5
 
 static bool rf_send_or_retry(uint8_t *buf, int len)
@@ -561,41 +474,22 @@ void rf_set_link_mode(uint8_t mode, uint8_t pairing)
     bb_spi_xfer(rf_tx_buf, 6);
 }
 
-// kro_prev_active tracks whether the previous CMD_REPORT carried any
-// key activity, used only for release-transition detection in
-// rf_kro_post_send_blanking — when this packet is idle (active == 0)
-// and the previous was active, we just sent the first all-zero release
-// packet and should queue the blanking tail.
-//
-// blanking_pending counts down from 6 to 0 after a release; each call
-// to rf_blanking_tick sends one packet from the alternation:
-//   pending == 6,4,2 (even, before decrement) → phantom (key 0x01)
-//   pending == 5,3,1 (odd)                    → blank   (all-zero)
-//
-// The alternation fires 3 phantom packets (HID key 0x01 = ErrorRollOver)
-// interleaved with 3 all-zero blanks. Because compute_byte9 is driven by
-// current packet activity, phantom packets get byte9=0 and blank packets
-// get byte9=1 — every packet has a unique signature on the wire so the
-// BK3632 can't dedupe them.
-//
-// `blanking_active` suppresses re-scheduling while rf_blanking_tick is
-// driving the sequence (the phantom packets are themselves "active"
-// and would otherwise reset blanking_pending to 0 via the cancel path).
+// After a release, blanking_pending counts down from 6; rf_blanking_tick sends
+// one packet per step, alternating 3 phantom packets (HID key 0x01,
+// ErrorRollOver) with 3 all-zero blanks. Since compute_byte9 tracks activity,
+// phantoms get byte9=0 and blanks byte9=1 — a unique wire signature per packet
+// so the BK3632 can't dedupe them and drop the release.
 #define BLANKING_COUNT_AFTER_RELEASE 6
 
 static void rf_kro_post_send_blanking(bool curr_active)
 {
     if (blanking_active) {
-        // We're inside rf_blanking_tick. The tick owns the counter.
-        return;
+        return; // inside rf_blanking_tick; the tick owns the counter
     }
     if (curr_active) {
-        // New (or continued) press cancels any pending blanking; the
-        // active packet is sufficient on its own.
-        blanking_pending = 0;
+        blanking_pending = 0; // a press cancels any pending blanking
     } else if (kro_prev_active) {
-        // First all-zero packet after a release transition. Queue the
-        // phantom/blank tail.
+        // First all-zero packet after a release — queue the phantom/blank tail.
         blanking_pending = BLANKING_COUNT_AFTER_RELEASE;
     }
 }
@@ -604,10 +498,8 @@ bool rf_send_kro_report(uint8_t *buffer)
 {
     const uint8_t len = 32;
 
-    // If lazy init is pending, override the caller's buffer with an
-    // all-zero baseline for this packet — the BK3632 receives a clean
-    // release and any keys still held get re-detected by the next matrix
-    // sweep.
+    // On pending lazy init, override the buffer with an all-zero baseline so
+    // the BK3632 gets a clean release; held keys re-detect on the next sweep.
     static __xdata uint8_t empty_buf[6] = {0, 0, 0, 0, 0, 0};
     if (lazy_init_pending) {
         lazy_init_pending = false;
@@ -633,10 +525,8 @@ bool rf_send_kro_report(uint8_t *buffer)
     }
     rf_tx_buf[9] = compute_byte9(active);
 
-    // rf_tx_buf[10..25] carries the NKRO bit state even for CMD_02 (6KRO)
-    // packets. We don't maintain a parallel NKRO buffer when running 6KRO,
-    // so synthesize it from the 5 key bytes in `buffer`: each HID keycode
-    // K maps to bit (K & 7) of byte (10 + (K >> 3)).
+    // rf_tx_buf[10..25] carries NKRO bit state even for 6KRO packets. Synthesize
+    // it from the 5 key bytes: keycode K sets bit (K & 7) of byte (10 + (K >> 3)).
     for (int i = 10; i < 31; i++) {
         rf_tx_buf[i] = 0x00;
     }
@@ -803,7 +693,7 @@ void rf_set_bt_name(uint8_t type, char *name)
     rf_tx_buf[2] = 0x08;
     rf_tx_buf[3] = type;
 
-    // [4] = name length, [5..5+name_len-1] = name chars.
+    // [4] = name length, [5..] = name chars.
     uint8_t name_len = 0;
     int     i        = 5;
     while (*name && i < (len - 1)) {
@@ -821,9 +711,8 @@ void rf_set_bt_name(uint8_t type, char *name)
     rf_tx_buf[len - 1] = checksum(rf_tx_buf, len - 1);
 
     bb_spi_xfer(rf_tx_buf, len);
-    // Wait 20 ms before firing rf_cmd_04 (the COMMIT). < 20 ms is sometimes
-    // not enough for the BK3632 to finish parsing the name buffer, and the
-    // commit then applies to an incomplete slot.
+    // 20 ms before the COMMIT: with less, the BK3632 may not finish parsing the
+    // name buffer and the commit applies to an incomplete slot.
     delay_ms(20);
     rf_cmd_04();
 }

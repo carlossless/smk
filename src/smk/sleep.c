@@ -1,9 +1,8 @@
 #include "sleep.h"
 
 #ifndef SLEEP_ENABLE
-// sleep.h collapses to macros when the feature is off, leaving this an empty
-// translation unit — which ISO C forbids (--std-c23 + --Werror rejects it).
-// One unused typedef keeps the TU non-empty and emits nothing.
+// With the feature off, sleep.h is all macros and this file would be an empty
+// translation unit (which ISO C forbids). One unused typedef keeps it non-empty.
 typedef int sleep_disabled_placeholder_t;
 #else
 
@@ -20,22 +19,14 @@ typedef int sleep_disabled_placeholder_t;
 
 #    include <stdint.h>
 
-// Inactivity threshold, in matrix frames. We tick once per matrix frame
-// (sleep_tick from the Timer 2 ISR) — a frame is ~8.7 ms (1 matrix scan + ~21
-// LED subframes).
-//
-// Real-world idle timeout: ~6 minutes. At ~8.7 ms/frame that's
-// 6 * 60 / 0.0087 ≈ 41,400 frames (well within the 16-bit counter's 65535 cap).
-// Any key wakes it.
+// Inactivity threshold, in matrix frames. sleep_tick() advances it once per
+// frame; ~41,400 frames is roughly a 6-minute idle timeout.
 #    define SLEEP_TIMEOUT 41400
 
-// All state lives in __xdata — the SH68F90A is at its internal-RAM ceiling, so
-// new state must not land in the default (internal) segment.
-//
-// `inactivity` is owned by the Timer 2 ISR (sleep_tick) during normal running;
-// the main loop only ever reads it indirectly via `sleep_requested`. Activity
-// is communicated to the ISR through the single-byte `activity_seen` flag, so
-// there is no read-modify-write race on the 16-bit counter across contexts.
+// `inactivity` is owned by sleep_tick() during normal running; the main loop
+// only ever reads it indirectly via `sleep_requested`. Activity reaches the tick
+// through the single-byte `activity_seen` flag, so there is no read-modify-write
+// race on the 16-bit counter across contexts.
 static volatile __xdata uint16_t inactivity;
 static volatile __xdata uint8_t  activity_seen;
 static volatile __xdata uint8_t  sleep_requested;
@@ -108,36 +99,30 @@ void sleep_task(void)
     const bool usb_mode = (mode == USER_SLEEP_USB);
 
 #    ifdef RF_ENABLED
-    // BK3632 sleep handshake: in RF mode tell the radio the MCU is going down so
-    // it stays awake and can wake us via its ACK line (P4.2 / INT42), alongside
-    // keypress wake (P4.1). Not needed in USB mode (the radio isn't the active
-    // link).
+    // In RF mode, tell the radio the MCU is going down so it stays awake and can
+    // wake us. Not needed in USB mode (the radio isn't the active link).
     if (!usb_mode) {
         rf_wake_from_sleep();
     }
 #    endif
 
-    // Stop the LED/matrix scan ISR and park the PWM (LEDs dark).
+    // Stop the scan and turn the indicators off.
     timer2_scan_pause();
     indicators_pwm_disable();
 
-    // Board hook: park every port into its low-power state and arm the INT4 wake
-    // (covers P4.1 keypress + P4.2 BK3632). Then drop into Power-Down — the core
-    // halts inside power_enter_powerdown() until a wake fires (INT4, or a USB bus
-    // resume in the USB-suspend variant).
+    // Board hook parks hardware and arms the wake source; power_enter_powerdown()
+    // then halts the core until a wake fires.
     user_sleep_prepare();
     power_enter_powerdown(usb_mode);
-    user_sleep_wake(); // restore GPIO + RF MOT pin, disable the wake int
+    user_sleep_wake();
 
     // Bring the visible subsystems back.
     indicators_pwm_enable();
     timer2_scan_resume();
 
 #    ifdef RF_ENABLED
-    // Re-sync the BK3632 after an RF-mode wake: nudge + status-poll up to 10×,
-    // until the link reports connected again. The loop counter lives in __xdata
-    // (XRAM), not on the internal-RAM-overlaid stack, so this heavier path
-    // doesn't blow the IRAM ceiling.
+    // Re-sync the radio after an RF-mode wake: nudge + status-poll up to 10×,
+    // until the link reports connected again.
     if (!usb_mode) {
         static __xdata uint8_t resync_tries;
         for (resync_tries = 10; resync_tries > 0; resync_tries--) {
@@ -151,8 +136,8 @@ void sleep_task(void)
     }
 #    endif
 
-    // Whatever woke us (a keypress, usually) counts as activity; let the next
-    // Timer 2 tick zero the counter so we don't immediately re-arm.
+    // Whatever woke us counts as activity; let the next tick zero the counter so
+    // we don't immediately re-arm.
     activity_seen = 1;
 }
 

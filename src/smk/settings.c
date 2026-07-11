@@ -4,21 +4,15 @@
 #    include "debug.h" // dprintf
 #endif
 
-// The settings record on flash is
-//   [magic0][magic1][len][payload x len][checksum] = 4 + sizeof(payload) bytes
-// and must fit in the 512-byte settings sector. If the struct grows past that,
-// the build fails here instead of overrunning into the adjacent sectors at
-// runtime.
-_Static_assert(sizeof(user_settings_t) + 4u <= 512u, "user_settings_t too large for the 512-byte settings sector");
+// The persisted record is a 4-byte header + payload; if the struct outgrows the
+// storage sector the build fails here instead of corrupting adjacent storage.
+_Static_assert(sizeof(user_settings_t) + 4u <= 512u, "user_settings_t too large for the settings sector");
 
 __xdata user_settings_t user_settings;
 
-// Deferred-save dirty flag. Handlers set this and return; the main loop calls
-// settings_task() which flushes and clears. Multiple mark_dirty() between
-// flushes coalesce into a single sector erase + N programs, so a fast
-// brightness ramp produces one flash op instead of one per step. Avoids
-// per-press LED flicker (a sector erase stalls the CPU ~5 ms, freezing
-// whatever row was active on the LED scan).
+// Deferred-save dirty flag. Handlers set it and return; settings_task() flushes
+// and clears. Multiple marks between flushes coalesce into one write, so a fast
+// brightness ramp produces a single persist instead of one per step.
 static __xdata bool settings_dirty;
 
 bool settings_load(void)
@@ -28,15 +22,10 @@ bool settings_load(void)
 
 void settings_save(void)
 {
-    // Quiesce the board's LED drivers around the write (no-op on LED-less
-    // boards) so the ~5 ms erase stall can't freeze a lit row bright.
     settings_save_pre();
     flash_settings_save((const __xdata uint8_t *)&user_settings, (uint8_t)sizeof(user_settings));
     settings_save_post();
-    // Anyone calling settings_save() directly has just flushed, so the
-    // dirty flag is no longer meaningful — clear it so the next
-    // settings_task() doesn't re-do the same write.
-    settings_dirty = false;
+    settings_dirty = false; // just flushed; don't let settings_task() redo it
 }
 
 void settings_mark_dirty(void)
@@ -58,7 +47,7 @@ void settings_task(void)
     }
     settings_dirty = false;
 #if DEBUG == 1
-    settings_dump(); // report the coalesced change
+    settings_dump();
 #endif
     settings_save_pre();
     flash_settings_save((const __xdata uint8_t *)&user_settings, (uint8_t)sizeof(user_settings));

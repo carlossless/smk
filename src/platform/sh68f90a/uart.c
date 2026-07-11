@@ -5,18 +5,14 @@
 #include <stdint.h>
 
 // Two independent debug sinks, picked at build time via meson:
-//   - DEBUG_SINK_UART     — bit-banged 8051 UART (SCON/SBUF). One blocking
-//                           busy-wait per byte (~87 µs at 115200 bps,
-//                           ~140 µs at 57600 bps). Stalls the main loop
+//   - DEBUG_SINK_UART     — 8051 UART (SCON/SBUF). One blocking busy-wait per
+//                           byte (~140 µs at 57600 bps); stalls the main loop
 //                           while the TX shift register drains.
-//   - DEBUG_SINK_CONSOLE  — HID console ring buffer drained over USB EP2 IN
-//                           by console_task(). Non-blocking from the writer's
-//                           perspective (drops on full buffer instead of
-//                           waiting), but useless until USB is enumerated.
-// Either, both, or neither may be enabled. With neither, dprintf() still
-// expands but every byte is dropped on the floor by putchar() — useful
-// when you want a release-shaped build to keep dprintf in source for later
-// re-enable without rebuilding the world.
+//   - DEBUG_SINK_CONSOLE  — HID console ring buffer drained over USB EP2 IN by
+//                           console_task(). Non-blocking (drops on full buffer),
+//                           but useless until USB is enumerated.
+// Either, both, or neither may be enabled. With neither, dprintf() still expands
+// but putchar() drops every byte — lets a release build keep dprintf in source.
 
 #ifdef DEBUG_SINK_UART
 
@@ -54,11 +50,10 @@
 #    define UART_ISR_DISABLE() (IEN1 &= ~_ES0)
 
 // Compile-time verification against datasheet §8.5.3.
-// Mode 1, SBRT (15-bit) is in valid range [0, 32767].
 _Static_assert(SBRT_S >= 0 && SBRT_S < 32768, "SBRT out of 15-bit range");
 _Static_assert(SFINE_S >= 0 && SFINE_S < 16, "SFINE must be in [0, 15]");
-// Datasheet's worked example: Fsys=8MHz, baud=115200 -> SBRT=32764, BFINE=5,
-// effective baud 115942 (+0.64%). Verify our formulas reproduce it.
+// Reproduce the datasheet's worked example (Fsys=8MHz, baud=115200 → SBRT=32764,
+// BFINE=5) to verify the formulas.
 #    define _DS_SBRT(fsys, baud)  (32768 - ((fsys) / 16 / (baud)))
 #    define _DS_SFINE(fsys, baud) (((fsys) / (baud)) - 16 * ((fsys) / 16 / (baud)))
 _Static_assert(_DS_SBRT(8000000, 115200) == 32764, "SBRT formula diverges from datasheet example");

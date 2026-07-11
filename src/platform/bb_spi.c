@@ -6,9 +6,8 @@
 
 uint8_t bb_spi_xfer_byte(uint8_t data);
 
-// After CS rises we poll RF_BB_SPI_ACK for up to RF_BB_SPI_ACK_POLL_MAX
-// iterations of RF_BB_SPI_ACK_POLL_US µs each, watching for the BK3632 to
-// toggle the line. ~150 µs total.
+// After CS rises, poll RF_BB_SPI_ACK for the BK3632 to toggle the line
+// (~150 µs total).
 #define RF_BB_SPI_ACK_POLL_MAX 50
 #define RF_BB_SPI_ACK_POLL_US  3
 
@@ -60,8 +59,7 @@ static void bb_spi_burst(uint8_t *data, int len, bool lock)
         }
     }
     CS_RELEASE_HIGH();
-    // MOSI was left in whichever direction the last bit set; release to
-    // input (pull-up high).
+    // Release MOSI to input (pull-up high) after the last bit.
     P0CR &= (uint8_t)~_P0_7;
     RF_BB_SPI_MOSI = 1;
     MOT_RELEASE_HIGH();
@@ -85,25 +83,16 @@ bool bb_spi_xfer(uint8_t *data, int len)
 
 void bb_spi_recv(uint8_t *data, int len)
 {
-    bb_spi_burst(data, len, true);
-    // No ACK poll on the RX path.
+    bb_spi_burst(data, len, true); // no ACK poll on the RX path
 }
 
 uint8_t bb_spi_xfer_byte(uint8_t data)
 {
     uint8_t recv = 0;
 
-    // Per-bit open-drain bit-bang:
-    //
-    //   1. Drive SCK low (P4_7 latch=0; P4CR bit 7 = output).
-    //   2. Set MOSI: bit=1 → P0CR bit 7 = input (pull-up → high);
-    //                bit=0 → P0_7 latch=0, P0CR bit 7 = output (drive low).
-    //   3. Sample MISO (P0_6).
-    //   4. Release SCK high (P4CR bit 7 = input, pull-up takes over).
-    //
-    // The MISO sample happens while SCK is LOW: the slave latches MISO on
-    // the SCK falling edge, master reads while low, then releases SCK high
-    // for the next slave latch.
+    // Per-bit open-drain bit-bang: SCK low, set MOSI, sample MISO, release SCK
+    // high. MISO is sampled while SCK is LOW — the slave latches it on the SCK
+    // falling edge, so the master must read before releasing SCK high again.
     for (uint8_t i = 0; i < 8; i++) {
         recv = recv << 1;
 

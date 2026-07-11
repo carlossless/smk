@@ -9,11 +9,9 @@
 #    include <stdarg.h>
 
 // Emit a 16-bit value in `base` (10 or 16), padded to `width` with `pad`.
-// __reentrant so the digit scratch + scalars live transiently on the stack
-// rather than permanently in internal RAM, which is at its ceiling.
 static void console_emit_num(uint16_t val, uint8_t base, uint8_t width, char pad, uint8_t upper) __reentrant
 {
-    char    buf[5]; // 16-bit: 5 decimal digits / 4 hex digits max
+    char    buf[5];
     uint8_t n = 0;
     do {
         uint8_t d = (uint8_t)(val % base);
@@ -28,11 +26,8 @@ static void console_emit_num(uint16_t val, uint8_t base, uint8_t width, char pad
     }
 }
 
-// Minimal printf for debug output. Tiny so it fits where SDCC's printf_large
-// cannot: bulk storage is console_buf (__xdata) and the formatter keeps only a
-// few transient bytes on the stack (__reentrant, so ISR-safe). Supports %%, %c,
-// %s, and %d/%u/%x/%X with an optional '0' flag + single width digit (e.g. %02x,
-// %5u). 16-bit numeric range only.
+// Minimal printf for debug output. Supports %%, %c, %s, and %d/%u/%x/%X with an
+// optional '0' flag + single width digit (e.g. %02x, %5u). 16-bit range only.
 void console_printf(const __code char *fmt, ...) __reentrant
 {
     va_list ap;
@@ -107,9 +102,8 @@ static __xdata unsigned char    console_buf[CONSOLE_BUF_SIZE];
 static volatile __xdata uint8_t console_head; // producer (console_putc)
 static volatile __xdata uint8_t console_tail; // consumer (console_task)
 
-// Set once the host tool has handshaked (see console_notify_attached). Reset
-// whenever USB drops out of the configured state, so a re-attach after
-// re-enumeration must handshake again (and re-flushes whatever has queued).
+// Set once the host tool has handshaked; cleared when the link drops, so a
+// re-attach must handshake again and re-flushes whatever has queued.
 static __xdata uint8_t console_attached;
 
 void console_notify_attached(void)
@@ -120,8 +114,8 @@ void console_notify_attached(void)
 void console_putc(unsigned char c)
 {
     uint8_t next;
-    // __critical so a dprintf() reached from an interrupt can't tear the head
-    // update against a main-loop writer. Drops the byte when the buffer is full.
+    // __critical so a write from an interrupt can't tear the head update
+    // against a main-loop writer. Drops the byte when the buffer is full.
     __critical
     {
         next = (console_head + 1) & CONSOLE_BUF_MASK;
@@ -132,16 +126,14 @@ void console_putc(unsigned char c)
     }
 }
 
-// Drains buffered bytes into the EP2 IN buffer as a REPORT_ID_CONSOLE HID report.
-// Writes the hardware endpoint buffer directly (rather than via a helper taking
-// a pointer/length) to avoid spending internal RAM on parameter passing.
+// Drains buffered bytes to the host as a REPORT_ID_CONSOLE HID report.
 void console_task(void)
 {
     uint8_t len;
 
     if (!usb_is_configured()) {
-        console_attached = 0; // require a fresh handshake after re-enumeration
-        return;               // not enumerated over USB (e.g. wireless / unplugged)
+        console_attached = 0; // require a fresh handshake once the link is back
+        return;
     }
     if (!console_attached) {
         return; // host tool hasn't announced itself yet; keep buffering
@@ -150,7 +142,7 @@ void console_task(void)
         return; // nothing buffered
     }
     if (EP2CON & _IEP2RDY) {
-        return; // previous EP2 report still pending; retry next iteration
+        return; // previous report still pending; retry next iteration
     }
 
     EP2_IN_BUF[0] = REPORT_ID_CONSOLE;

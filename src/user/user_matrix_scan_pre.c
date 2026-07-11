@@ -1,4 +1,4 @@
 #include "user_matrix.h"
 
-// Default no-op per-sweep pre-hook, for boards whose columns are always outputs.
+// Default no-op, for boards with dedicated column outputs.
 void user_matrix_scan_pre(void) {}

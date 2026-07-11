@@ -303,9 +303,16 @@ static void usb_ep0_out_irq();
 static void usb_ep0_in_irq();
 
 // buffer utils
-static void setup_ep0_in_xfer(uint8_t *src, uint16_t len);
+// __reentrant on the two EP0-IN helpers: they run inside the USB ISR while
+// streaming (often __code) descriptor pointers. SDCC's static-overlay allocator
+// doesn't model interrupt preemption, so left non-reentrant it parks their pointer
+// params on the same internal-RAM bytes as main-loop locals — and a mid-render IRQ
+// then corrupts them (see project_sdcc_isr_overlay_collision). Reentrant keeps
+// their params on the stack, out of the shared overlay. Enforced by
+// utils/check_isr_overlay.py.
+static void setup_ep0_in_xfer(uint8_t *src, uint16_t len) __reentrant;
 static void step_ep0_in_xfer();
-static void set_ep0_in_buffer(uint8_t *src, uint8_t len);
+static void set_ep0_in_buffer(uint8_t *src, uint8_t len) __reentrant;
 static void get_ep0_out_buffer(uint8_t *dest);
 static void set_ep1_in_buffer(uint8_t *src, uint8_t len);
 static void get_ep1_out_buffer(uint8_t *dest);
@@ -349,20 +356,17 @@ uint8_t __xdata            active_configuration;
 uint8_t __xdata            interface0_protocol;
 uint8_t __xdata            interface1_protocol;
 __bit                      usb_remote_wakeup;
-// Set when the host suspends the bus (SUSPIF: no SOF for >3 ms), cleared the
-// instant bus activity resumes (SOF) or on a bus reset. The sleep feature reads
-// this to decide when USB-mode sleep is safe — self-suspending while the host is
-// actively polling would break the link, so we only drop into the USB-suspend
-// Power-Down once the host has parked the bus itself.
+// Set when the host suspends the bus (SUSPIF), cleared on the next SOF or bus
+// reset. The sleep feature only enters USB-suspend Power-Down once the host has
+// parked the bus itself — self-suspending mid-poll would break the link.
 __bit                   usb_suspended;
 uint8_t __xdata         idle_time;
 usb_ep0_state_t __xdata usb_ep0_state;
 
-// See usb.h: reloaded on each SETUP, decremented on each SOF; main() keeps the
-// backlight dark until enumeration has been seen and then gone quiet, so the
-// boot scan-blip lands on a dark frame. ~500 ms quiet window after the last
-// control transfer. usb_enum_seen latches the first SETUP so the gate isn't
-// defeated by the boot race (quiet before enumeration has even started).
+// See usb.h. Reloaded on each SETUP, decremented on each SOF; main() keeps the
+// backlight dark until enumeration is seen and has gone quiet (~500 ms), so the
+// boot scan-blip lands on a dark frame. usb_enum_seen latches the first SETUP so
+// the boot race (quiet before enumeration starts) doesn't defeat the gate.
 __xdata uint16_t usb_enum_active_ticks;
 __xdata bool     usb_enum_seen;
 #define USB_ENUM_ACTIVE_RELOAD 500
@@ -382,9 +386,8 @@ void usb_init()
     ep0_xfer_bytes_left = 0;
     ep0_xfer_src        = 0;
 
-    // Reset the boot LED gate state here (runs at boot and on every bus reset).
-    // Cold-boot xdata isn't guaranteed zero, so explicit init keeps a garbage
-    // value from making main() think enumeration already finished.
+    // Reset the boot LED gate (cold-boot xdata isn't guaranteed zero, and a
+    // garbage value would make main() think enumeration already finished).
     usb_enum_active_ticks = 0;
     usb_enum_seen         = false;
 
@@ -395,13 +398,10 @@ void usb_init()
     IEN1 |= _EUSB;
 }
 
-// Tear down the USB device state — the counterpart to usb_init(). Used by the
-// RF-sleep path: the regulator-off sleep drops the USB PHY (the host sees a
-// disconnect), so we reset the device-state machine to DEFAULT (not configured)
-// and disable the module + its interrupt. With the device marked un-configured,
-// the configured-gate in usb_send_* blocks any send until the host
-// re-enumerates and re-configures us on wake; usb_init() then brings it all
-// back up.
+// Tear down the USB device state (counterpart to usb_init). Used by the RF-sleep
+// path: the regulator-off sleep drops the PHY, so reset the device-state machine
+// to DEFAULT and disable the module + interrupt. The un-configured state makes
+// the gate in usb_send_* block sends until the host re-enumerates on wake.
 void usb_deinit()
 {
     usb_device_state     = USB_DEVICE_STATE_DEFAULT;
@@ -421,10 +421,9 @@ void usb_deinit()
 
 void usb_send_report(__xdata report_keyboard_t *report)
 {
-    // Don't touch the endpoint until the host has configured us. Before
-    // SET_CONFIGURATION (incl. the re-enumeration window after a sleep wake) the
-    // host isn't reading EP1, so a write is lost AND the IEP1RDY wait below would
-    // spin its full ~10 ms timeout, stalling the main loop on every keypress.
+    // Don't touch the endpoint until configured. Before SET_CONFIGURATION the
+    // host isn't reading EP1, so a write is lost AND the IEP1RDY wait below spins
+    // its full ~10 ms timeout, stalling the main loop on every keypress.
     if (usb_device_state != USB_DEVICE_STATE_CONFIGURED) {
         return;
     }
@@ -668,14 +667,11 @@ static void usb_setup_irq()
 
 void usb_interrupt_handler() __interrupt(_INT_USB)
 {
-    // Save and restore INSCON and FLASHCON around the entire USB handler. The
-    // handler reads descriptors out of __code (the EP0 streamer and the descriptor
-    // memcpy), and preserving the instruction/flash-controller banking registers
-    // keeps a USB IRQ that lands mid-instruction-fetch — or over any main-loop
-    // code/flash access — from corrupting the interrupted path's banking state.
-    // SDCC's __interrupt prologue saves the standard registers but NOT these two
-    // SFRs. usb_interrupt_handler() has no early returns, so restoring at the tail
-    // covers every path.
+    // Save/restore INSCON and FLASHCON: the handler reads descriptors out of
+    // __code, and a USB IRQ landing over a main-loop code/flash access would
+    // otherwise corrupt the interrupted path's banking state. SDCC's __interrupt
+    // prologue saves the standard registers but not these two SFRs; the handler
+    // has no early returns, so restoring at the tail covers every path.
     uint8_t saved_inscon   = INSCON;
     uint8_t saved_flashcon = FLASHCON;
 
@@ -685,13 +681,11 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
     if (temp_usbif1 != 0x00) {
         if (temp_usbif1 & _SOFIF) {
             USBIF1 &= ~_SOFIF;
-            // 1 ms bus heartbeat — use it as the clock that ages out the
-            // "USB still busy" window set by each SETUP (see usb_enum_active_ticks).
+            // 1 ms heartbeat — ages out the "USB busy" window set by each SETUP.
             if (usb_enum_active_ticks) {
                 usb_enum_active_ticks--;
             }
-            // Any SOF means the host is driving the bus again — not suspended.
-            usb_suspended = 0;
+            usb_suspended = 0; // a SOF means the host is driving the bus again
         } else {
             USBIF1 &= ~(_SETUPIF);      // Clear SETUPIF
             USBIF1 &= ~(_OVERIF | _OW); // SETUP OVERIF & OW
@@ -701,8 +695,8 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
                 usb_init();
             } else if (temp_usbif1 & _SETUPIF) {
                 USBIF1 &= ~_SETUPIF;
-                // Host is running control transfers — keep the "USB busy" window
-                // alive so the backlight stays dark through enumeration + HID attach.
+                // Refresh the "USB busy" window so the backlight stays dark
+                // through enumeration + HID attach.
                 usb_enum_active_ticks = USB_ENUM_ACTIVE_RELOAD;
                 usb_enum_seen         = true;
                 usb_setup_irq();
@@ -710,23 +704,22 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
                 USBIF1 &= ~_RESMIF;
             } else if (temp_usbif1 & _SUSPIF) { // SUSPIF
                 USBIF1 &= ~_SUSPIF;
-                // Host parked the bus (>3 ms idle). Only treat it as a real
-                // suspend once we're a configured device — spurious SUSPIF
-                // during enumeration shouldn't arm USB sleep.
+                // Only treat it as a real suspend once configured — spurious
+                // SUSPIF during enumeration shouldn't arm USB sleep.
                 if (usb_device_state == USB_DEVICE_STATE_CONFIGURED) {
                     usb_suspended = 1;
                 }
             } else if (temp_usbif1 & _USBRSTIF) { // BUSRSTIF
                 USBIF1 &= ~_USBRSTIF;
 
-                USBCON |= _SWRST; // softreset
+                USBCON |= _SWRST;
                 _nop_();
                 _nop_();
                 _nop_();
                 _nop_();
                 _nop_();
                 _nop_();
-                USBCON &= ~_SWRST; // clear softreset
+                USBCON &= ~_SWRST;
 
                 usb_init();
                 SET_EP0_OUT_RDY;
@@ -752,8 +745,7 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
         }
     }
 
-    // Restore the banking SFRs the handler may have disturbed (see top).
-    FLASHCON = saved_flashcon;
+    FLASHCON = saved_flashcon; // restore banking SFRs (see top)
     INSCON   = saved_inscon;
 }
 
@@ -973,10 +965,14 @@ static void usb_get_descriptor_handler(__xdata struct usb_req_setup *req)
     uint8_t               index = req->wValue & 0xff;
     usb_descriptor_set_c *set   = &usb_descriptor_set;
 
-#define APPEND(addr, length)       \
-    do {                           \
-        memcpy(buf, addr, length); \
-        buf += length;             \
+// Byte loop, not memcpy: this runs in the USB ISR (see set_ep0_in_buffer).
+// Sources are the __code descriptor tables (usb_descriptor_set_c).
+#define APPEND(addr, length)                          \
+    do {                                              \
+        for (uint16_t _i = 0; _i < (length); _i++) {  \
+            buf[_i] = ((__code uint8_t *)(addr))[_i]; \
+        }                                             \
+        buf += (length);                              \
     } while (0)
 
 #define APPEND_DESC(desc) APPEND(desc, (desc)->bLength)
@@ -1026,14 +1022,10 @@ static void usb_get_descriptor_handler(__xdata struct usb_req_setup *req)
     } else if (type == USB_DESC_CLASS_REPORT) {
         uint8_t iface_index = req->wIndex;
 
-        // Stream the report descriptor straight out of __code instead of
-        // memcpy-ing the whole thing into `scratch` first. That copy ran inside the
-        // USB ISR; for the ~100+ byte `extra` descriptor it was long enough to
-        // starve the equal-priority Timer-2 LED scan while it held a row sink — a
-        // one-shot blip when the HID driver fetches the report descriptor (right
-        // after SET_CONFIGURATION, once the backlight is up). The EP0 streamer
-        // copies 8 bytes per IN-IRQ through a generic pointer, which reads __code
-        // fine.
+        // Stream the report descriptor straight out of __code — the EP0 streamer
+        // copies 8 bytes per IN-IRQ. Bulk-copying the ~100+ byte descriptor into
+        // scratch inside the ISR was long enough to starve the equal-priority LED
+        // scan while it held a row sink, blipping when the HID driver fetches it.
         if (iface_index == 0) {
             addr   = (uint8_t *)hid_report_desc_keyboard;
             length = sizeof(hid_report_desc_keyboard);
@@ -1224,7 +1216,7 @@ void usb_ep0_in_irq()
     }
 }
 
-static void setup_ep0_in_xfer(uint8_t *src, uint16_t len)
+static void setup_ep0_in_xfer(uint8_t *src, uint16_t len) __reentrant
 {
     ep0_xfer_src        = src;
     ep0_xfer_bytes_left = len;
@@ -1257,44 +1249,57 @@ static void step_ep0_in_xfer()
     }
 }
 
-static void set_ep0_in_buffer(uint8_t *src, uint8_t len)
+// Byte-loop copies, never library memcpy: memcpy is non-reentrant, and these
+// EP buffers are touched from both the USB ISR (EP0/descriptors) and the main
+// loop (EP1/EP2 report sends). An ISR memcpy preempting a main-loop memcpy
+// corrupts the shared statics and hangs the main loop.
+static void set_ep0_in_buffer(uint8_t *src, uint8_t len) __reentrant
 {
     if (len > EP0_BUF_SIZE) {
-        return; // never happens; guards the memcpy without logging from an ISR
+        return;
     }
-
-    memcpy(EP0_IN_BUF, src, len);
+    for (uint8_t i = 0; i < len; i++) {
+        EP0_IN_BUF[i] = src[i];
+    }
 }
 
 static void get_ep0_out_buffer(uint8_t *dest)
 {
-    memcpy(dest, EP0_OUT_BUF, EP0_BUF_SIZE);
+    for (uint8_t i = 0; i < EP0_BUF_SIZE; i++) {
+        dest[i] = EP0_OUT_BUF[i];
+    }
 }
 
 static void set_ep1_in_buffer(uint8_t *src, uint8_t len)
 {
     if (len > EP1_BUF_SIZE) {
-        return; // never happens; guards the memcpy without logging from an ISR
+        return;
     }
-
-    memcpy(EP1_IN_BUF, src, len);
+    for (uint8_t i = 0; i < len; i++) {
+        EP1_IN_BUF[i] = src[i];
+    }
 }
 
 static void get_ep1_out_buffer(uint8_t *dest)
 {
-    memcpy(dest, EP1_OUT_BUF, EP1_BUF_SIZE);
+    for (uint8_t i = 0; i < EP1_BUF_SIZE; i++) {
+        dest[i] = EP1_OUT_BUF[i];
+    }
 }
 
 static void set_ep2_in_buffer(uint8_t *src, uint8_t len)
 {
     if (len > EP2_BUF_SIZE) {
-        return; // never happens; guards the memcpy without logging from an ISR
+        return;
     }
-
-    memcpy(EP2_IN_BUF, src, len);
+    for (uint8_t i = 0; i < len; i++) {
+        EP2_IN_BUF[i] = src[i];
+    }
 }
 
 static void get_ep2_out_buffer(uint8_t *dest)
 {
-    memcpy(dest, EP2_OUT_BUF, EP2_BUF_SIZE);
+    for (uint8_t i = 0; i < EP2_BUF_SIZE; i++) {
+        dest[i] = EP2_OUT_BUF[i];
+    }
 }

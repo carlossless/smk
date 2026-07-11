@@ -18,17 +18,15 @@ typedef uint8_t matrix_col_t;
 __xdata matrix_col_t matrix[MATRIX_COLS];
 __xdata matrix_col_t matrix_previous[MATRIX_COLS];
 
-// Set by matrix_scan_full() (called from the Timer 2 ISR) every time a
-// full 16-column sweep completes. Cleared by matrix_task() after it has
-// diffed the new sample against the previous one. Volatile because the
-// ISR writes it asynchronously from the main loop's read.
+// Set by matrix_scan_full() each time a full column sweep completes; cleared by
+// matrix_task() after it has diffed the new sample against the previous one.
+// Volatile because the scan writes it asynchronously from the main loop's read.
 volatile bool matrix_updated;
 
 uint8_t action_layer;
 
 // Base layer the matrix resolves keys against when no momentary (MO) layer is
-// held. Defaults to 0; a keyboard can retarget it at runtime (e.g. the
-// nuphy-air60 points it at _MAC_BL / _WIN_BL from the OS_MODE_SWITCH slider).
+// held. Defaults to 0; a keyboard can retarget it at runtime.
 __xdata uint8_t default_layer;
 
 void matrix_init()
@@ -123,36 +121,23 @@ void process_key_state(uint8_t row, uint8_t col, bool pressed)
     (void)qcode; // unrecognized keycode: nothing to send
 }
 
-// Called from the Timer 2 ISR. Disables the LED column PWM (so the col
-// pins are GPIO-driven, not PWM-driven), turns off every LED row sink
-// so leakage current through the matrix doesn't bias the row reads, runs
-// the board's per-sweep pre-hook, drives the cols HIGH, then for each of the
-// 16 cols drops it LOW, samples rows twice ~10 µs apart, and only commits the
-// result if both samples agree. Runs the board's per-sweep post-hook and
-// re-enables PWM.
+// Sweep the whole matrix once: for each column, select it, sample the rows
+// twice with a settle delay between, and commit only if both samples agree
+// (two-sample debounce). Board hooks wrap the sweep and the LED indicators are
+// quiesced across it so they can't bias the row reads.
 void matrix_scan_full(void)
 {
     indicators_pwm_disable();
 
-    // Drop every LED row sink so no LED current flows through the matrix while
-    // we sample. Otherwise a row sink sourcing 3.3V with a col driven LOW lets
-    // the LED conduct, biasing adjacent row traces.
     user_matrix_sinks_off();
 
-    // Per-sweep board hook: prepare the column pins before we drive them — e.g.
-    // nuphy-air60 switches its muxed columns from their high-Z rest state to
-    // output, so it must run before cols_deselect_all() takes effect. No-op on
-    // boards whose columns are permanently outputs.
     user_matrix_scan_pre();
     user_matrix_cols_deselect_all();
 
     for (uint8_t col = 0; col < MATRIX_COLS; col++) {
         user_matrix_col_select(col);
 
-        // Settle. Row pin RC (pull-up + trace cap) is ~1 µs; 10 µs is a
-        // generous margin — net cost is 160 µs per full sweep, still well
-        // under the Timer 2 period.
-        delay_us(10);
+        delay_us(10); // let the row lines settle before sampling
         const uint8_t sample1 = user_matrix_read_rows();
         delay_us(10);
         const uint8_t sample2 = user_matrix_read_rows();
@@ -164,11 +149,6 @@ void matrix_scan_full(void)
         user_matrix_col_deselect(col);
     }
 
-    // Per-sweep board hook: restore the column pins after the sweep — e.g.
-    // nuphy-air60 releases its columns to input/high-Z so that when the LED PWM
-    // is later parked (per-subframe, or for the ~5 ms settings-save) the pins
-    // float instead of holding a row bright. No-op on boards that keep their
-    // columns driven.
     user_matrix_scan_post();
 
     indicators_pwm_enable();
@@ -182,15 +162,10 @@ uint8_t matrix_task()
         return false;
     }
 
-    // Three-buffer diff: snapshot the ISR-written matrix[], then diff it
-    // against matrix_previous[].
-    //
-    // No EA toggle around the copy — each matrix[col] is one byte and the
-    // 8051 MOV is atomic per byte, so a concurrent ISR scan can land
-    // entirely on either side of the read without tearing. If the ISR
-    // updates matrix[col] mid-snapshot, the diff (snapshot ^ matrix_previous)
-    // still catches whatever transition happened — it just may split
-    // press/release across two main-loop iterations instead of one.
+    // Snapshot the scan-written matrix[], then diff it against
+    // matrix_previous[]. No lock needed: each column byte reads atomically, so a
+    // concurrent scan lands cleanly on one side of the read — at worst a
+    // transition is split across two main-loop iterations, never lost.
     __xdata matrix_col_t snapshot[MATRIX_COLS];
     matrix_updated = false;
     for (uint8_t i = 0; i < MATRIX_COLS; i++) {
@@ -206,10 +181,7 @@ uint8_t matrix_task()
             continue;
         }
         matrix_changed = true;
-        // A key changed state — reset the sleep inactivity timer. Placed here
-        // (not behind a separate `if (matrix_changed)`) so it stays a plain
-        // statement when SLEEP_ENABLE is off and the macro is a no-op.
-        sleep_note_activity();
+        sleep_note_activity(); // a key changed state; reset the inactivity timer
 
         __xdata matrix_col_t row_mask = 1;
         for (uint8_t row = 0; row < MATRIX_ROWS; row++, row_mask <<= 1) {

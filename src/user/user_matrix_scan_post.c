@@ -1,4 +1,4 @@
 #include "user_matrix.h"
 
-// Default no-op per-sweep post-hook, for boards that keep their columns driven.
+// Default no-op, for boards with dedicated column outputs.
 void user_matrix_scan_post(void) {}

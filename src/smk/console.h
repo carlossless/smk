@@ -2,28 +2,22 @@
 
 #include <stdint.h>
 
-// Debug console over USB HID. Bytes written with console_putc() are queued in a
-// ring buffer and drained to the host as REPORT_ID_CONSOLE HID input reports by
-// console_task(), which must be called periodically from the main loop. Only
-// active in DEBUG builds; see putchar() in uart.c for the stdio hookup.
+// Debug console over the host link. Bytes written with console_putc() are queued
+// in a ring buffer and drained to the host by console_task(), which must be
+// called periodically from the main loop. DEBUG builds only.
 //
 // Output is held in the ring buffer until the host announces it is listening
-// (console_notify_attached(), driven by a SET_REPORT handshake from the host
-// tool). This avoids the hidraw attach race: a one-shot drain on USB-configured
-// would be consumed by the kernel before the host tool opens the node, losing
-// the boot banner. Holding until the explicit handshake means whatever is
-// queued (banner included) flushes the moment the tool actually attaches.
+// (console_notify_attached), so nothing queued (the boot banner included) is
+// lost to a race where the host opens its node after the link comes up.
 
 void console_putc(unsigned char c);
 void console_task(void);
 
 // The host tool announces it is attached and ready to read; console_task() then
-// starts draining the buffered output. Called from the USB SET_REPORT handler.
+// starts draining the buffered output.
 void console_notify_attached(void);
 
-// Minimal printf for debug output (prefer the dprintf() macro in debug.h). Tiny
-// so it fits where SDCC's printf_large does not: bulk storage is console_buf
-// (__xdata) and the formatter keeps only transient state on the stack. Supports
-// %%, %c, %s, and %d/%u/%x/%X with an optional '0' flag + single width digit.
-// 16-bit range. __reentrant, so ISR-safe.
+// Minimal printf for debug output (prefer the dprintf() macro in debug.h).
+// Supports %%, %c, %s, and %d/%u/%x/%X with an optional '0' flag + single width
+// digit. 16-bit range.
 void console_printf(const __code char *fmt, ...) __reentrant;

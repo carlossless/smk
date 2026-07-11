@@ -1,12 +1,11 @@
 #pragma once
 
-// Inactivity sleep feature: an inactivity counter ticks up once per matrix
-// frame, is reset to zero on key activity, and on reaching a threshold the
-// keyboard drops the MCU into Power-Down mode (LEDs off, RF asleep) until a
-// keypress (INT4) or USB bus event wakes it.
+// Inactivity sleep feature: a counter ticks up once per matrix frame, resets on
+// key activity, and on reaching a threshold drops the MCU into its lowest-power
+// state (LEDs off, RF asleep) until a keypress or host event wakes it.
 //
-// Gated by SLEEP_ENABLE (meson `sleep` feature, enabled by default). When off,
-// every entry point compiles to nothing so call sites stay clean.
+// Gated by SLEEP_ENABLE. When off, every entry point compiles to nothing so call
+// sites stay clean.
 
 #ifdef SLEEP_ENABLE
 
@@ -14,9 +13,8 @@
 // inactivity counter / request state.
 void sleep_init(void);
 
-// Advance the inactivity counter by one. Called from the Timer 2 ISR, once per
-// matrix-scan frame. Cheap: a couple of xdata ops. No-op until the threshold,
-// then latches a sleep request.
+// Advance the inactivity counter by one, once per matrix-scan frame. No-op until
+// the threshold, then latches a sleep request.
 void sleep_tick(void);
 
 // Mark that the user did something (a key changed state). Resets the inactivity
@@ -24,9 +22,9 @@ void sleep_tick(void);
 // the main loop or an ISR without guarding.
 void sleep_note_activity(void);
 
-// Main-loop hook: if a sleep request is pending, quiesce LEDs/RF, enter
-// Power-Down via the platform + board hooks, and on wake restore everything.
-// Blocks (the core is halted) for the whole sleep. No-op when nothing pending.
+// Main-loop hook: if a sleep request is pending, quiesce everything, sleep via
+// the platform + board hooks, and restore on wake. Blocks for the whole sleep.
+// No-op when nothing is pending.
 void sleep_task(void);
 
 #else

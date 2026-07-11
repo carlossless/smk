@@ -2,17 +2,15 @@
 
 - [x] Debug printf (via UART)
 - [x] Key Scan
-    - [ ] Debouncing
+    - [x] Debouncing
 - [x] Indicators (Backlight)
-- [x] Sleep (inactivity → SH68F90A Power-Down, INT4/USB wake; default on, opt-in per board)
+- [x] Sleep
 - [x] USB HID
     - [x] ISP Command
     - [x] USB Keyboard
     - [x] Status LEDs
     - [x] Extra Keys (System / Consumer)
     - [x] NKRO
-- [~] QMK Compatibility
-    - [~] Layouts
 - [~] Wireless
     - [~] BK3632
         - [~] 2.4G

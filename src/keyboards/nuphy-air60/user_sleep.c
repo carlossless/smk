@@ -27,6 +27,8 @@ user_sleep_mode_t user_sleep_supported(void)
 void user_sleep_prepare(void)
 {
     // --- Per-port low-power parking -----------------------------------------
+    // Transcribed from the stock sleep teardown, minus its provably-dead writes
+    // (duplicate PxPCR clears and a redundant second P0CR mask).
     P1PCR &= 0xCF;
     P1CR &= 0xCF;
     P2PCR &= 0xC0;
@@ -35,16 +37,12 @@ void user_sleep_prepare(void)
     P3CR &= 0xC0;
     P5PCR &= 0xF8;
     P5CR &= 0xF8;
-    P5PCR &= 0xF8;
     P5CR |= 0x47;
     P5 &= 0xB8;
-    P3PCR &= 0xC0;
     P3CR |= 0x3F;
     P3 &= 0xC0;
-    P2PCR &= 0xC0;
     P2CR |= 0x3F;
     P2 &= 0xC0;
-    P1PCR &= 0xCF;
     P1CR |= 0x38;
     P1 &= 0xC0;
     P0PCR &= 0xE3;
@@ -66,8 +64,7 @@ void user_sleep_prepare(void)
     P7CR |= 0x80;
     P7 &= 0x7F;
     P4CR &= 0x7F;
-    P0CR &= 0x7F;
-    P0CR &= 0xDF;
+    P0CR &= 0x5F;
     P7CR &= 0xEF;
     P5_6 = 1;
     P1_3 = 1;

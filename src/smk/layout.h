@@ -6,6 +6,5 @@
 extern const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS];
 
 // Retarget the base layer used for keys that aren't under a held MO() layer.
-// Defaults to 0. Used by keyboards with runtime-selectable base layouts
-// (e.g. the nuphy-air60 Win/Mac OS_MODE_SWITCH slider).
+// Defaults to 0. For keyboards with runtime-selectable base layouts.
 void set_default_layer(uint8_t layer);

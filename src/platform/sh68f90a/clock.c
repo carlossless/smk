@@ -3,40 +3,37 @@
 #include "delay.h"
 #include "watchdog.h"
 
-/** \brief sets up HRCCLK and uses it as SYSCLK */
+// Set up HRCCLK/PLL and use it as SYSCLK.
 void clock_init()
 {
-    CLKCON = _HFON;  // enable HRCCLK
-    PLLCON = _PLLON; // init PLL
+    CLKCON = _HFON;
+    PLLCON = _PLLON;
 
-    while (!(PLLCON & _PLLSTA)) { // wait for PLL to lock phase
+    while (!(PLLCON & _PLLSTA)) { // wait for PLL phase lock
         CLR_WDT();
     }
 
-    PLLCON |= _PLLFS; // switch OSCSCLK
-    CLKCON |= _FS;    // use HRCCLK as SYSCLK
+    PLLCON |= _PLLFS;
+    CLKCON |= _FS; // HRCCLK as SYSCLK
 }
 
 void clock_wake_restart()
 {
-    // Wake from Power-Down: the HF oscillator was fully stopped, so it needs a
-    // cold-start settle before the PLL output is trustworthy. Do NOT poll PLLSTA
-    // here — it can return the instant the lock comparator trips, before the
-    // freshly restarted oscillator is stable enough for USB-grade (12 MHz ±0.25%)
-    // timing. Selecting that marginal clock stalls both the Timer-2 LED/matrix scan
-    // (frozen animation) and USB enumeration at once. Instead: start HF+PLL, spin a
-    // FIXED warm-up, then commit the PLL as SYSCLK in one shot.
-    //
-    // Interrupts masked: an ISR firing mid clock-switch would run on a
-    // half-selected/unstable clock.
+    // On a Power-Down wake the HF oscillator was fully stopped and needs a
+    // cold-start settle. Do NOT poll PLLSTA — it can return the instant the lock
+    // comparator trips, before the oscillator is stable enough for USB-grade
+    // (12 MHz ±0.25%) timing, and selecting that marginal clock stalls both the
+    // LED scan and USB enumeration. Start HF+PLL, spin a FIXED warm-up, then
+    // commit the PLL as SYSCLK in one shot. Interrupts masked so no ISR runs on
+    // a half-selected clock.
     __critical
     {
-        CLKCON |= _HFON;  // start HF oscillator
-        PLLCON |= _PLLON; // start PLL
+        CLKCON |= _HFON;
+        PLLCON |= _PLLON;
         CLR_WDT();
 
-        // Fixed settle. SYSCLK is still the slow pre-PLL clock here, so these
-        // iterations are far longer than the needed ~20 µs — comfortably generous.
+        // Fixed settle. SYSCLK is still the slow pre-PLL clock, so these
+        // iterations run far longer than the needed ~20 µs.
         for (uint8_t i = 0; i < 200; i++) {
             // clang-format off
             __asm
@@ -45,8 +42,8 @@ void clock_wake_restart()
             // clang-format on
         }
 
-        PLLCON = _PLLFS | _PLLON; // PLL drives the clock source
-        CLKCON = _FS | _HFON;     // SYSCLK = HF/PLL
+        PLLCON = _PLLFS | _PLLON;
+        CLKCON = _FS | _HFON; // SYSCLK = HF/PLL
         CLR_WDT();
     }
 }
