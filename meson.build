@@ -123,6 +123,8 @@ endif
 
 if get_option('buildtype') == 'debug'
     cc_base_args += '-DDEBUG=1'
+    cc_base_args += '--debug'   # emit SDCC .cdb for source-level tests (tests/sim.py)
+
     debug_sink = get_option('debug_sink')
     if debug_sink == 'console' or debug_sink == 'both'
         cc_base_args += '-DDEBUG_SINK_CONSOLE=1'

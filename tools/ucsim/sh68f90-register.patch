@@ -1,0 +1,55 @@
+--- a/sim/ucsim/src/core/utils.src/stypes.h
++++ b/sim/ucsim/src/core/utils.src/stypes.h
+@@ -133,12 +133,13 @@
+   CPU_517	= 0x0800,
+   CPU_F380	= 0x1000,
+   CPU_XC88X	= 0x2000,
++  CPU_SH68F90	= 0x4000,
+   
+   CPU_ALL_51	= (CPU_51|CPU_31),
+   CPU_ALL_52	= (CPU_52|CPU_32|CPU_51R|CPU_89C51R|CPU_251|
+ 		   CPU_DS320|CPU_DS390|CPU_DS390F|
+ 		   CPU_C521|CPU_517|CPU_XC88X|
+-		   CPU_F380),
++		   CPU_F380|CPU_SH68F90),
+   CPU_ALL_DS3X0 = (CPU_DS320|CPU_DS390|CPU_DS390F),
+  
+   CPU_AVR	= 0x0001,
+--- a/sim/ucsim/src/core/utils.src/globals.cc
++++ b/sim/ucsim/src/core/utils.src/globals.cc
+@@ -396,6 +396,7 @@
+     // F type should go to subtype...
+     {"DS390" , CPU_DS390, CPU_CMOS		, "Dallas DS80C390" , "cmos"},
+     {"DS390F", CPU_DS390F, CPU_CMOS		, "Dallas DS80C390F", "cmos"},
++    {"SH68F90", CPU_SH68F90, CPU_CMOS		, "SinoWealth SH68F90", "cmos"},
+     
+     {NULL, CPU_NONE, 0, "", ""}
+   };
+--- a/sim/ucsim/src/sims/s51.src/sim51.cc
++++ b/sim/ucsim/src/sims/s51.src/sim51.cc
+@@ -52,6 +52,7 @@
+ #include "uc88xcl.h"
+ #include "uc320cl.h"
+ #include "uc380cl.h"
++#include "sh68f90cl.h"
+ //#include "glob.h"
+ 
+ 
+@@ -105,6 +106,8 @@
+       return(new cl_uc320(&cpus_51[i], this));
+     case CPU_DS390: case CPU_DS390F:
+       return(new cl_uc390(&cpus_51[i], this));
++    case CPU_SH68F90:
++      return(new cl_sh68f90(&cpus_51[i], this));
+     default:
+       fprintf(stderr, "Unknown processor type\n");
+       return NULL;
+--- a/sim/ucsim/src/sims/s51.src/objs.mk
++++ b/sim/ucsim/src/sims/s51.src/objs.mk
+@@ -5,5 +5,5 @@
+                   timer0.o timer1.o timer2.o serial.o port.o interrupt.o \
+                   wdt.o pca.o mdu.o \
+                   uc51.o uc52.o uc51r.o uc89c51r.o uc251.o uc517.o \
+-                  uc390.o uc390hw.o uc521.o uc88x.o uc320.o uc380.o
++                  uc390.o uc390hw.o uc521.o uc88x.o uc320.o uc380.o sh68f90.o
+ 

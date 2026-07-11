@@ -19,6 +19,7 @@ Override targets with env vars SMK_UCSIM (simulator) and SMK_FIRMWARE (.hex).
 import unittest
 
 from sim import Sim
+from devices import Air60Sim
 
 SIM = Sim()
 
@@ -30,39 +31,44 @@ def setUpModule():
 
 
 class TestWorstCaseStack(unittest.TestCase):
-    """Drive the deepest stack path reachable in simulation -- a full boot through
-    real init, then a real key press (PWM ISR -> matrix scan -> process_key_state
-    -> EP1 report) with the deepest USB ISR (GET_DESCRIPTOR's descriptor handler)
-    nested over it -- and verify the firmware reaches the end without overflowing
-    the 122-byte stack. The firmware paints the stack at boot (stack_paint), so the
-    peak is read back from the painted region; uCsim's stack tracking is the
-    overflow backstop.
+    """Drive the deepest stack path reachable in simulation -- a real key press
+    (matrix scan -> process_key_state -> EP1 report) with the deepest USB ISR
+    (GET_DESCRIPTOR's descriptor handler) nested over it -- and verify the firmware
+    reaches the end without overflowing the 122-byte stack. The peak is read back
+    from the boot-time painted region; uCsim's stack tracking is the backstop.
 
-    Caveat: the deepest frames of the key path and the USB ISR being live at the
-    *same instant* isn't forced (the paint captures the deepest SP ever reached, not
-    proven simultaneity), so this is the deepest *reachable* combination, not a
-    provable global maximum."""
+    Caveat: the deepest key-path and USB-ISR frames being live at the *same
+    instant* isn't forced (the paint captures the deepest SP ever reached), so this
+    is the deepest *reachable* combination, not a provable global maximum."""
 
     def test_deepest_path_reaches_end_without_overflow(self):
-        out = SIM.deepest_stack_run()
-        self.assertNotIn("Stack overflow", out,
+        kb = Air60Sim()
+        try:
+            kb.boot(usb=True)                 # stack_paint runs during boot
+            kb.mark_usb_configured()          # enumerated host: usb_send_* gates on CONFIGURED
+            kb.matrix.press(1, 2)             # KC_A: real scan -> process_key_state -> EP1
+            reps = kb.scan_for_report()
+            kb.nest_usb_descriptor()          # deepest USB ISR nested over the main loop
+            peak = kb.stack_highwater()
+            stack_base = kb.stack_base
+            serr = kb.stderr_text()
+        finally:
+            kb.close()
+        self.assertNotIn("Stack overflow", serr,
                          "firmware must not overflow its stack on the deepest path")
-        self.assertIn(0x0004, [q for q, _ in SIM.key_events(out)],
-                      "the real key path (KC_A) must have run during the measurement")
-        self.assertTrue(SIM.in_packets(out),
-                        "the deep USB ISR must have run to completion")
-        peak = SIM.stack_highwater(out)
+        self.assertTrue(reps and reps[-1][2] == 0x04,
+                        f"the real key path (KC_A) must have run; EP1 reports: {reps}")
+        self.assertIn("EP0 IN", serr, "the deep USB ISR must have run to completion")
+        cap = Air60Sim.STACK_TOP - stack_base   # usable stack bytes for this build
         self.assertGreater(peak, 0, "stack high-water should be measurable")
-        self.assertLess(peak, 122, f"stack peak {peak} must stay within 122 bytes")
-        print(f"\n[worst-case stack] deepest reached = {peak}/122 bytes")
+        self.assertLess(peak, cap, f"stack peak {peak} must stay within {cap} bytes")
+        print(f"\n[worst-case stack] deepest reached = {peak}/{cap} bytes")
 
 
 class TestStackOverflow(unittest.TestCase):
-    """The 8051 has no hardware stack-overflow protection: the 8-bit SP simply
-    wraps 0xFF->0x00 and silently corrupts low RAM / register bank 0. The
-    firmware's usable stack is 122 bytes (0x86-0xFF, base 0x85). This forces an
-    overflow and verifies the corruption -- and that uCsim's stack tracking
-    catches it (a tool for spotting real overflows)."""
+    """Force a stack overflow and verify the SP wraps 0xFF->0x00, corrupting
+    register bank 0, and that uCsim's stack tracking catches it (a tool for
+    spotting real overflows)."""
 
     def test_overflow_wraps_sp_and_corrupts_register_bank(self):
         out = SIM.overflow_stack(marker=0xAA)

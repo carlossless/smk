@@ -17,6 +17,7 @@ from sim import (
     set_address, set_configuration, get_configuration, get_status_device,
     hid_set_idle, hid_get_idle, hid_set_protocol, hid_get_protocol,
 )
+from devices import Air60Sim
 
 SIM = Sim()
 
@@ -40,12 +41,15 @@ class TestUsbInterrupt(unittest.TestCase):
                          f"expected vector to 0x3b; sim output:\n{out}")
 
     def test_vectoring_pushes_return_address(self):
-        """Accepting the interrupt must push the 2-byte return address (SP +2)."""
-        out = SIM.fire_vector()
-        pre = SIM.dump_in_section(out, "===PRE_IRQ===", SIM.SP_SFR, "===POST_IRQ===")
-        post = SIM.dump_in_section(out, "===POST_IRQ===", SIM.SP_SFR)
-        self.assertIsNotNone(pre, f"failed to read pre-IRQ SP:\n{out}")
-        self.assertIsNotNone(post, f"failed to read post-IRQ SP:\n{out}")
+        """Accepting the interrupt must push the 2-byte return address (SP +2).
+        Driven over the interactive socket so each SP read is cleanly framed."""
+        kb = Air60Sim()
+        try:
+            kb.boot(usb=True)
+            pre, post, stopped = kb.fire_usb_vector()
+        finally:
+            kb.close()
+        self.assertEqual(stopped, 0x3b, "USBIF1.SETUPIF should vector to 0x3b")
         self.assertEqual(post - pre, 2,
                          f"USB vector should push 2 bytes; pre=0x{pre:02x} post=0x{post:02x}")
 
@@ -160,38 +164,52 @@ class TestKeyboardReport(unittest.TestCase):
     def test_6kro_report_carries_keycodes(self):
         """send_keyboard_report() must emit the pressed keycodes as an 8-byte EP1
         report (bytes 2..7 = keys; byte 0 = modifiers, sourced separately)."""
-        rpt = SIM.ep1_report(SIM.keyboard_report_6kro([0x04, 0x05, 0x06]))
+        kb = Air60Sim()
+        try:
+            kb.boot(usb=True)
+            kb.mark_usb_configured()
+            reps = kb.send_report_direct([0x04, 0x05, 0x06])
+        finally:
+            kb.close()
+        self.assertTrue(reps, "send_keyboard_report() should emit an EP1 report")
+        rpt = reps[-1]
         self.assertEqual(len(rpt), 8, f"keyboard report is 8 bytes; got {rpt}")
         self.assertEqual(rpt[2:8], [0x04, 0x05, 0x06, 0x00, 0x00, 0x00])
 
 
 class TestKeyEvent(unittest.TestCase):
-    """The device's whole job, end to end with NO cold injection: a physical key
-    press propagates through the real scan path -- the PWM ISR drives
-    matrix_scan_step(), the main loop's matrix_task() detects the change and calls
-    process_key_state(), which resolves the keycode from the real keymap and (in
-    USB mode) sends the HID report on EP1. Exercises the modeled PWM timebase and
-    key matrix (column drive -> row read) on top of a full boot through init."""
+    """End to end with NO cold injection: a physical key press propagates through
+    the real scan path (Timer2 ISR -> matrix scan -> matrix_task ->
+    process_key_state -> HID report on EP1).
+
+    The key matrix is the *board's* hardware, emulated test-side
+    (devices.KeyMatrix): the simulator exposes the GPIO ports, and the test pulls
+    the pressed key's row low while its column is scanned."""
 
     def test_keypress_resolves_keycode_and_sends_report(self):
         # col 1, row 2 = KC_A (0x04) in the default keymap (row 2 is CAPS,A,S,D,...)
-        out = SIM.press_key(col=1, row=2)
-        qcodes = [q for q, _ in SIM.key_events(out)]
-        self.assertIn(0x0004, qcodes,
-                      f"pressing (col1,row2) should resolve to KC_A (0x0004) via the "
-                      f"real scan path; key events: {SIM.key_events(out)}")
-        # ...and the press becomes an 8-byte USB HID report on EP1 with KC_A in slot 0
-        self.assertEqual(SIM.ep1_report(out),
-                         [0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00],
-                         f"EP1 report should carry KC_A; got {SIM.ep1_report(out)}")
+        kb = Air60Sim()
+        try:
+            kb.boot(usb=True)
+            kb.mark_usb_configured()
+            kb.matrix.press(1, 2)
+            reps = kb.scan_for_report()
+        finally:
+            kb.close()
+        self.assertTrue(reps, "a keypress should produce an EP1 report")
+        self.assertEqual(reps[-1], [0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00],
+                         f"EP1 report should carry KC_A; got {reps[-1]}")
 
     def test_no_key_produces_no_events(self):
-        # nothing staged: the scan path still runs every loop, but must report no
-        # key events (guards against phantom keys from the matrix model)
-        out = SIM.press_key(col=0, row=0, enable=False)
-        self.assertEqual(SIM.key_events(out), [],
-                         f"no staged key must produce no KEY events; got "
-                         f"{SIM.key_events(out)}")
+        # nothing pressed: the scan path still runs every loop, but with idle rows
+        # held high test-side it must report no key (guards against phantom keys).
+        kb = Air60Sim()
+        try:
+            kb.boot(usb=True)
+            reps = kb.scan_for_report(max_hits=80)  # no key staged -> expect none
+        finally:
+            kb.close()
+        self.assertEqual(reps, [], f"no pressed key must produce no EP1 report; got {reps}")
 
 
 class TestEnumerationThroughInit(unittest.TestCase):
