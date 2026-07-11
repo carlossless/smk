@@ -124,6 +124,14 @@ endif
 if get_option('buildtype') == 'debug'
     cc_base_args += '-DDEBUG=1'
     cc_base_args += '--debug'   # emit SDCC .cdb for source-level tests (tests/sim.py)
+
+    debug_sink = get_option('debug_sink')
+    if debug_sink == 'console' or debug_sink == 'both'
+        cc_base_args += '-DDEBUG_SINK_CONSOLE=1'
+    endif
+    if debug_sink == 'uart' or debug_sink == 'both'
+        cc_base_args += '-DDEBUG_SINK_UART=1'
+    endif
 endif
 
 sdar_args = ['-rc']
@@ -139,6 +147,16 @@ sinowisp = find_program('sinowisp', required : true)
 host_cc = find_program('cc', 'gcc', required : true)
 gen_led_geometry = join_paths(meson.current_build_dir(), 'led_geometry_gen')
 run_command(host_cc, '-O2', '-o', gen_led_geometry, join_paths(meson.current_source_dir(), 'utils/led_geometry_gen.c'), check : true)
+
+# Host-side debug tool: prints SMK's HID console output (report id 7) from
+# DEBUG builds. Built with the build-machine compiler, independent of the
+# sdcc firmware cross-build above.
+executable(
+    'smk-console',
+    'tools/smk-console.c',
+    native : true,
+    install : false,
+)
 
 dir_base = meson.current_source_dir()
 

@@ -3,7 +3,9 @@
 #include "watchdog.h"
 #include "delay.h"
 #include "isp.h"
-#include "uart.h"
+#ifdef DEBUG_SINK_UART
+#    include "uart.h"
+#endif
 #include "usb.h"
 #include "debug.h"
 #include "matrix.h"
@@ -11,7 +13,6 @@
 #include "keyboard.h"
 #include "user_init.h"
 #include "indicators.h"
-#include "uart.h"
 #include "kb.h"
 #include "console.h"
 #include "stack.h"
@@ -27,7 +28,7 @@ void init()
 {
     ldo_init();
     clock_init();
-#if DEBUG == 1
+#ifdef DEBUG_SINK_UART
     uart_init();
 #endif
 

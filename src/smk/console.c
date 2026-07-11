@@ -3,9 +3,94 @@
 #if DEBUG == 1
 
 #    include "report.h"
-#    include "usb.h"     // usb_is_configured(), EP2 buffer/SFRs via sh68f90a.h
-#    include "usbregs.h" // SET_EP2_CNT, SET_EP2_IN_RDY
+#    include "usb.h"
+#    include "usbregs.h"
 #    include <stdint.h>
+#    include <stdarg.h>
+
+static void console_emit_num(uint16_t val, uint8_t base, uint8_t width, char pad, uint8_t upper) __reentrant
+{
+    char    buf[5]; // 16-bit: 5 decimal digits / 4 hex digits max
+    uint8_t n = 0;
+    do {
+        uint8_t d = (uint8_t)(val % base);
+        buf[n++]  = (char)(d < 10 ? '0' + d : (upper ? 'A' : 'a') + d - 10);
+        val /= base;
+    } while (val);
+    for (uint8_t w = n; w < width; w++) {
+        console_putc((unsigned char)pad);
+    }
+    while (n) {
+        console_putc((unsigned char)buf[--n]);
+    }
+}
+
+void console_printf(const __code char *fmt, ...) __reentrant
+{
+    va_list ap;
+    va_start(ap, fmt);
+
+    for (char c = *fmt; c; c = *++fmt) {
+        if (c != '%') {
+            console_putc((unsigned char)c);
+            continue;
+        }
+
+        c             = *++fmt;
+        char    pad   = ' ';
+        uint8_t width = 0;
+        if (c == '0') {
+            pad = '0';
+            c   = *++fmt;
+        }
+        if (c >= '1' && c <= '9') {
+            width = (uint8_t)(c - '0');
+            c     = *++fmt;
+        }
+
+        switch (c) {
+            case 'c':
+                console_putc((unsigned char)va_arg(ap, int));
+                break;
+            case 's': {
+                const char *s = va_arg(ap, const char *);
+                while (*s)
+                    console_putc((unsigned char)*s++);
+                break;
+            }
+            case 'd': {
+                int v = va_arg(ap, int);
+                if (v < 0) {
+                    console_putc('-');
+                    v = -v;
+                }
+                console_emit_num((uint16_t)v, 10, width, pad, 0);
+                break;
+            }
+            case 'u':
+                console_emit_num((uint16_t)va_arg(ap, unsigned int), 10, width, pad, 0);
+                break;
+            case 'x':
+                console_emit_num((uint16_t)va_arg(ap, unsigned int), 16, width, pad, 0);
+                break;
+            case 'X':
+                console_emit_num((uint16_t)va_arg(ap, unsigned int), 16, width, pad, 1);
+                break;
+            case '%':
+                console_putc('%');
+                break;
+            case 0:
+                va_end(ap);
+                return;
+            default:
+                console_putc('%');
+                console_putc((unsigned char)c);
+                break;
+        }
+    }
+
+    va_end(ap);
+}
 
 #    define CONSOLE_BUF_SIZE 128 // must stay a power of two
 #    define CONSOLE_BUF_MASK (CONSOLE_BUF_SIZE - 1)
@@ -13,6 +98,13 @@
 static __xdata unsigned char    console_buf[CONSOLE_BUF_SIZE];
 static volatile __xdata uint8_t console_head; // producer (console_putc)
 static volatile __xdata uint8_t console_tail; // consumer (console_task)
+
+static __xdata uint8_t console_attached;
+
+void console_notify_attached(void)
+{
+    console_attached = 1;
+}
 
 void console_putc(unsigned char c)
 {
@@ -29,16 +121,16 @@ void console_putc(unsigned char c)
     }
 }
 
-// Drains buffered bytes into the EP2 IN buffer as a REPORT_ID_CONSOLE HID report.
-// Writes the hardware endpoint buffer directly (rather than via a helper taking
-// a pointer/length) to avoid spending the SH68F90A's last bytes of internal RAM
-// on parameter passing.
 void console_task(void)
 {
     uint8_t len;
 
     if (!usb_is_configured()) {
-        return; // not enumerated over USB (e.g. wireless mode / unplugged)
+        console_attached = 0; // require a fresh handshake after re-enumeration
+        return;               // not enumerated over USB (e.g. wireless / unplugged)
+    }
+    if (!console_attached) {
+        return; // host tool hasn't announced itself yet; keep buffering
     }
     if (console_head == console_tail) {
         return; // nothing buffered
