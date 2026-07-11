@@ -123,6 +123,7 @@ endif
 
 if get_option('buildtype') == 'debug'
     cc_base_args += '-DDEBUG=1'
+    cc_base_args += '--debug'   # emit SDCC .cdb for source-level tests (tests/sim.py)
 endif
 
 sdar_args = ['-rc']
