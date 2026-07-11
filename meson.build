@@ -219,6 +219,10 @@ foreach part : parts
             '-DWATCHDOG_ENABLE=@0@'.format(options['watchdog_enable']),
             '-DUSB_VID=@0@'.format(options['vendor_id']),
             '-DUSB_PID=@0@'.format(options['product_id']),
+            # build-time identity, as ready-to-use string literals (names have
+            # hyphens, so quote rather than rely on token stringizing)
+            '-DKEYBOARD_NAME="@0@"'.format(keyboard),
+            '-DLAYOUT_NAME="@0@"'.format(layout),
         ]
 
         wireless = options.get('wireless', '')

@@ -8,21 +8,23 @@
 #endif
 #include "usb.h"
 #include "debug.h"
+#include "console.h"
 #include "matrix.h"
 #include "utils.h"
 #include "keyboard.h"
 #include "user_init.h"
 #include "indicators.h"
 #include "kb.h"
-#include "console.h"
 #include "stack.h"
+#include "settings.h"
 #ifdef RF_ENABLED
 #    include "rf_controller.h"
 #endif
 
-#include "pwm.h" // TODO: interrupt is defined here and need to be imported in main, centralise interupt definitions
-
-#include <stdio.h>
+#include "pwm.h"    // TODO: interrupt is defined here and need to be imported in main, centralise interupt definitions
+#include "timer2.h" // ISR vector slot — see SDCC ISR-prototype-in-main rule
+#include "sleep.h"
+#include "power.h" // int4_isr ISR vector slot — same SDCC ISR-prototype-in-main rule
 
 void init()
 {
@@ -38,31 +40,24 @@ void init()
     keyboard_init();
     usb_init();
 
-    // usb interupt priority - 3
-    IPH1 |= (1 << 6);
-    IPL1 |= (1 << 6);
+    indicators_init();
 
-#if DEBUG == 1
-    // uart interupt priority - 2
-    IPH1 |= (1 << 6);
-    IPL1 |= (0 << 6);
-#endif
+    timer2_init();
 
-    EA = 1; // enable interrupts
+    EA = 1;
 }
 
 void main()
 {
-#if DEBUG == 1
-    stack_paint(); // must run before interrupts/deep calls to capture true peak
-#endif
-
     init();
 
-    dprintf("SMK v" TOSTRING(SMK_VERSION) "\r\n");
-    dprintf("DEVICE vId:" TOSTRING(USB_VID) " pId:" TOSTRING(USB_PID) "\n\r");
+#if DEBUG == 1
+    stack_paint();
+#endif
 
-    delay_ms(1000);
+    dprintf("SMK v" TOSTRING(SMK_VERSION) "\r\n");
+    dprintf("KB " KEYBOARD_NAME " / " LAYOUT_NAME "\r\n");
+    dprintf("DEVICE vId:" TOSTRING(USB_VID) " pId:" TOSTRING(USB_PID) "\n\r");
 
     kb_init();
 
@@ -70,19 +65,49 @@ void main()
     rf_init();
 #endif
 
-    // enable pwm and interrupt (driving matrix scan)
+    if (!settings_load()) {
+        indicators_apply_defaults();
+    }
+    indicators_validate_settings();
+#if DEBUG == 1
+    settings_dump(); // report the settings the keyboard came up with
+#endif
+
+    for (uint16_t i = 0; i < 4000; i++) {
+        CLR_WDT();
+        if (usb_enum_seen) {
+            if (usb_enum_active_ticks == 0) {
+                break; // enumerated and gone quiet
+            }
+        } else if (i >= 500) {
+            break; // no enumeration seen — not on a USB host
+        }
+        delay_ms(1);
+    }
+
     indicators_start();
 
-    delay_ms(1000);
+#ifdef RF_ENABLED
+    rf_set_link((rf_mode_t)user_settings.rf_link);
+    keyboard_state.rf_link   = user_settings.rf_link;
+    keyboard_state.connected = 1;
+    keyboard_state.paired    = 1;
+#endif
+
+    sleep_init();
 
     while (1) {
         CLR_WDT();
 
         kb_update_switches();
-
         kb_update();
-
         matrix_task();
+
+        indicators_render();
+
+        settings_task();
+
+        sleep_task();
 
 #if DEBUG == 1
         stack_task();
