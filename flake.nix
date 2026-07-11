@@ -30,12 +30,12 @@
           # parser/lexer.
           nativeBuildInputs = with pkgs; [ bison flex ];
 
-          patches = [ ./tools/ucsim/sh68f90-usb-irq.patch ];
+          # Register the SH68F90 as a uCsim CPU variant (-t sh68f90).
+          patches = [ ./tools/ucsim/sh68f90-register.patch ];
 
-          # uCsim's Makefile declares cmdlex.cc as a target but gives it NO recipe,
-          # so flex never runs and an empty lexer slips through (link fails on
-          # yylex/uc_yy_*). Generate it by hand.
           postPatch = ''
+            cp ${./tools/ucsim/sh68f90.cc}  sim/ucsim/src/sims/s51.src/sh68f90.cc
+            cp ${./tools/ucsim/sh68f90cl.h} sim/ucsim/src/sims/s51.src/sh68f90cl.h
             flex -o sim/ucsim/src/core/cmd.src/cmdlex.cc \
                     sim/ucsim/src/core/cmd.src/cmdlex.l
           '';
@@ -73,6 +73,7 @@
 
           meta.description = "SDCC uCsim 8051 simulator patched with the SH68F90 USB interrupt source";
         };
+
       in
       {
         packages = {
