@@ -6,6 +6,7 @@
 #include "debug.h"
 #include "utils.h"
 #include "usbhidreport.h"
+#include "console.h"
 #include "keyboard.h"
 #include "delay.h"
 #include <stdint.h>
@@ -34,6 +35,7 @@ typedef enum {
     USB_EP0_STATE_RECV_STATUS = 0x02,
     USB_EP0_STATE_LED         = 0x04,
     USB_EP0_STATE_ISP         = 0x05,
+    USB_EP0_STATE_CONSOLE     = 0x06,
 } usb_ep0_state_t;
 
 const uint8_t hid_report_desc_keyboard[] = {
@@ -347,8 +349,13 @@ uint8_t __xdata            active_configuration;
 uint8_t __xdata            interface0_protocol;
 uint8_t __xdata            interface1_protocol;
 __bit                      usb_remote_wakeup;
-uint8_t __xdata            idle_time;
-usb_ep0_state_t __xdata    usb_ep0_state;
+__bit                   usb_suspended;
+uint8_t __xdata         idle_time;
+usb_ep0_state_t __xdata usb_ep0_state;
+
+__xdata uint16_t usb_enum_active_ticks;
+__xdata bool     usb_enum_seen;
+#define USB_ENUM_ACTIVE_RELOAD 500
 
 void usb_init()
 {
@@ -358,11 +365,15 @@ void usb_init()
     interface0_protocol  = 0;
     interface1_protocol  = 0;
     usb_remote_wakeup    = 0;
+    usb_suspended        = 0;
     usb_ep0_state        = USB_EP0_STATE_DEFAULT;
     idle_time            = 0;
 
     ep0_xfer_bytes_left = 0;
     ep0_xfer_src        = 0;
+
+    usb_enum_active_ticks = 0;
+    usb_enum_seen         = false;
 
     USBADDR = 0;
     USBIE1  = (_OVERIE | _SETUPIE | _SOFIA | _RESMIE | _SUSPIE | _PBRSTIE);
@@ -371,8 +382,29 @@ void usb_init()
     IEN1 |= _EUSB;
 }
 
+void usb_deinit()
+{
+    usb_device_state     = USB_DEVICE_STATE_DEFAULT;
+    received_usb_addr    = 0;
+    active_configuration = 0;
+    interface0_protocol  = 0;
+    interface1_protocol  = 0;
+    usb_remote_wakeup    = 0;
+    usb_suspended        = 0;
+    usb_ep0_state        = USB_EP0_STATE_DEFAULT;
+    idle_time            = 0;
+
+    USBADDR = 0;
+    USBCON &= ~(_ENUSB | _SW1CON | _SW2CON); // drop the module-enable bits
+    IEN1 &= ~_EUSB;                          // disable the USB interrupt
+}
+
 void usb_send_report(__xdata report_keyboard_t *report)
 {
+    if (usb_device_state != USB_DEVICE_STATE_CONFIGURED) {
+        return;
+    }
+
     uint8_t timeout = 0;
     while (timeout < 255 && EP1CON & _IEP1RDY) {
         delay_us(40);
@@ -387,6 +419,10 @@ void usb_send_report(__xdata report_keyboard_t *report)
 
 void usb_send_nkro(__xdata report_nkro_t *report)
 {
+    if (usb_device_state != USB_DEVICE_STATE_CONFIGURED) {
+        return; // not enumerated/configured — see usb_send_report
+    }
+
     uint8_t timeout = 0;
     while (timeout < 255 && EP2CON & _IEP2RDY) {
         delay_us(40);
@@ -401,6 +437,10 @@ void usb_send_nkro(__xdata report_nkro_t *report)
 
 void usb_send_extra(__xdata report_extra_t *report)
 {
+    if (usb_device_state != USB_DEVICE_STATE_CONFIGURED) {
+        return; // not enumerated/configured — see usb_send_report
+    }
+
     uint8_t timeout = 0;
     while (timeout < 255 && EP2CON & _IEP2RDY) {
         delay_us(40);
@@ -429,9 +469,10 @@ static void usb_setup_irq()
 {
     usb_req_setup_x req;
 
-    EA = 0;
-    get_ep0_out_buffer((uint8_t *)&req);
-    EA = 1;
+    __critical
+    {
+        get_ep0_out_buffer((uint8_t *)&req);
+    }
 
     uint8_t type    = req.bmRequestType;
     uint8_t request = req.bRequest;
@@ -601,14 +642,20 @@ static void usb_setup_irq()
 
 void usb_interrupt_handler() __interrupt(_INT_USB)
 {
+    uint8_t saved_inscon   = INSCON;
+    uint8_t saved_flashcon = FLASHCON;
+
     uint8_t temp_usbif1 = USBIF1;
     uint8_t temp_usbif2 = USBIF2;
 
     if (temp_usbif1 != 0x00) {
         if (temp_usbif1 & _SOFIF) {
             USBIF1 &= ~_SOFIF;
+            if (usb_enum_active_ticks) {
+                usb_enum_active_ticks--;
+            }
+            usb_suspended = 0;
         } else {
-            // why is this being cleared and why in this fashion?
             USBIF1 &= ~(_SETUPIF);      // Clear SETUPIF
             USBIF1 &= ~(_OVERIF | _OW); // SETUP OVERIF & OW
 
@@ -617,11 +664,16 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
                 usb_init();
             } else if (temp_usbif1 & _SETUPIF) {
                 USBIF1 &= ~_SETUPIF;
+                usb_enum_active_ticks = USB_ENUM_ACTIVE_RELOAD;
+                usb_enum_seen         = true;
                 usb_setup_irq();
             } else if (temp_usbif1 & _RESMIF) { // RESMIF
                 USBIF1 &= ~_RESMIF;
             } else if (temp_usbif1 & _SUSPIF) { // SUSPIF
                 USBIF1 &= ~_SUSPIF;
+                if (usb_device_state == USB_DEVICE_STATE_CONFIGURED) {
+                    usb_suspended = 1;
+                }
             } else if (temp_usbif1 & _USBRSTIF) { // BUSRSTIF
                 USBIF1 &= ~_USBRSTIF;
 
@@ -657,6 +709,9 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
             usb_ep0_in_irq();
         }
     }
+
+    FLASHCON = saved_flashcon;
+    INSCON   = saved_inscon;
 }
 
 // request handlers
@@ -929,13 +984,11 @@ static void usb_get_descriptor_handler(__xdata struct usb_req_setup *req)
         uint8_t iface_index = req->wIndex;
 
         if (iface_index == 0) {
+            addr   = (uint8_t *)hid_report_desc_keyboard;
             length = sizeof(hid_report_desc_keyboard);
-            APPEND(&hid_report_desc_keyboard, length);
-            addr = scratch;
         } else if (iface_index == 1) {
+            addr   = (uint8_t *)hid_report_desc_extra;
             length = sizeof(hid_report_desc_extra);
-            APPEND(&hid_report_desc_extra, length);
-            addr = scratch;
         } else {
             STALL_EP0();
             return;
@@ -1012,6 +1065,12 @@ static void usb_hid_set_report_handler(__xdata struct usb_req_setup *req)
                 usb_ep0_state = USB_EP0_STATE_ISP;
                 SET_EP0_OUT_RDY;
             }
+#if DEBUG == 1
+            else if ((req->wValue & 0xff) == REPORT_ID_CONSOLE) {
+                usb_ep0_state = USB_EP0_STATE_CONSOLE;
+                SET_EP0_OUT_RDY;
+            }
+#endif
 
             break;
 
@@ -1077,6 +1136,15 @@ void usb_ep0_out_irq()
         if (EP0_OUT_BUF[0] == 0x05 && EP0_OUT_BUF[1] == 0x75) {
             isp_jump();
         }
+#if DEBUG == 1
+    } else if (usb_ep0_state == USB_EP0_STATE_CONSOLE) {
+        usb_ep0_state = 0;
+
+        console_notify_attached(); // host tool is listening; start draining
+
+        CLEAR_EP0_CNT;
+        SET_EP0_IN_RDY;
+#endif
     } else {
         usb_ep0_state = 0;
         CLEAR_EP0_CNT;

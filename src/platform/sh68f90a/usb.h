@@ -9,11 +9,20 @@ enum {
     USB_PROTOCOL_REPORT = 1,
 };
 
-void    usb_init();
+void usb_init();
+void    usb_deinit();
 void    usb_send_report(__xdata report_keyboard_t *report);
 void    usb_send_nkro(__xdata report_nkro_t *report);
 void    usb_send_extra(__xdata report_extra_t *report);
 uint8_t usb_device_state_get_protocol();
+
+extern __xdata uint16_t usb_enum_active_ticks;
+
+extern __xdata bool usb_enum_seen;
+
+extern __bit usb_remote_wakeup;
+
+extern __bit usb_suspended;
 
 #if DEBUG == 1
 bool usb_is_configured();

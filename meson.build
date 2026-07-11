@@ -45,6 +45,7 @@ src_smk = [
     'src/smk/console.c',
     'src/smk/settings.c',
     'src/smk/led_effect.c',
+    'src/smk/sleep.c',
 ]
 
 # USER DEFAULTS
@@ -65,6 +66,11 @@ src_user = [
     'src/user/user_led_radial.c',
     'src/user/user_led_axis_x.c',
     'src/user/user_led_axis_y.c',
+    'src/user/user_matrix_sinks_off.c',
+    'src/user/user_matrix_scan_pre.c',
+    'src/user/user_matrix_scan_post.c',
+    'src/user/settings_save_pre.c',
+    'src/user/settings_save_post.c',
 
     'src/kb/kb_init.c',
     'src/kb/kb_process_record.c',
@@ -85,9 +91,11 @@ src_platform_sh68f90a = [
     'src/platform/sh68f90a/isp.c',
     'src/platform/sh68f90a/ldo.c',
     'src/platform/sh68f90a/pwm.c',
+    'src/platform/sh68f90a/timer2.c',
     'src/platform/sh68f90a/uart.c',
     'src/platform/sh68f90a/usb.c',
     'src/platform/sh68f90a/stack.c',
+    'src/platform/sh68f90a/power.c',
 ]
 
 inc_platform_bk3632 = [
@@ -103,6 +111,7 @@ src_platform_bk3632 = [
 possible_src_keyboard = [
     'user_matrix.c',
     'user_init.c',
+    'user_sleep.c',
     # 'user_keyboard.c',
     'kb.c'
 ]
@@ -129,6 +138,10 @@ cc_base_args = [
 
 if get_option('nkro').enabled()
     cc_base_args += '-DNKRO_ENABLE=1'
+endif
+
+if get_option('sleep').enabled()
+    cc_base_args += '-DSLEEP_ENABLE=1'
 endif
 
 if get_option('buildtype') == 'debug'

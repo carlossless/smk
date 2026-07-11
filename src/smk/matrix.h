@@ -4,4 +4,5 @@
 
 void    matrix_init();
 uint8_t matrix_task();
-void    matrix_scan_step();
+
+void matrix_scan_full();
