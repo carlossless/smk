@@ -16,5 +16,25 @@ void rf_init();
 void rf_send_report(__xdata report_keyboard_t *report);
 void rf_send_nkro(__xdata report_nkro_t *report);
 void rf_send_extra(__xdata report_extra_t *report);
-void rf_update_keyboard_state(keyboard_state_t *keyboard);
+bool rf_update_keyboard_state(keyboard_state_t *keyboard);
 void rf_set_link(rf_mode_t link);
+void rf_set_link_pairing(rf_mode_t link, __xdata keyboard_state_t *keyboard);
+void rf_factory_reset_bonds(void);
+void rf_link_supervisor(keyboard_state_t *keyboard);
+void rf_reassert_link(rf_mode_t link);
+
+void rf_apply_usb_mode(void);
+
+void rf_set_mac_mode_compat(bool is_mac);
+
+void rf_byte9_set_disable(bool on);
+
+void rf_kbd_lazy_state_init(void);
+
+void rf_send_pending_flush(void);
+
+void rf_blanking_tick(void);
+
+void rf_prepare_sleep(uint8_t param);
+void rf_wake_from_sleep(void);
+void rf_wake_nudge(void);
