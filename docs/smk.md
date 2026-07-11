@@ -2,7 +2,7 @@
 
 - [x] Debug printf (via UART)
 - [x] Key Scan
-    - [ ] Debouncing
+    - [x] Debouncing
 - [x] Indicators (Backlight)
 - [x] Sleep
 - [x] USB HID
@@ -11,8 +11,6 @@
     - [x] Status LEDs
     - [x] Extra Keys (System / Consumer)
     - [x] NKRO
-- [~] QMK Compatibility
-    - [~] Layouts
 - [~] Wireless
     - [~] BK3632
         - [~] 2.4G

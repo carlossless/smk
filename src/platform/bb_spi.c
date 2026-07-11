@@ -50,6 +50,7 @@ static void bb_spi_burst(uint8_t *data, int len, bool lock)
         }
     }
     CS_RELEASE_HIGH();
+    // Release MOSI to input (pull-up high) after the last bit.
     P0CR &= (uint8_t)~_P0_7;
     RF_BB_SPI_MOSI = 1;
     MOT_RELEASE_HIGH();
@@ -73,7 +74,7 @@ bool bb_spi_xfer(uint8_t *data, int len)
 
 void bb_spi_recv(uint8_t *data, int len)
 {
-    bb_spi_burst(data, len, true);
+    bb_spi_burst(data, len, true); // no ACK poll on the RX path
 }
 
 uint8_t bb_spi_xfer_byte(uint8_t data)

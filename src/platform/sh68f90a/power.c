@@ -4,6 +4,10 @@
 #include "usb.h"
 #include "clock.h"
 
+#define SUSLO_POWERDOWN_KEY     0x55
+#define USBIF1_BUS_EVENTS_CLEAR (uint8_t)(_SUSPIF | _SOFIF | _SETUPIF | _OW | _OVERIF)
+#define USBIE1_RESUME_ARM       (uint8_t)(_PBRSTIE | _SUSPIE | _RESMIE | _SOFIA | _SETUPIE | _OVERIE)
+
 static volatile __xdata uint8_t int4_woke;
 
 void power_enter_powerdown(bool usb_keep_alive)
@@ -20,7 +24,7 @@ void power_enter_powerdown(bool usb_keep_alive)
     CLKCON &= ~_HFON;
 
     USBIE1 |= (_BOOTS | _RESMIE | _PBRSTIE);
-    USBIF1 &= 0x7A;
+    USBIF1 &= USBIF1_BUS_EVENTS_CLEAR;
 
     if (usb_keep_alive) {
         IEN1 = _EUSB;
@@ -33,17 +37,15 @@ void power_enter_powerdown(bool usb_keep_alive)
 
     int4_woke = 0;
 
-    // Datasheet 8.9.3 enter sequence: SUSLO = 0x55 then set PCON.PD on the very
-    // next instruction, NOPs padding after. EA is 1 and INT4 is armed, so a
-    // keypress (P4.1) or BK3632 event (P4.2) — or a USB resume, in the USB
-    // variant — wakes the core here.
+    // The key write and PCON.PD must be consecutive instructions; nothing may
+    // come between them.
     // clang-format off
     __asm
         nop
     __endasm;
     // clang-format on
-    SUSLO = 0x55;
-    PCON |= 0x02;
+    SUSLO = SUSLO_POWERDOWN_KEY;
+    PCON |= _PD;
     // clang-format off
     __asm
         nop
@@ -65,7 +67,7 @@ void power_enter_powerdown(bool usb_keep_alive)
     }
 
     if (usb_keep_alive) {
-        USBIE1 = 0x5F;
+        USBIE1 = USBIE1_RESUME_ARM;
         IEN1 |= _EUSB;
         usb_suspended = 0;
     } else {

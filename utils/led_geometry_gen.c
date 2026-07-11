@@ -84,9 +84,9 @@ int main(int argc, char **argv)
     }
     printf("};\n\n");
 
-    printf("uint8_t user_led_radial(uint8_t row, uint8_t col) { return radial[row][col]; }\n");
-    printf("uint8_t user_led_axis_x(uint8_t col) { return axis_x[col]; }\n");
-    printf("uint8_t user_led_axis_y(uint8_t row) { return axis_y[row]; }\n");
+    printf("uint8_t user_led_radial(uint8_t row, uint8_t col) __reentrant { return radial[row][col]; }\n");
+    printf("uint8_t user_led_axis_x(uint8_t col) __reentrant { return axis_x[col]; }\n");
+    printf("uint8_t user_led_axis_y(uint8_t row) __reentrant { return axis_y[row]; }\n");
 
     return 0;
 }

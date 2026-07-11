@@ -128,7 +128,7 @@ void matrix_scan_full(void)
     for (uint8_t col = 0; col < MATRIX_COLS; col++) {
         user_matrix_col_select(col);
 
-        delay_us(10);
+        delay_us(10); // let the row lines settle before sampling
         const uint8_t sample1 = user_matrix_read_rows();
         delay_us(10);
         const uint8_t sample2 = user_matrix_read_rows();
@@ -168,7 +168,7 @@ uint8_t matrix_task()
             continue;
         }
         matrix_changed = true;
-        sleep_note_activity();
+        sleep_note_activity(); // a key changed state; reset the inactivity timer
 
         __xdata matrix_col_t row_mask = 1;
         for (uint8_t row = 0; row < MATRIX_ROWS; row++, row_mask <<= 1) {

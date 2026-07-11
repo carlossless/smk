@@ -38,13 +38,8 @@
 
 #    define UART_ISR_ENABLE()  (IEN1 |= _ES0)
 #    define UART_ISR_DISABLE() (IEN1 &= ~_ES0)
-
-// Compile-time verification against datasheet §8.5.3.
-// Mode 1, SBRT (15-bit) is in valid range [0, 32767].
 _Static_assert(SBRT_S >= 0 && SBRT_S < 32768, "SBRT out of 15-bit range");
 _Static_assert(SFINE_S >= 0 && SFINE_S < 16, "SFINE must be in [0, 15]");
-// Datasheet's worked example: Fsys=8MHz, baud=115200 -> SBRT=32764, BFINE=5,
-// effective baud 115942 (+0.64%). Verify our formulas reproduce it.
 #    define _DS_SBRT(fsys, baud)  (32768 - ((fsys) / 16 / (baud)))
 #    define _DS_SFINE(fsys, baud) (((fsys) / (baud)) - 16 * ((fsys) / 16 / (baud)))
 _Static_assert(_DS_SBRT(8000000, 115200) == 32764, "SBRT formula diverges from datasheet example");

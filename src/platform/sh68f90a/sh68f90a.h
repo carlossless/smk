@@ -759,6 +759,7 @@ SBIT(PSPIL, 0xB8, 6);
  * \name Bits from register PCON
  * @{
  */
+#define _PD    (1u << 1)
 #define _SSTAT (1u << 6)
 #define _SMOD  (1u << 7)
 /**@}*/

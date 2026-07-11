@@ -302,10 +302,9 @@ static void usb_setup_irq();
 static void usb_ep0_out_irq();
 static void usb_ep0_in_irq();
 
-// buffer utils
-static void setup_ep0_in_xfer(uint8_t *src, uint16_t len);
+static void setup_ep0_in_xfer(uint8_t *src, uint16_t len) __reentrant;
 static void step_ep0_in_xfer();
-static void set_ep0_in_buffer(uint8_t *src, uint8_t len);
+static void set_ep0_in_buffer(uint8_t *src, uint8_t len) __reentrant;
 static void get_ep0_out_buffer(uint8_t *dest);
 static void set_ep1_in_buffer(uint8_t *src, uint8_t len);
 static void get_ep1_out_buffer(uint8_t *dest);
@@ -642,6 +641,11 @@ static void usb_setup_irq()
 
 void usb_interrupt_handler() __interrupt(_INT_USB)
 {
+    // Save/restore INSCON and FLASHCON: the handler reads descriptors out of
+    // __code, and a USB IRQ landing over a main-loop code/flash access would
+    // otherwise corrupt the interrupted path's banking state. SDCC's __interrupt
+    // prologue saves the standard registers but not these two SFRs; the handler
+    // has no early returns, so restoring at the tail covers every path.
     uint8_t saved_inscon   = INSCON;
     uint8_t saved_flashcon = FLASHCON;
 
@@ -654,7 +658,7 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
             if (usb_enum_active_ticks) {
                 usb_enum_active_ticks--;
             }
-            usb_suspended = 0;
+            usb_suspended = 0; // a SOF means the host is driving the bus again
         } else {
             USBIF1 &= ~(_SETUPIF);      // Clear SETUPIF
             USBIF1 &= ~(_OVERIF | _OW); // SETUP OVERIF & OW
@@ -677,14 +681,14 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
             } else if (temp_usbif1 & _USBRSTIF) { // BUSRSTIF
                 USBIF1 &= ~_USBRSTIF;
 
-                USBCON |= _SWRST; // softreset
+                USBCON |= _SWRST;
                 _nop_();
                 _nop_();
                 _nop_();
                 _nop_();
                 _nop_();
                 _nop_();
-                USBCON &= ~_SWRST; // clear softreset
+                USBCON &= ~_SWRST;
 
                 usb_init();
                 SET_EP0_OUT_RDY;
@@ -710,7 +714,7 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
         }
     }
 
-    FLASHCON = saved_flashcon;
+    FLASHCON = saved_flashcon; // restore banking SFRs (see top)
     INSCON   = saved_inscon;
 }
 
@@ -930,10 +934,12 @@ static void usb_get_descriptor_handler(__xdata struct usb_req_setup *req)
     uint8_t               index = req->wValue & 0xff;
     usb_descriptor_set_c *set   = &usb_descriptor_set;
 
-#define APPEND(addr, length)       \
-    do {                           \
-        memcpy(buf, addr, length); \
-        buf += length;             \
+#define APPEND(addr, length)                          \
+    do {                                              \
+        for (uint16_t _i = 0; _i < (length); _i++) {  \
+            buf[_i] = ((__code uint8_t *)(addr))[_i]; \
+        }                                             \
+        buf += (length);                              \
     } while (0)
 
 #define APPEND_DESC(desc) APPEND(desc, (desc)->bLength)
@@ -1170,7 +1176,7 @@ void usb_ep0_in_irq()
     }
 }
 
-static void setup_ep0_in_xfer(uint8_t *src, uint16_t len)
+static void setup_ep0_in_xfer(uint8_t *src, uint16_t len) __reentrant
 {
     ep0_xfer_src        = src;
     ep0_xfer_bytes_left = len;
@@ -1203,44 +1209,53 @@ static void step_ep0_in_xfer()
     }
 }
 
-static void set_ep0_in_buffer(uint8_t *src, uint8_t len)
+static void set_ep0_in_buffer(uint8_t *src, uint8_t len) __reentrant
 {
     if (len > EP0_BUF_SIZE) {
-        return; // never happens; guards the memcpy without logging from an ISR
+        return;
     }
-
-    memcpy(EP0_IN_BUF, src, len);
+    for (uint8_t i = 0; i < len; i++) {
+        EP0_IN_BUF[i] = src[i];
+    }
 }
 
 static void get_ep0_out_buffer(uint8_t *dest)
 {
-    memcpy(dest, EP0_OUT_BUF, EP0_BUF_SIZE);
+    for (uint8_t i = 0; i < EP0_BUF_SIZE; i++) {
+        dest[i] = EP0_OUT_BUF[i];
+    }
 }
 
 static void set_ep1_in_buffer(uint8_t *src, uint8_t len)
 {
     if (len > EP1_BUF_SIZE) {
-        return; // never happens; guards the memcpy without logging from an ISR
+        return;
     }
-
-    memcpy(EP1_IN_BUF, src, len);
+    for (uint8_t i = 0; i < len; i++) {
+        EP1_IN_BUF[i] = src[i];
+    }
 }
 
 static void get_ep1_out_buffer(uint8_t *dest)
 {
-    memcpy(dest, EP1_OUT_BUF, EP1_BUF_SIZE);
+    for (uint8_t i = 0; i < EP1_BUF_SIZE; i++) {
+        dest[i] = EP1_OUT_BUF[i];
+    }
 }
 
 static void set_ep2_in_buffer(uint8_t *src, uint8_t len)
 {
     if (len > EP2_BUF_SIZE) {
-        return; // never happens; guards the memcpy without logging from an ISR
+        return;
     }
-
-    memcpy(EP2_IN_BUF, src, len);
+    for (uint8_t i = 0; i < len; i++) {
+        EP2_IN_BUF[i] = src[i];
+    }
 }
 
 static void get_ep2_out_buffer(uint8_t *dest)
 {
-    memcpy(dest, EP2_OUT_BUF, EP2_BUF_SIZE);
+    for (uint8_t i = 0; i < EP2_BUF_SIZE; i++) {
+        dest[i] = EP2_OUT_BUF[i];
+    }
 }

@@ -165,6 +165,14 @@ sdar = find_program('sdar', required : true)
 packihx = find_program('packihx', required : true)
 sinowisp = find_program('sinowisp', required : true)
 
+py = find_program('python3', required : true)
+sdcc_compile = join_paths(meson.current_source_dir(), 'utils/sdcc_compile.py')
+
+# Guards against the SDCC overlay/interrupt hazard (project_sdcc_isr_overlay_collision):
+# fails the build if any interrupt-reachable function shares SDCC's static overlay
+# with a main-loop function, which would let an ISR corrupt main-loop state.
+check_isr_overlay = files('utils/check_isr_overlay.py')
+
 # Host-side generator that bakes per-device LED animation geometry into ROM tables
 # (see utils/led_geometry_gen.c). Compiled once with the host compiler at configure
 # time so the generated headers exist on disk before any firmware source is built.
@@ -186,9 +194,12 @@ foreach dir : inc_base_dirs
     cc_incs += '-I' + join_paths(dir_base, dir)
 endforeach
 
-compiler = generator(cc,
+compiler = generator(py,
     output : '@BASENAME@.rel',
-    arguments : cc_base_args + cc_incs + ['-c', '@INPUT@', '-o', '@OUTPUT@']
+    # depfile + wrapper: rebuild a .rel whenever one of its #included headers changes
+    # (plain SDCC gives no header tracking, so header edits are otherwise silent).
+    depfile : '@BASENAME@.d',
+    arguments : [sdcc_compile, '@DEPFILE@', cc.full_path()] + cc_base_args + cc_incs + ['-c', '@INPUT@', '-o', '@OUTPUT@']
 )
 
 rel_user = compiler.process(src_user)
@@ -284,9 +295,12 @@ foreach part : parts
             cc_incs += '-I' + join_paths(dir_base, dir)
         endforeach
 
-        compiler = generator(cc,
+        compiler = generator(py,
             output : '@BASENAME@.rel',
-            arguments : cc_args + cc_incs + ['-c', '@INPUT@', '-o', '@OUTPUT@'],
+            # See the user-lib compiler above: wrapper + depfile so ninja rebuilds a
+            # .rel whenever one of its #included headers changes.
+            depfile : '@BASENAME@.d',
+            arguments : [sdcc_compile, '@DEPFILE@', cc.full_path()] + cc_args + cc_incs + ['-c', '@INPUT@', '-o', '@OUTPUT@'],
         )
 
         rel_main = compiler.process(src_main, geom_src)
@@ -299,6 +313,19 @@ foreach part : parts
             command : [cc, cc_args, '-o', '@OUTPUT@', '@INPUT@', '-l' + lib_user.full_path()],
         )
 
+        # Overlay/interrupt-safety gate: reads the just-linked .map + per-module .asm
+        # and fails if an ISR-reachable function overlays a main-reachable one. The
+        # .hex depends on it, so a violation breaks the build.
+        overlay_check = custom_target('@0@overlay-check'.format(prefix),
+            input : ihx_smk,
+            output : '@0@smk.overlay-ok'.format(prefix),
+            command : [py, check_isr_overlay,
+                       '--src', meson.current_source_dir() / 'src',
+                       '--asmdir', meson.current_build_dir() / '@0@smk.ihx.p'.format(prefix),
+                       '--map', meson.current_build_dir() / '@0@smk.map'.format(prefix),
+                       '--stamp', '@OUTPUT@'],
+        )
+
         hex_smk_target_name = '@0@smk.hex'.format(prefix)
         hex_smk = custom_target(hex_smk_target_name,
             input : ihx_smk,
@@ -306,6 +333,7 @@ foreach part : parts
             capture: true,
             install : true,
             install_dir : 'firmware',
+            depends : overlay_check,
             command : [packihx, '@INPUT@'],
         )
 

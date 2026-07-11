@@ -134,7 +134,6 @@ extern void indicators_battery_off();
 // underglow instead of the main backlight. Held in xdata to spare internal RAM.
 static __xdata bool ul_mode_active;
 
-// While RESET_HOLD (Fn+Tab) is held, pressing FACT_RESET (V) factory-resets settings.
 static __xdata bool reset_mode_active;
 
 #ifdef RF_ENABLED
@@ -150,10 +149,10 @@ bool kb_process_record(uint16_t keycode, bool key_pressed)
         case UL_MODE:
             ul_mode_active = key_pressed;
             return false;
-        case RESET_HOLD:
+        case RST_HLD:
             reset_mode_active = key_pressed;
             return false;
-        case FACT_RESET:
+        case FCT_RST:
             if (key_pressed && reset_mode_active) {
                 indicators_factory_reset();
 #ifdef RF_ENABLED
@@ -161,7 +160,7 @@ bool kb_process_record(uint16_t keycode, bool key_pressed)
 #endif
             }
             return false;
-        case RGB_FX_NEXT:
+        case FX_NEXT:
             if (key_pressed) {
                 if (ul_mode_active) {
                     indicators_ul_next_effect();
@@ -170,7 +169,7 @@ bool kb_process_record(uint16_t keycode, bool key_pressed)
                 }
             }
             return false;
-        case RGB_FX_PREV:
+        case FX_PREV:
             if (key_pressed) {
                 if (ul_mode_active) {
                     indicators_ul_prev_effect();
@@ -179,7 +178,7 @@ bool kb_process_record(uint16_t keycode, bool key_pressed)
                 }
             }
             return false;
-        case RGB_BRI_UP:
+        case BRI_UP:
             if (key_pressed) {
                 if (ul_mode_active) {
                     indicators_ul_brightness_up();
@@ -188,7 +187,7 @@ bool kb_process_record(uint16_t keycode, bool key_pressed)
                 }
             }
             return false;
-        case RGB_BRI_DN:
+        case BRI_DN:
             if (key_pressed) {
                 if (ul_mode_active) {
                     indicators_ul_brightness_down();
@@ -197,7 +196,7 @@ bool kb_process_record(uint16_t keycode, bool key_pressed)
                 }
             }
             return false;
-        case RGB_SPD_UP:
+        case SPD_UP:
             if (key_pressed) {
                 if (ul_mode_active) {
                     indicators_ul_speed_up();
@@ -206,7 +205,7 @@ bool kb_process_record(uint16_t keycode, bool key_pressed)
                 }
             }
             return false;
-        case RGB_SPD_DN:
+        case SPD_DN:
             if (key_pressed) {
                 if (ul_mode_active) {
                     indicators_ul_speed_down();
@@ -241,7 +240,7 @@ bool kb_process_record(uint16_t keycode, bool key_pressed)
                 }
             }
             return false;
-        case BAT_FLASH:
+        case BAT_FL:
             if (key_pressed) {
                 indicators_battery_flash();
             }

@@ -3,18 +3,17 @@
 #include "delay.h"
 #include "watchdog.h"
 
-/** \brief sets up HRCCLK and uses it as SYSCLK */
 void clock_init()
 {
-    CLKCON = _HFON;  // enable HRCCLK
-    PLLCON = _PLLON; // init PLL
+    CLKCON = _HFON;
+    PLLCON = _PLLON;
 
-    while (!(PLLCON & _PLLSTA)) { // wait for PLL to lock phase
+    while (!(PLLCON & _PLLSTA)) {
         CLR_WDT();
     }
 
-    PLLCON |= _PLLFS; // switch OSCSCLK
-    CLKCON |= _FS;    // use HRCCLK as SYSCLK
+    PLLCON |= _PLLFS;
+    CLKCON |= _FS;
 }
 
 void clock_wake_restart()
