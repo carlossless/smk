@@ -44,6 +44,7 @@ src_smk = [
     'src/smk/keyboard.c',
     'src/smk/console.c',
     'src/smk/settings.c',
+    'src/smk/led_effect.c',
 ]
 
 # USER DEFAULTS
@@ -55,6 +56,9 @@ src_user = [
     'src/user/indicators_pre_update.c',
     'src/user/indicators_update_step.c',
     'src/user/indicators_post_update.c',
+    'src/user/user_led_radial.c',
+    'src/user/user_led_axis_x.c',
+    'src/user/user_led_axis_y.c',
 
     'src/kb/kb_init.c',
     'src/kb/kb_process_record.c',
@@ -235,11 +239,19 @@ foreach part : parts
 
         prefix = '@0@_@1@_'.format(keyboard, layout)
 
-        # RGB boards bake their animation geometry into a ROM table at configure time.
+        # LED boards bake their animation geometry into ROM tables at configure time:
+        # a header with the matrix sizes (for the board's _Static_assert) and a source
+        # file with the tables + user_led_* accessors the shared effect engine calls.
+        geom_src = []
         if options.has_key('led_cols')
             configure_file(
                 output : prefix + 'led_geometry.h',
-                command : [gen_led_geometry, options['led_rows'], options['led_cols'], options['led_cx2'], options['led_cy2']],
+                command : [gen_led_geometry, 'header', options['led_rows'], options['led_cols'], options['led_cx2'], options['led_cy2']],
+                capture : true,
+            )
+            geom_src += configure_file(
+                output : prefix + 'led_geometry.c',
+                command : [gen_led_geometry, 'source', options['led_rows'], options['led_cols'], options['led_cx2'], options['led_cy2']],
                 capture : true,
             )
             cc_args += '-DLED_GEOMETRY_HEADER="@0@led_geometry.h"'.format(prefix)
@@ -256,7 +268,7 @@ foreach part : parts
             arguments : cc_args + cc_incs + ['-c', '@INPUT@', '-o', '@OUTPUT@'],
         )
 
-        rel_main = compiler.process(src_main)
+        rel_main = compiler.process(src_main, geom_src)
 
         ihx_smk_target_name = '@0@smk.ihx'.format(prefix)
         ihx_smk = custom_target(ihx_smk_target_name,
