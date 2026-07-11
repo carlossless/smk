@@ -4,13 +4,6 @@
 #include "pwm.h"
 #include "settings.h"
 
-// TODO: move these defines out
-#define PWM_CLK_DIV         0b010 // PWM_CLK = SYS_CLK / 4
-#define PWM_SS_BIT          (1 << 3)
-#define PWM_MOD_BIT         (1 << 4)
-#define PWM_INT_ENABLE_BIT  (1 << 6)
-#define PWM_MODE_ENABLE_BIT (1 << 7)
-
 // Single-colour variant of the per-key animation engine. Same structure as the RGB
 // boards (framebuffer + incremental regeneration + build-time geometry), but each LED
 // has one brightness channel instead of R/G/B, so effects are moving brightness waves
@@ -219,43 +212,43 @@ static void led_set_columns()
 void indicators_pwm_enable()
 {
     // TODO: try abstracting individual banks away
-    PWM00CON = (uint8_t)(PWM_MODE_ENABLE_BIT | PWM_INT_ENABLE_BIT | PWM_SS_BIT | PWM_CLK_DIV);
-    PWM01CON = PWM_SS_BIT;
-    PWM02CON = PWM_SS_BIT;
-    PWM03CON = PWM_SS_BIT;
-    PWM04CON = PWM_SS_BIT;
-    PWM05CON = PWM_SS_BIT;
+    PWM00CON = (uint8_t)(PWM_MODE_ENABLE | PWM_INT_ENABLE | PWM_SS | PWM_CLK_DIV_4);
+    PWM01CON = PWM_SS;
+    PWM02CON = PWM_SS;
+    PWM03CON = PWM_SS;
+    PWM04CON = PWM_SS;
+    PWM05CON = PWM_SS;
 
-    PWM10CON = (uint8_t)(PWM_MODE_ENABLE_BIT | PWM_SS_BIT | PWM_CLK_DIV);
-    PWM11CON = PWM_SS_BIT;
-    PWM12CON = PWM_SS_BIT;
-    PWM13CON = PWM_SS_BIT;
-    PWM14CON = PWM_SS_BIT;
-    PWM15CON = PWM_SS_BIT;
+    PWM10CON = (uint8_t)(PWM_MODE_ENABLE | PWM_SS | PWM_CLK_DIV_4);
+    PWM11CON = PWM_SS;
+    PWM12CON = PWM_SS;
+    PWM13CON = PWM_SS;
+    PWM14CON = PWM_SS;
+    PWM15CON = PWM_SS;
 
-    PWM20CON = (uint8_t)(PWM_MODE_ENABLE_BIT | PWM_SS_BIT | PWM_CLK_DIV);
-    PWM24CON = PWM_SS_BIT;
-    PWM25CON = PWM_SS_BIT;
+    PWM20CON = (uint8_t)(PWM_MODE_ENABLE | PWM_SS | PWM_CLK_DIV_4);
+    PWM24CON = PWM_SS;
+    PWM25CON = PWM_SS;
 }
 
 void indicators_pwm_disable()
 {
     // TODO: try abstracting individual banks away
-    PWM00CON = (uint8_t)(PWM_CLK_DIV);
-    PWM01CON = 0;
-    PWM02CON = 0;
-    PWM03CON = 0;
-    PWM04CON = 0;
-    PWM05CON = 0;
+    PWM00CON = PWM_CON_PARKED;
+    PWM01CON = PWM_CON_OFF;
+    PWM02CON = PWM_CON_OFF;
+    PWM03CON = PWM_CON_OFF;
+    PWM04CON = PWM_CON_OFF;
+    PWM05CON = PWM_CON_OFF;
 
-    PWM10CON = (uint8_t)(PWM_CLK_DIV);
-    PWM11CON = 0;
-    PWM12CON = 0;
-    PWM13CON = 0;
-    PWM14CON = 0;
-    PWM15CON = 0;
+    PWM10CON = PWM_CON_PARKED;
+    PWM11CON = PWM_CON_OFF;
+    PWM12CON = PWM_CON_OFF;
+    PWM13CON = PWM_CON_OFF;
+    PWM14CON = PWM_CON_OFF;
+    PWM15CON = PWM_CON_OFF;
 
-    PWM20CON = (uint8_t)(PWM_CLK_DIV);
-    PWM24CON = 0;
-    PWM25CON = 0;
+    PWM20CON = PWM_CON_PARKED;
+    PWM24CON = PWM_CON_OFF;
+    PWM25CON = PWM_CON_OFF;
 }

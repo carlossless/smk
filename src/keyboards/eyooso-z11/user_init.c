@@ -2,7 +2,6 @@
 #include "user_init.h"
 #include "pwm.h"
 
-// TODO: move these defines out
 #define PWM_PERD 0x0400 // 1024 / PWM_CLK ~= 43 us
 
 #define PWM_DUTY1 (uint16_t)PWM_PERD
