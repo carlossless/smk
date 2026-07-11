@@ -20,10 +20,6 @@
     { K00_4, K01_4, K02_4, KC_NO, KC_NO, K05_4, KC_NO, KC_NO, K08_4, K09_4, K10_4, KC_NO, KC_NO, K13_4, K14_4, KC_NO } \
 }
 
-// Each layer gets a name for readability, which is then used in the keymap matrix below.
-// The underscores don't mean anything - you can have a layer called STUFF or any other name.
-// Layer names don't all need to be of the same length, obviously, and you can also skip them
-// entirely and just use numbers.
 #define _MAC_BL 0
 #define _WIN_BL 1
 #define _MAC_FL 2
@@ -52,7 +48,7 @@ const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_TAB,  KC_Q,    KC_W,    KC_E,   KC_R,    KC_T,    KC_Y,    KC_U,     KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC, KC_BSLS,
         KC_CAPS, KC_A,    KC_S,    KC_D,   KC_F,    KC_G,    KC_H,    KC_J,     KC_K,    KC_L,    KC_SCLN, KC_QUOT,          KC_ENT,
         KC_LSFT, KC_Z,    KC_X,    KC_C,   KC_V,    KC_B,    KC_N,    KC_M,     KC_COMM, KC_DOT,  KC_SLSH, KC_RSFT, KC_UP,   KC_DEL,
-        KC_LCTL, KC_LGUI, KC_LALT,                           KC_SPC,                     KC_LGUI, MO(_MAC_FL), KC_LEFT, KC_DOWN, KC_RGHT
+        KC_LCTL, KC_LALT, KC_LGUI,                           KC_SPC,                     KC_LGUI, MO(_MAC_FL), KC_LEFT, KC_DOWN, KC_RGHT
     ),
 
     [_WIN_BL] = LAYOUT_60(
@@ -60,33 +56,39 @@ const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_TAB,  KC_Q,    KC_W,    KC_E,   KC_R,    KC_T,    KC_Y,    KC_U,     KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC, KC_BSLS,
         KC_CAPS, KC_A,    KC_S,    KC_D,   KC_F,    KC_G,    KC_H,    KC_J,     KC_K,    KC_L,    KC_SCLN, KC_QUOT,          KC_ENT,
         KC_LSFT, KC_Z,    KC_X,    KC_C,   KC_V,    KC_B,    KC_N,    KC_M,     KC_COMM, KC_DOT,  KC_SLSH, KC_RSFT, KC_UP,   KC_DEL,
-        KC_LCTL, KC_LALT, KC_LGUI,                           KC_SPC,                     KC_LGUI, MO(_WIN_FL), KC_LEFT, KC_DOWN, KC_RGHT
+        KC_LCTL, KC_LGUI, KC_LALT,                           KC_SPC,                     KC_LGUI, MO(_WIN_FL), KC_LEFT, KC_DOWN, KC_RGHT
     ),
 
     [_MAC_FL] = LAYOUT_60(
         KC_GRV,  KC_BRID, KC_BRIU, KC_MCTL, KC_ASST, BL_DOWN, BL_UP,   KC_MRWD, KC_MPLY, KC_MFFD, KC_MUTE, KC_VOLD, KC_VOLU, KC_DEL,
-        RESET_HOLD, LNK_BT1, LNK_BT2, LNK_BT3, LNK_24G, _______, _______, _______, _______, _______, _______, _______, _______, _______,
+        RESET_HOLD, LNK_BT1, LNK_BT2, LNK_BT3, LNK_24G, _______, _______, _______, _______, _______, _______, BAT_FLASH, BAT_ON, BAT_OFF,
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,          _______,
         _______, _______, _______, _______, FACT_RESET, _______, _______, _______, RGB_SPD_DN, RGB_SPD_UP, UL_MODE, _______, RGB_BRI_UP, _______,
         _______, _______, _______,                            _______,                   _______, _______, RGB_FX_PREV, RGB_BRI_DN, RGB_FX_NEXT
     ),
 
-    /* Keymap _FL: (Base Layer) Function Layer
+    /* Keymap _WIN_FL / _MAC_FL: Function Layer (hold Fn)
      * ,------------------------------------------------------------.
      * | ~ | F1| F2| F3| F4| F5| F6| F7| F8| F9|F10|F11|F12|    Del |
      * |------------------------------------------------------------|
-     * |     |BT1|BT2|BT3|24G|   |   |   |   |   |   |   |   |      |
+     * |Rst  |BT1|BT2|BT3|24G|   |   |   |   |   |   |BFl|BOn|   BOf|
      * |------------------------------------------------------------|
      * |       |   |   |   |   |   |   |   |   |   |   |   |        |
      * |------------------------------------------------------------|
-     * |        |   |   |   |   |   |   |   |   |   |   |   |   |   |
+     * |        |   |   |   |FRs|   |   |   |Sp-|Sp+| UL|   |Br+|   |
      * |------------------------------------------------------------|
-     * |    |    |    |                         |   |   |   |   |   |
+     * |    |    |    |                         |   |   |Fx-|Br-|Fx+|
      * `------------------------------------------------------------'
+     * Rst = reset (hold)   BT1/BT2/BT3 = Bluetooth slots   24G = 2.4 GHz
+     * BFl/BOn/BOf = battery indicator flash / on / off     FRs = factory reset
+     * Sp-/Sp+ = animation speed   UL = underglow mode   Br-/Br+ = brightness
+     * Fx-/Fx+ = effect prev / next
+     * (Win F-row shown; on Mac the top row is brightness / Mission Control /
+     *  Spotlight / media-transport / volume instead of F1-F12.)
      */
     [_WIN_FL] = LAYOUT_60(
         KC_GRV,  KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,   KC_F7,   KC_F8,   KC_F9,   KC_F10,  KC_F11,  KC_F12,  KC_DEL,
-        RESET_HOLD, LNK_BT1, LNK_BT2, LNK_BT3, LNK_24G, _______, _______, _______, _______, _______, _______, _______, _______, _______,
+        RESET_HOLD, LNK_BT1, LNK_BT2, LNK_BT3, LNK_24G, _______, _______, _______, _______, _______, _______, BAT_FLASH, BAT_ON, BAT_OFF,
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,          _______,
         _______, _______, _______, _______, FACT_RESET, _______, _______, _______, RGB_SPD_DN, RGB_SPD_UP, UL_MODE, _______, RGB_BRI_UP, _______,
         _______, _______, _______,                            _______,                   _______, _______, RGB_FX_PREV, RGB_BRI_DN, RGB_FX_NEXT
@@ -94,6 +96,11 @@ const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 };
 
 // clang-format on
+
+uint8_t layout_os_base_layer(bool is_mac)
+{
+    return is_mac ? _MAC_BL : _WIN_BL;
+}
 
 bool layout_process_record(uint16_t keycode, bool key_pressed)
 {
