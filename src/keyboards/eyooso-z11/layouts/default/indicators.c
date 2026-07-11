@@ -3,11 +3,9 @@
 #include "kbdef.h"
 #include "pwm.h"
 #include "settings.h"
+#include "led_effect.h"
+#include "user_led.h"
 
-// Single-colour variant of the per-key animation engine. Same structure as the RGB
-// boards (framebuffer + incremental regeneration + build-time geometry), but each LED
-// has one brightness channel instead of R/G/B, so effects are moving brightness waves
-// rather than hues.
 #define LED_ROWS MATRIX_ROWS
 #define LED_COLS MATRIX_COLS
 
@@ -21,19 +19,6 @@
 // (driven low = lit), so "disable" means driving them high.
 #define LED_ALL_ROWS (uint8_t)(LED_R0_P6_1 | LED_R1_P6_2 | LED_R2_P6_3 | LED_R3_P6_4 | LED_R4_P6_5)
 
-typedef enum {
-    FX_RADIAL = 0, // brightness rings rippling from the centre
-    FX_HORIZONTAL, // brightness wave across columns
-    FX_VERTICAL,   // brightness wave across rows
-    FX_SOLID,      // static full brightness (no animation)
-    FX_COUNT
-} led_effect_t;
-
-// The cycle key steps OFF -> each effect -> OFF -> ...; FX_OFF is the dark state.
-#define FX_OFF FX_COUNT
-
-// Per-device geometry baked into ROM at build time (utils/led_geometry_gen.c). Shared
-// with the RGB boards; here the values index a brightness wave instead of a colour wheel.
 #include LED_GEOMETRY_HEADER
 _Static_assert(LED_GEOMETRY_ROWS == LED_ROWS && LED_GEOMETRY_COLS == LED_COLS, "generated LED geometry size does not match the key matrix");
 
@@ -78,8 +63,6 @@ void indicators_next_effect()
     settings_save();
 }
 
-// Factory reset: turn the backlight off and persist that. (The shared user_settings
-// struct also carries fields the eyooso doesn't use; leave them alone.)
 void indicators_factory_reset()
 {
     user_settings.led_effect = FX_RADIAL;
@@ -128,35 +111,11 @@ void indicators_post_update()
     indicators_pwm_enable();
 }
 
-// triangle wave: 0 -> dark, 128 -> brightest, 255 -> dark; gives smooth moving bands
-static uint8_t led_wave(uint8_t x)
-{
-    return (x < 128) ? (uint8_t)(x << 1) : (uint8_t)((uint8_t)(255 - x) << 1);
-}
-
 static void led_regen_one()
 {
-    if (user_settings.led_effect == FX_SOLID) {
-        // static full brightness, no animation
-        led_fb[regen_row][regen_col] = 255;
-    } else {
-        uint8_t v;
-
-        // spatial parameter depends on the active effect; phase animates all of them
-        switch (user_settings.led_effect) {
-            case FX_HORIZONTAL:
-                v = (uint8_t)(col_hue[regen_col] + led_phase);
-                break;
-            case FX_VERTICAL:
-                v = (uint8_t)(row_hue[regen_row] + led_phase);
-                break;
-            case FX_RADIAL:
-            default:
-                v = (uint8_t)(radial_index[regen_row][regen_col] + led_phase);
-                break;
-        }
-
-        led_fb[regen_row][regen_col] = led_wave(v);
+    uint8_t v;
+    if (led_effect_mono((led_effect_t)user_settings.led_effect, regen_row, regen_col, led_phase, &v)) {
+        led_fb[regen_row][regen_col] = v;
     }
 
     if (++regen_col >= LED_COLS) {

@@ -2,9 +2,9 @@
 #include "user_init.h"
 #include "pwm.h"
 
-#define PWM_PERD 0x0400 // 1024 / PWM_CLK ~= 43 us
+#define PWM_PERD 0x0100
 
-#define PWM_DUTY1 (uint16_t)PWM_PERD
+#define PWM_DUTY1 (uint16_t)0
 #define PWM_DUTY2 (uint16_t)0
 
 #define PWM_PERDH_INIT ((uint8_t)(PWM_PERD >> 8))
@@ -17,8 +17,6 @@ void user_init()
 {
     user_gpio_init();
     user_pwm_init();
-
-    IEN1 |= (1 << 1); // EPWM0
 }
 
 void user_gpio_init()
@@ -50,23 +48,14 @@ void user_gpio_init()
     P7PCR = (uint8_t)(KB_R0_P7_1 | KB_R1_P7_2 | KB_R2_P7_3);
 
     if (DEBUG) {
-        // UART TXD conflicts with CONN_MODE_SWITCH
-        // FIXME: make this configurable somehow
-        // P5CR |= CONN_MODE_SWITCH_P5_5;
-        // P5PCR &= ~CONN_MODE_SWITCH_P5_5;
     }
-
-    // BB SPI pins for RF
-    // TODO: move this out
     P7 |= RF_BB_SPI_CS_P7_4;
     P4 |= RF_BB_SPI_SCK_P4_7;
     P0 |= (RF_BB_SPI_MOSI_P0_7 | RF_BB_SPI_MOT_P0_5);
 
-    P7CR |= RF_BB_SPI_CS_P7_4;
-    P4CR |= RF_BB_SPI_SCK_P4_7;
-    P0CR |= (RF_BB_SPI_MOSI_P0_7 | RF_BB_SPI_MOT_P0_5);
-
-    P0PCR |= RF_BB_SPI_MISO_P0_6;
+    P0PCR |= (RF_BB_SPI_MISO_P0_6 | RF_BB_SPI_MOSI_P0_7 | RF_BB_SPI_MOT_P0_5);
+    P4PCR |= (RF_BB_SPI_ACK_P4_2 | RF_BB_SPI_SCK_P4_7);
+    P7PCR |= RF_BB_SPI_CS_P7_4;
 }
 
 void user_pwm_init()
