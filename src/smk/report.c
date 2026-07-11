@@ -47,7 +47,16 @@ void send_6kro_report()
 
     /* Only send the report if there are changes to propagate to the host. */
     if (memcmp(&keyboard_report, &last_report, sizeof(report_keyboard_t)) != 0) {
-        memcpy(&last_report, &keyboard_report, sizeof(report_keyboard_t));
+        // Dedicated copy, NOT library memcpy. SDCC's memcpy is non-reentrant: it
+        // passes args through fixed globals (___memcpy_PARM_2/3). The USB ISR also
+        // calls memcpy (descriptor handler) during enumeration; if it preempts a
+        // main-loop memcpy between PARM setup and the routine reading them, our
+        // dest/src/len get the ISR's values → wild copy → corruption/crash. A
+        // private byte loop keeps this copy's state local so nothing is shared
+        // with the ISR.
+        for (uint8_t i = 0; i < KEYBOARD_REPORT_SIZE; i++) {
+            last_report.raw[i] = keyboard_report.raw[i];
+        }
         host_keyboard_send(&keyboard_report);
     }
 }
@@ -61,7 +70,12 @@ void send_nkro_report()
 
     /* Only send the report if there are changes to propagate to the host. */
     if (memcmp(&nkro_report, &last_nkro_report, sizeof(report_nkro_t)) != 0) {
-        memcpy(&last_nkro_report, &nkro_report, sizeof(report_nkro_t));
+        // Dedicated copy, not library memcpy — see send_6kro_report: keeps this
+        // copy's state local so the USB ISR's memcpy can't race the shared
+        // ___memcpy PARM globals.
+        for (uint8_t i = 0; i < NKRO_REPORT_SIZE; i++) {
+            last_nkro_report.raw[i] = nkro_report.raw[i];
+        }
         host_nkro_send(&nkro_report);
     }
 }
@@ -185,9 +199,8 @@ void add_key_bit(report_nkro_t *nkro_report, uint8_t code)
 {
     if ((code >> 3) < NKRO_REPORT_BITS) {
         nkro_report->bits[code >> 3] |= 1 << (code & 7);
-    } else {
-        dprintf("add_key_bit: can't add: %02X\n", code);
     }
+    // codes past the report range are silently dropped
 }
 
 /** \brief del key bit
@@ -198,8 +211,6 @@ void del_key_bit(report_nkro_t *nkro_report, uint8_t code)
 {
     if ((code >> 3) < NKRO_REPORT_BITS) {
         nkro_report->bits[code >> 3] &= ~(1 << (code & 7));
-    } else {
-        dprintf("del_key_bit: can't del: %02X\n", code);
     }
 }
 #endif
@@ -308,4 +319,82 @@ uint8_t biton(uint8_t bits)
         n += 1;
     }
     return n;
+}
+
+/* keycode to system usage */
+uint16_t keycode_to_system(uint8_t key)
+{
+    switch (key) {
+        case KC_SYSTEM_POWER:
+            return SYSTEM_POWER_DOWN;
+        case KC_SYSTEM_SLEEP:
+            return SYSTEM_SLEEP;
+        case KC_SYSTEM_WAKE:
+            return SYSTEM_WAKE_UP;
+        default:
+            return 0;
+    }
+}
+
+/* keycode to consumer usage */
+uint16_t keycode_to_consumer(uint8_t key)
+{
+    switch (key) {
+        case KC_AUDIO_MUTE:
+            return AUDIO_MUTE;
+        case KC_AUDIO_VOL_UP:
+            return AUDIO_VOL_UP;
+        case KC_AUDIO_VOL_DOWN:
+            return AUDIO_VOL_DOWN;
+        case KC_MEDIA_NEXT_TRACK:
+            return TRANSPORT_NEXT_TRACK;
+        case KC_MEDIA_PREV_TRACK:
+            return TRANSPORT_PREV_TRACK;
+        case KC_MEDIA_FAST_FORWARD:
+            return TRANSPORT_FAST_FORWARD;
+        case KC_MEDIA_REWIND:
+            return TRANSPORT_REWIND;
+        case KC_MEDIA_STOP:
+            return TRANSPORT_STOP;
+        case KC_MEDIA_EJECT:
+            return TRANSPORT_STOP_EJECT;
+        case KC_MEDIA_PLAY_PAUSE:
+            return TRANSPORT_PLAY_PAUSE;
+        case KC_MEDIA_SELECT:
+            return AL_CC_CONFIG;
+        case KC_MAIL:
+            return AL_EMAIL;
+        case KC_CALCULATOR:
+            return AL_CALCULATOR;
+        case KC_MY_COMPUTER:
+            return AL_LOCAL_BROWSER;
+        case KC_CONTROL_PANEL:
+            return AL_CONTROL_PANEL;
+        case KC_ASSISTANT:
+            return AL_ASSISTANT;
+        case KC_WWW_SEARCH:
+            return AC_SEARCH;
+        case KC_WWW_HOME:
+            return AC_HOME;
+        case KC_WWW_BACK:
+            return AC_BACK;
+        case KC_WWW_FORWARD:
+            return AC_FORWARD;
+        case KC_WWW_STOP:
+            return AC_STOP;
+        case KC_WWW_REFRESH:
+            return AC_REFRESH;
+        case KC_BRIGHTNESS_UP:
+            return BRIGHTNESS_UP;
+        case KC_BRIGHTNESS_DOWN:
+            return BRIGHTNESS_DOWN;
+        case KC_WWW_FAVORITES:
+            return AC_BOOKMARKS;
+        case KC_MISSION_CONTROL:
+            return AC_DESKTOP_SHOW_ALL_WINDOWS;
+        case KC_LAUNCHPAD:
+            return AC_SOFT_KEY_LEFT;
+        default:
+            return 0;
+    }
 }
