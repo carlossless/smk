@@ -130,7 +130,7 @@ sdar_args = ['-rc']
 cc = find_program('sdcc', required : true)
 sdar = find_program('sdar', required : true)
 packihx = find_program('packihx', required : true)
-skbt = find_program('sinowealth-kb-tool', required : true)
+sinowisp = find_program('sinowisp', required : true)
 
 # Host-side generator that bakes per-device LED animation geometry into ROM tables
 # (see utils/led_geometry_gen.c). Compiled once with the host compiler at configure
@@ -261,7 +261,7 @@ foreach part : parts
 
         flash_target_name = '@0@flash'.format(prefix)
         run_target(flash_target_name,
-            command : [skbt, 'write', '-d', keyboard, '--force', hex_smk.full_path()], # TODO: try to remove the need for --force
+            command : [sinowisp, 'write', '-d', keyboard, '--force', hex_smk.full_path()], # TODO: try to remove the need for --force
             depends : hex_smk,
         )
 
