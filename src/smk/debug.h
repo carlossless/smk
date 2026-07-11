@@ -1,8 +1,8 @@
 #pragma once
 
-#include <stdio.h>
+#include "console.h"
 
-#define dprintf(...)                    \
-    do {                                \
-        if (DEBUG) printf(__VA_ARGS__); \
+#define dprintf(...)                            \
+    do {                                        \
+        if (DEBUG) console_printf(__VA_ARGS__); \
     } while (0)

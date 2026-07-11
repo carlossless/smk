@@ -1,1 +1,3 @@
 option('nkro', type : 'feature', value : 'enabled', description: 'NKRO support')
+option('debug_sink', type : 'combo', choices : ['console', 'uart', 'both'], value : 'uart',
+       description: 'Where dprintf output goes in debug builds: HID console only (default), UART only, or both. UART has a blocking busy-wait per byte (uart_putc), so picking it can stall the main loop while the TX shift register drains.')

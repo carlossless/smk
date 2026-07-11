@@ -356,7 +356,7 @@ class Sim:
         return self.run(cmds, timeout=60)
 
     @staticmethod
-    def stack_highwater(output, base=0x85, sentinel=0xAA):
+    def stack_highwater(output, base=0x30, sentinel=0xAA):
         """Bytes of stack used at the peak: scan the painted stack dump (after the
         ===STACKDUMP=== marker) for the highest address still overwritten."""
         seg = output.split("===STACKDUMP===")[-1]
