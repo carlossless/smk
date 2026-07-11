@@ -2,13 +2,13 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     utils.url = "github:numtide/flake-utils";
-    sinowealth-kb-tool = {
-      url = "github:carlossless/sinowealth-kb-tool";
+    sinowisp = {
+      url = "github:carlossless/sinowisp";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { self, nixpkgs, utils, sinowealth-kb-tool }:
+  outputs = { self, nixpkgs, utils, sinowisp }:
     utils.lib.eachDefaultSystem (
       system:
       let
@@ -85,7 +85,7 @@
             meson
             ninja
 
-            sinowealth-kb-tool.packages."${system}".default # flashing
+            sinowisp.packages."${system}".default # flashing
             clang-tools # for clang-format
 
             ucsim-sh68f90 # patched 8051 simulator (USB vector 7 + SIE model)

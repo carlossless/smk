@@ -3,7 +3,7 @@
     "fenix": {
       "inputs": {
         "nixpkgs": [
-          "sinowealth-kb-tool",
+          "sinowisp",
           "naersk",
           "nixpkgs"
         ],
@@ -94,7 +94,7 @@
     "root": {
       "inputs": {
         "nixpkgs": "nixpkgs",
-        "sinowealth-kb-tool": "sinowealth-kb-tool",
+        "sinowisp": "sinowisp",
         "utils": "utils_2"
       }
     },
@@ -133,7 +133,7 @@
         "type": "github"
       }
     },
-    "sinowealth-kb-tool": {
+    "sinowisp": {
       "inputs": {
         "naersk": "naersk",
         "nixpkgs": [
@@ -143,16 +143,16 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1779946764,
-        "narHash": "sha256-jTExsD7/knXJvMXXiYPU9KDeTs1isz/k69s1quWzJnQ=",
+        "lastModified": 1783766549,
+        "narHash": "sha256-9wUZDgsk4ydhOxRKBSTIuTHhSyxSm1aWKe+z6rCyxq0=",
         "owner": "carlossless",
-        "repo": "sinowealth-kb-tool",
-        "rev": "c4e675be67ccec2655eda12d75be59841e761abc",
+        "repo": "sinowisp",
+        "rev": "95285984a1761d15300d7ca71a6d4254d66942df",
         "type": "github"
       },
       "original": {
         "owner": "carlossless",
-        "repo": "sinowealth-kb-tool",
+        "repo": "sinowisp",
         "type": "github"
       }
     },
