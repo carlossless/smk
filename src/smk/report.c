@@ -24,9 +24,6 @@ void send_6kro_report();
 void send_nkro_report();
 #endif
 
-/** \brief Send keyboard report
- *
- */
 void send_keyboard_report()
 {
 #ifdef NKRO_ENABLE
@@ -45,7 +42,6 @@ void send_6kro_report()
     keyboard_report.mods = real_mods;
     keyboard_report.mods |= weak_mods;
 
-    /* Only send the report if there are changes to propagate to the host. */
     if (memcmp(&keyboard_report, &last_report, sizeof(report_keyboard_t)) != 0) {
         for (uint8_t i = 0; i < KEYBOARD_REPORT_SIZE; i++) {
             last_report.raw[i] = keyboard_report.raw[i];
@@ -61,7 +57,6 @@ void send_nkro_report()
     nkro_report.mods      = real_mods;
     nkro_report.mods |= weak_mods;
 
-    /* Only send the report if there are changes to propagate to the host. */
     if (memcmp(&nkro_report, &last_nkro_report, sizeof(report_nkro_t)) != 0) {
         for (uint8_t i = 0; i < NKRO_REPORT_SIZE; i++) {
             last_nkro_report.raw[i] = nkro_report.raw[i];
@@ -71,9 +66,6 @@ void send_nkro_report()
 }
 #endif
 
-/** \brief has_anykey
- *
- */
 uint8_t has_anykey(report_keyboard_t *keyboard_report)
 {
     uint8_t  cnt = 0;
@@ -96,10 +88,6 @@ uint8_t has_anykey(report_keyboard_t *keyboard_report)
     return cnt;
 }
 
-/** \brief get_first_key
- *
- * FIXME: Needs doc
- */
 uint8_t get_first_key(report_keyboard_t *keyboard_report)
 {
 #ifdef NKRO_ENABLE
@@ -113,11 +101,6 @@ uint8_t get_first_key(report_keyboard_t *keyboard_report)
     return keyboard_report->keys[0];
 }
 
-/** \brief Checks if a key is pressed in the report
- *
- * Returns true if the keyboard_report reports that the key is pressed, otherwise false
- * Note: The function doesn't support modifers currently, and it returns false for KC_NO
- */
 bool is_key_pressed(report_keyboard_t *keyboard_report, uint8_t key)
 {
     if (key == KC_NO) {
@@ -143,9 +126,6 @@ bool is_key_pressed(report_keyboard_t *keyboard_report, uint8_t key)
     return false;
 }
 
-/** \brief add key byte
- *
- */
 void add_key_byte(report_keyboard_t *keyboard_report, uint8_t code)
 {
     int8_t i     = 0;
@@ -168,9 +148,6 @@ void add_key_byte(report_keyboard_t *keyboard_report, uint8_t code)
     }
 }
 
-/** \brief del key byte
- *
- */
 void del_key_byte(report_keyboard_t *keyboard_report, uint8_t code)
 {
     for (uint8_t i = 0; i < KEYBOARD_REPORT_KEYS; i++) {
@@ -181,10 +158,6 @@ void del_key_byte(report_keyboard_t *keyboard_report, uint8_t code)
 }
 
 #ifdef NKRO_ENABLE
-/** \brief add key bit
- *
- * FIXME: Needs doc
- */
 void add_key_bit(report_nkro_t *nkro_report, uint8_t code)
 {
     if ((code >> 3) < NKRO_REPORT_BITS) {
@@ -192,10 +165,6 @@ void add_key_bit(report_nkro_t *nkro_report, uint8_t code)
     }
 }
 
-/** \brief del key bit
- *
- * FIXME: Needs doc
- */
 void del_key_bit(report_nkro_t *nkro_report, uint8_t code)
 {
     if ((code >> 3) < NKRO_REPORT_BITS) {
@@ -204,9 +173,6 @@ void del_key_bit(report_nkro_t *nkro_report, uint8_t code)
 }
 #endif
 
-/** \brief add key to report
- *
- */
 void add_key_to_report(report_keyboard_t *keyboard_report, uint8_t key)
 {
 #ifdef NKRO_ENABLE
@@ -218,9 +184,6 @@ void add_key_to_report(report_keyboard_t *keyboard_report, uint8_t key)
     add_key_byte(keyboard_report, key);
 }
 
-/** \brief del key from report
- *
- */
 void del_key_from_report(report_keyboard_t *keyboard_report, uint8_t key)
 {
 #ifdef NKRO_ENABLE
@@ -232,9 +195,6 @@ void del_key_from_report(report_keyboard_t *keyboard_report, uint8_t key)
     del_key_byte(keyboard_report, key);
 }
 
-/** \brief clear key from report
- *
- */
 void clear_keys_from_report(report_keyboard_t *keyboard_report)
 {
 #ifdef NKRO_ENABLE
@@ -246,45 +206,27 @@ void clear_keys_from_report(report_keyboard_t *keyboard_report)
     memset(keyboard_report->keys, 0, sizeof(keyboard_report->keys));
 }
 
-/** \brief Get mods
- *
- */
 uint8_t get_mods(void)
 {
     return real_mods;
 }
-/** \brief add mods
- *
- */
 void add_mods(uint8_t mods)
 {
     real_mods |= mods;
 }
-/** \brief del mods
- *
- */
 void del_mods(uint8_t mods)
 {
     real_mods &= ~mods;
 }
-/** \brief set mods
- *
- */
 void set_mods(uint8_t mods)
 {
     real_mods = mods;
 }
-/** \brief clear mods
- *
- */
 void clear_mods(void)
 {
     real_mods = 0;
 }
 
-/** \brief get weak mods
- *
- */
 uint8_t get_weak_mods(void)
 {
     return weak_mods;

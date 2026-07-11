@@ -21,10 +21,10 @@
 #    include "rf_controller.h"
 #endif
 
-#include "pwm.h"    // TODO: interrupt is defined here and need to be imported in main, centralise interupt definitions
-#include "timer2.h" // ISR vector slot — see SDCC ISR-prototype-in-main rule
+#include "pwm.h"    // TODO: centralise interrupt definitions
+#include "timer2.h" // ISR vector slot must be visible where main() is compiled
 #include "sleep.h"
-#include "power.h" // int4_isr ISR vector slot — same SDCC ISR-prototype-in-main rule
+#include "power.h" // int4_isr ISR vector slot — same reason
 
 void init()
 {
@@ -70,7 +70,7 @@ void main()
     }
     indicators_validate_settings();
 #if DEBUG == 1
-    settings_dump(); // report the settings the keyboard came up with
+    settings_dump();
 #endif
 
     for (uint16_t i = 0; i < 4000; i++) {

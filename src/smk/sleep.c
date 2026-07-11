@@ -84,7 +84,7 @@ void sleep_task(void)
 
     user_sleep_prepare();
     power_enter_powerdown(usb_mode);
-    user_sleep_wake(); // restore GPIO + RF MOT pin, disable the wake int
+    user_sleep_wake();
 
     indicators_pwm_enable();
     timer2_scan_resume();

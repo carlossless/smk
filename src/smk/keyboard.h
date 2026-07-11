@@ -6,7 +6,7 @@ typedef struct {
     uint8_t led_state;
     uint8_t rf_link;
     uint8_t battery_level; // 0..7
-    uint8_t low_power;     // 1 when BK3632 reports critical-low battery
+    uint8_t low_power;     // 1 when the battery is critically low
     uint8_t connected;     // 1 when the active RF link has a host paired+connected
     uint8_t paired;        // 1 when the active RF link has a paired host
 } keyboard_state_t;

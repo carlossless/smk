@@ -5,8 +5,8 @@
 
 typedef enum {
     USER_SLEEP_NONE = 0, // don't sleep
-    USER_SLEEP_RF   = 1, // RF/battery: regulator off, inactivity-triggered
-    USER_SLEEP_USB  = 2, // USB: regulator on / GOSUSP, host-suspend-triggered
+    USER_SLEEP_RF   = 1, // RF/battery: inactivity-triggered
+    USER_SLEEP_USB  = 2, // USB: host-suspend-triggered
 } user_sleep_mode_t;
 
 user_sleep_mode_t user_sleep_supported(void);

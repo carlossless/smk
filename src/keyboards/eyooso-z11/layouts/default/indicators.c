@@ -22,14 +22,11 @@
 // 8-bit framebuffer brightness -> 10-bit column PWM duty (0 = full on, 0x400 = off)
 #define LED_DUTY(v) (uint16_t)(0x0400u - ((uint16_t)(v) << 2))
 
-// All LED rows, used to disable the whole matrix between substeps. Rows are active-low
-// (driven low = lit), so "disable" means driving them high.
 #define LED_ALL_ROWS (uint8_t)(LED_R0_P6_1 | LED_R1_P6_2 | LED_R2_P6_3 | LED_R3_P6_4 | LED_R4_P6_5)
 
 #include LED_GEOMETRY_HEADER
 _Static_assert(LED_GEOMETRY_ROWS == LED_ROWS && LED_GEOMETRY_COLS == LED_COLS, "generated LED geometry size does not match the key matrix");
 
-// Single-channel framebuffer (brightness per LED). __xdata to spare internal RAM.
 static __xdata uint8_t led_fb[LED_ROWS][LED_COLS];
 
 static __xdata uint8_t led_row;
@@ -84,7 +81,7 @@ void indicators_pre_update()
     indicators_pwm_disable();
 }
 
-bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
+bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step) __reentrant
 {
     current_step;
 

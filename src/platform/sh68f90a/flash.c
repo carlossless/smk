@@ -2,11 +2,6 @@
 #include "sh68f90a.h"
 #include <stdbool.h>
 
-// On-chip flash is 128 x 512-byte sectors (64K). The bootloader occupies the top 4K
-// (0xF000-0xFFFF), and the flasher stores the app's reset-vector redirect at 0xEFFC
-// (sector 119) which the bootloader uses to enter the app - so sector 119 must NEVER
-// be erased. We use the sector just below it, and cap the linker (--code-size 0xEC00)
-// so no program code is ever placed here.
 #define CFG_ADDR   0xEC00u               // flash sector 118 (0xEC00..0xEDFF)
 #define CFG_SIZE   512u                  // SH68F90A flash sector size
 #define CFG_END    (CFG_ADDR + CFG_SIZE) // first address past the settings sector
@@ -33,6 +28,7 @@ static void ssp_run(uint16_t addr, uint8_t op, uint8_t data)
     if (addr < CFG_ADDR || addr >= CFG_END) {
         return;
     }
+    // A sector erase auto-IDLEs the CPU for ~5 ms with interrupts off.
     __critical
     {
         XPAGE     = (uint8_t)(addr >> 8);
@@ -72,7 +68,7 @@ bool flash_settings_load(__xdata uint8_t *dst, uint8_t len)
         return false;
     }
     if (flash_read(CFG_ADDR + 2) != len) {
-        return false; // a different-sized record (e.g. struct changed) - ignore it
+        return false; // different-sized record (struct changed) — ignore
     }
 
     uint8_t sum = 0;
@@ -83,7 +79,6 @@ bool flash_settings_load(__xdata uint8_t *dst, uint8_t len)
         return false; // checksum mismatch
     }
 
-    // valid: commit to dst only now, so a bad record never corrupts the caller's data
     for (uint8_t i = 0; i < len; i++) {
         dst[i] = flash_read((uint16_t)(CFG_ADDR + CFG_HDR + i));
     }
@@ -93,7 +88,6 @@ bool flash_settings_load(__xdata uint8_t *dst, uint8_t len)
 void flash_settings_save(const __xdata uint8_t *src, uint8_t len)
 {
 
-    // skip the write entirely if the stored record already matches (avoids wear)
     bool same = flash_read(CFG_ADDR) == CFG_MAGIC0 && flash_read(CFG_ADDR + 1) == CFG_MAGIC1 && flash_read(CFG_ADDR + 2) == len;
     if (same) {
         for (uint8_t i = 0; i < len; i++) {

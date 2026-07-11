@@ -4,7 +4,7 @@
 #    include "debug.h" // dprintf
 #endif
 
-_Static_assert(sizeof(user_settings_t) + 4u <= 512u, "user_settings_t too large for the 512-byte settings sector");
+_Static_assert(sizeof(user_settings_t) + 4u <= 512u, "user_settings_t too large for the settings sector");
 
 __xdata user_settings_t user_settings;
 
@@ -20,7 +20,7 @@ void settings_save(void)
     settings_save_pre();
     flash_settings_save((const __xdata uint8_t *)&user_settings, (uint8_t)sizeof(user_settings));
     settings_save_post();
-    settings_dirty = false;
+    settings_dirty = false; // just flushed; don't let settings_task() redo it
 }
 
 void settings_mark_dirty(void)
@@ -42,7 +42,7 @@ void settings_task(void)
     }
     settings_dirty = false;
 #if DEBUG == 1
-    settings_dump(); // report the coalesced change
+    settings_dump();
 #endif
     settings_save_pre();
     flash_settings_save((const __xdata uint8_t *)&user_settings, (uint8_t)sizeof(user_settings));

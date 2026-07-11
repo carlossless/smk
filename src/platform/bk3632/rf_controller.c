@@ -1,9 +1,9 @@
 #include "rf_controller.h"
 #include <stdint.h>
 #include "delay.h"
-#include "debug.h"    // dprintf
-#include "bb_spi.h"   // FIXME: should be conditional?
-#include "sh68f90a.h" // for EA
+#include "debug.h"
+#include "bb_spi.h" // FIXME: should be conditional?
+#include "sh68f90a.h"
 
 #define MAGIC_BYTE 0xaa
 #define CMD_REPORT 0x02
@@ -98,15 +98,19 @@ void rf_reassert_link(rf_mode_t link)
     rf_set_link_mode((uint8_t)link, 0);
 }
 
+// Wipe all BT bonds / factory reset. Destructive: tears down BLE advertising
+// and committed BT names, so rf_init must re-run afterwards. Recovers a BK3632
+// that's accumulated bad BLE state across repeated failed pairings (rotating-MAC
+// advertising the host can't pair against because SMP keeps timing out).
 void rf_factory_reset_bonds(void)
 {
-    rf_cmd_03(2);
+    rf_cmd_03(2); // wipe stored bonds
     delay_ms(200);
     rf_prepare_sleep(0);
     delay_ms(100);
     rf_wake_from_sleep();
     delay_ms(200);
-    rf_init();
+    rf_init(); // reload BT names cleared by the wipe + sleep cycle
     delay_ms(200);
 }
 
@@ -331,16 +335,7 @@ bool rf_get_status(uint8_t status_bytes[2])
         return false;
     }
 
-    // rf_tx_buf[2] - 0x07 - 3 high power bits
     status_bytes[0] = rf_tx_buf[2];
-
-    // rf_tx_buf[3] & (1 << 0)              - num lock (0 - off, 1 - on)
-    // rf_tx_buf[3] & (1 << 1)              - caps lock (0 - off, 1 - on)
-    // rf_tx_buf[3] & (1 << 2)              - scroll lock (0 - off, 1 - on)
-    // rf_tx_buf[3] & (1 << 3)              - connection status (0 - disconnected, 1 - connected)
-    // rf_tx_buf[3] & (1 << 4)              - pairing status (0 - not paired, 1 - paired)
-    // rf_tx_buf[3] & ((1 << 5) | (1 << 6)) - rf mode (0 - 2.4G, 1 - BT1, 2 - BT2, 3 - BT3)
-    // rf_tx_buf[3] & (1 << 7)              - low power bit
     status_bytes[1] = rf_tx_buf[3];
 
     return true;
@@ -388,10 +383,10 @@ void rf_set_link_mode(uint8_t mode, uint8_t pairing)
 static void rf_kro_post_send_blanking(bool curr_active)
 {
     if (blanking_active) {
-        return;
+        return; // inside rf_blanking_tick; the tick owns the counter
     }
     if (curr_active) {
-        blanking_pending = 0;
+        blanking_pending = 0; // a press cancels any pending blanking
     } else if (kro_prev_active) {
         blanking_pending = BLANKING_COUNT_AFTER_RELEASE;
     }

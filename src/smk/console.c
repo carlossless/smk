@@ -10,7 +10,7 @@
 
 static void console_emit_num(uint16_t val, uint8_t base, uint8_t width, char pad, uint8_t upper) __reentrant
 {
-    char    buf[5]; // 16-bit: 5 decimal digits / 4 hex digits max
+    char    buf[5];
     uint8_t n = 0;
     do {
         uint8_t d = (uint8_t)(val % base);
@@ -109,8 +109,6 @@ void console_notify_attached(void)
 void console_putc(unsigned char c)
 {
     uint8_t next;
-    // __critical so a dprintf() reached from an interrupt can't tear the head
-    // update against a main-loop writer. Drops the byte when the buffer is full.
     __critical
     {
         next = (console_head + 1) & CONSOLE_BUF_MASK;
@@ -126,8 +124,8 @@ void console_task(void)
     uint8_t len;
 
     if (!usb_is_configured()) {
-        console_attached = 0; // require a fresh handshake after re-enumeration
-        return;               // not enumerated over USB (e.g. wireless / unplugged)
+        console_attached = 0; // require a fresh handshake once the link is back
+        return;
     }
     if (!console_attached) {
         return; // host tool hasn't announced itself yet; keep buffering
@@ -136,7 +134,7 @@ void console_task(void)
         return; // nothing buffered
     }
     if (EP2CON & _IEP2RDY) {
-        return; // previous EP2 report still pending; retry next iteration
+        return; // previous report still pending; retry next iteration
     }
 
     EP2_IN_BUF[0] = REPORT_ID_CONSOLE;

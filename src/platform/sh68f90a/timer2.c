@@ -49,9 +49,10 @@ void timer2_interrupt_handler(void) __interrupt(_INT_TIMER2)
         timer2_reload(T2_RELOAD_MATRIX);
         matrix_scan_full();
 
-        sleep_tick();
+        sleep_tick(); // advance the inactivity counter once per matrix frame
     } else {
-        timer2_reload(T2_RELOAD_LED);
+        timer2_reload(T2_RELOAD_LED); // full 400 µs dwell
+
         indicators_pre_update();
         const bool frame_wrapped = indicators_update_step(&keyboard_state, 0);
         indicators_post_update();
