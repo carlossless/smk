@@ -43,30 +43,43 @@ void timer2_scan_resume(void)
     ET2 = 1;
 }
 
-// Phase: 0 = next fire runs a matrix scan, 1 = next runs an LED substep. The
-// substep counter lives in the indicators module; when it wraps a full frame,
-// indicators_update_step returns true and we flip back to phase 0.
-static volatile uint8_t phase = 0;
+// Matrix scans are interleaved with the LED PWM subframes on this one timer. A
+// scan runs after every LED_SUBFRAMES_PER_SCAN LED subframes: 1 maximises the key
+// scan rate (a scan between every subframe, ~950 Hz — near the 1 kHz USB poll
+// ceiling), a larger value trades scan rate back for LED brightness/smoothness
+// (the backlight is blanked for the ~0.66 ms of each scan). The full LED frame
+// still takes LED_SCAN_ROWS*3 subframes; interleaving just stretches it in time.
+#define LED_SUBFRAMES_PER_SCAN 1
+
+// Phase: 0 = next fire runs a matrix scan, 1 = next runs an LED substep.
+static volatile uint8_t phase          = 0;
+static volatile uint8_t led_since_scan = 0;
 
 void timer2_interrupt_handler(void) __interrupt(_INT_TIMER2)
 {
     TF2 = 0;
 
     if (phase == 0) {
-        phase = 1;
+        phase          = 1;
+        led_since_scan = 0;
         // Short reload overflows during the scan so the first LED subframe
         // resumes the instant matrix_scan_full() returns.
         timer2_reload(T2_RELOAD_MATRIX);
         matrix_scan_full();
-
-        sleep_tick(); // advance the inactivity counter once per matrix frame
     } else {
         timer2_reload(T2_RELOAD_LED); // full 400 µs dwell
 
         indicators_pre_update();
         const bool frame_wrapped = indicators_update_step(&keyboard_state, 0);
         indicators_post_update();
+
+        // Idle timer runs off the LED frame, not the (now much faster) scan, so
+        // its cadence stays bounded regardless of LED_SUBFRAMES_PER_SCAN.
         if (frame_wrapped) {
+            sleep_tick();
+        }
+
+        if (++led_since_scan >= LED_SUBFRAMES_PER_SCAN) {
             phase = 0;
         }
     }

@@ -19,9 +19,10 @@ typedef int sleep_disabled_placeholder_t;
 
 #    include <stdint.h>
 
-// Inactivity threshold, in matrix frames. sleep_tick() advances it once per
-// frame; ~41,400 frames is roughly a 6-minute idle timeout.
-#    define SLEEP_TIMEOUT 41400
+// Inactivity threshold, in LED frames. sleep_tick() runs once per LED frame
+// (~59 Hz with LED_SUBFRAMES_PER_SCAN=1); ~21,000 frames is roughly a 6-minute
+// idle timeout. Retune if the LED frame rate changes (see timer2.c).
+#    define SLEEP_TIMEOUT 21000
 
 // `inactivity` is owned by sleep_tick() during normal running; the main loop
 // only ever reads it indirectly via `sleep_requested`. Activity reaches the tick
