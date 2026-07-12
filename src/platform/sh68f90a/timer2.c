@@ -38,25 +38,32 @@ void timer2_scan_resume(void)
     ET2 = 1;
 }
 
-static volatile uint8_t phase = 0;
+#define LED_SUBFRAMES_PER_SCAN 1
+
+static volatile uint8_t phase          = 0;
+static volatile uint8_t led_since_scan = 0;
 
 void timer2_interrupt_handler(void) __interrupt(_INT_TIMER2)
 {
     TF2 = 0;
 
     if (phase == 0) {
-        phase = 1;
+        phase          = 1;
+        led_since_scan = 0;
         timer2_reload(T2_RELOAD_MATRIX);
         matrix_scan_full();
-
-        sleep_tick(); // advance the inactivity counter once per matrix frame
     } else {
         timer2_reload(T2_RELOAD_LED); // full 400 µs dwell
 
         indicators_pre_update();
         const bool frame_wrapped = indicators_update_step(&keyboard_state, 0);
         indicators_post_update();
+
         if (frame_wrapped) {
+            sleep_tick();
+        }
+
+        if (++led_since_scan >= LED_SUBFRAMES_PER_SCAN) {
             phase = 0;
         }
     }

@@ -17,7 +17,7 @@ typedef int sleep_disabled_placeholder_t;
 
 #    include <stdint.h>
 
-#    define SLEEP_TIMEOUT 41400
+#    define SLEEP_TIMEOUT 21000
 
 static volatile __xdata uint16_t inactivity;
 static volatile __xdata uint8_t  activity_seen;
