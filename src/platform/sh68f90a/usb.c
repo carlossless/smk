@@ -303,16 +303,9 @@ static void usb_ep0_out_irq();
 static void usb_ep0_in_irq();
 
 // buffer utils
-// __reentrant on the two EP0-IN helpers: they run inside the USB ISR while
-// streaming (often __code) descriptor pointers. SDCC's static-overlay allocator
-// doesn't model interrupt preemption, so left non-reentrant it parks their pointer
-// params on the same internal-RAM bytes as main-loop locals — and a mid-render IRQ
-// then corrupts them (see project_sdcc_isr_overlay_collision). Reentrant keeps
-// their params on the stack, out of the shared overlay. Enforced by
-// utils/check_isr_overlay.py.
-static void setup_ep0_in_xfer(uint8_t *src, uint16_t len) __reentrant;
+static void setup_ep0_in_xfer(uint8_t *src, uint16_t len);
 static void step_ep0_in_xfer();
-static void set_ep0_in_buffer(uint8_t *src, uint8_t len) __reentrant;
+static void set_ep0_in_buffer(uint8_t *src, uint8_t len);
 static void get_ep0_out_buffer(uint8_t *dest);
 static void set_ep1_in_buffer(uint8_t *src, uint8_t len);
 static void get_ep1_out_buffer(uint8_t *dest);
@@ -320,26 +313,26 @@ static void set_ep2_in_buffer(uint8_t *src, uint8_t len);
 static void get_ep2_out_buffer(uint8_t *dest);
 
 // request handlers
-static void usb_clear_remote_wakeup_handler(__xdata struct usb_req_setup *req);
-static void usb_clear_endpoint_halt_handler(__xdata struct usb_req_setup *req);
-static void usb_set_remote_wakeup_handler(__xdata struct usb_req_setup *req);
-static void usb_set_endpoint_halt_handler(__xdata struct usb_req_setup *req);
-static void usb_set_address_handler(__xdata struct usb_req_setup *req);
-static void usb_set_configuration_handler(__xdata struct usb_req_setup *req);
-static void usb_set_interface_handler(__xdata struct usb_req_setup *req);
+static void usb_clear_remote_wakeup_handler(struct usb_req_setup *req);
+static void usb_clear_endpoint_halt_handler(struct usb_req_setup *req);
+static void usb_set_remote_wakeup_handler(struct usb_req_setup *req);
+static void usb_set_endpoint_halt_handler(struct usb_req_setup *req);
+static void usb_set_address_handler(struct usb_req_setup *req);
+static void usb_set_configuration_handler(struct usb_req_setup *req);
+static void usb_set_interface_handler(struct usb_req_setup *req);
 static void usb_set_descriptor_handler();
-static void usb_get_device_status_handler(__xdata struct usb_req_setup *req);
-static void usb_get_interface_status_handler(__xdata struct usb_req_setup *req);
-static void usb_get_endpoint_status_handler(__xdata struct usb_req_setup *req);
-static void usb_get_descriptor_handler(__xdata struct usb_req_setup *req);
+static void usb_get_device_status_handler(struct usb_req_setup *req);
+static void usb_get_interface_status_handler(struct usb_req_setup *req);
+static void usb_get_endpoint_status_handler(struct usb_req_setup *req);
+static void usb_get_descriptor_handler(struct usb_req_setup *req);
 static void usb_get_configuration_handler();
 static void usb_get_interface_handler();
 static void usb_hid_get_report_handler();
-static void usb_hid_set_report_handler(__xdata struct usb_req_setup *req);
-static void usb_hid_set_idle_handler(__xdata struct usb_req_setup *req);
+static void usb_hid_set_report_handler(struct usb_req_setup *req);
+static void usb_hid_set_idle_handler(struct usb_req_setup *req);
 static void usb_hid_get_idle_handler();
-static void usb_hid_set_protocol_handler(__xdata struct usb_req_setup *req);
-static void usb_hid_get_protocol_handler(__xdata struct usb_req_setup *req);
+static void usb_hid_set_protocol_handler(struct usb_req_setup *req);
+static void usb_hid_get_protocol_handler(struct usb_req_setup *req);
 
 /**
  * 0.5KB of general purpose scratch RAM.
@@ -490,7 +483,7 @@ bool usb_is_configured()
 
 static void usb_setup_irq()
 {
-    usb_req_setup_x req;
+    struct usb_req_setup req;
 
     // __critical (save+restore EA) instead of CLR/SETB so a nested entry
     // (already EA=0) doesn't get interrupts silently re-enabled on return.
@@ -751,7 +744,7 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
 
 // request handlers
 
-static void usb_set_address_handler(__xdata struct usb_req_setup *req)
+static void usb_set_address_handler(struct usb_req_setup *req)
 {
     usb_ep0_state = USB_EP0_STATE_DEFAULT;
 
@@ -768,7 +761,7 @@ static void usb_set_address_handler(__xdata struct usb_req_setup *req)
     SET_EP0_IN_RDY;
 }
 
-static void usb_clear_remote_wakeup_handler(__xdata struct usb_req_setup *req)
+static void usb_clear_remote_wakeup_handler(struct usb_req_setup *req)
 {
     usb_ep0_state = USB_EP0_STATE_DEFAULT;
 
@@ -782,7 +775,7 @@ static void usb_clear_remote_wakeup_handler(__xdata struct usb_req_setup *req)
     SET_EP0_IN_RDY;
 }
 
-static void usb_set_remote_wakeup_handler(__xdata struct usb_req_setup *req)
+static void usb_set_remote_wakeup_handler(struct usb_req_setup *req)
 {
     usb_ep0_state = USB_EP0_STATE_DEFAULT;
 
@@ -796,7 +789,7 @@ static void usb_set_remote_wakeup_handler(__xdata struct usb_req_setup *req)
     SET_EP0_IN_RDY;
 }
 
-static void usb_clear_endpoint_halt_handler(__xdata struct usb_req_setup *req)
+static void usb_clear_endpoint_halt_handler(struct usb_req_setup *req)
 {
     usb_ep0_state = USB_EP0_STATE_DEFAULT;
 
@@ -820,7 +813,7 @@ static void usb_clear_endpoint_halt_handler(__xdata struct usb_req_setup *req)
     SET_EP0_IN_RDY;
 }
 
-static void usb_set_endpoint_halt_handler(__xdata struct usb_req_setup *req)
+static void usb_set_endpoint_halt_handler(struct usb_req_setup *req)
 {
     usb_ep0_state = USB_EP0_STATE_DEFAULT;
 
@@ -841,7 +834,7 @@ static void usb_set_endpoint_halt_handler(__xdata struct usb_req_setup *req)
     SET_EP0_IN_RDY;
 }
 
-static void usb_set_configuration_handler(__xdata struct usb_req_setup *req)
+static void usb_set_configuration_handler(struct usb_req_setup *req)
 {
     usb_ep0_state = USB_EP0_STATE_DEFAULT;
 
@@ -868,7 +861,7 @@ static void usb_set_configuration_handler(__xdata struct usb_req_setup *req)
     SET_EP0_IN_RDY;
 }
 
-static void usb_set_interface_handler(__xdata struct usb_req_setup *req)
+static void usb_set_interface_handler(struct usb_req_setup *req)
 {
     usb_ep0_state = USB_EP0_STATE_DEFAULT;
 
@@ -894,7 +887,7 @@ static void usb_set_descriptor_handler()
     STALL_EP0();
 }
 
-static void usb_get_device_status_handler(__xdata struct usb_req_setup *req)
+static void usb_get_device_status_handler(struct usb_req_setup *req)
 {
     usb_ep0_state = USB_EP0_STATE_RECV_STATUS;
 
@@ -914,7 +907,7 @@ static void usb_get_device_status_handler(__xdata struct usb_req_setup *req)
     }
 }
 
-static void usb_get_interface_status_handler(__xdata struct usb_req_setup *req)
+static void usb_get_interface_status_handler(struct usb_req_setup *req)
 {
     if ((req->bmRequestType & USB_RECIP_MASK) == USB_RECIP_IFACE) {
         if ((req->wIndex == 0) || (req->wIndex == 1)) {
@@ -931,7 +924,7 @@ static void usb_get_interface_status_handler(__xdata struct usb_req_setup *req)
     }
 }
 
-static void usb_get_endpoint_status_handler(__xdata struct usb_req_setup *req)
+static void usb_get_endpoint_status_handler(struct usb_req_setup *req)
 {
     if ((req->bmRequestType & USB_RECIP_MASK) == USB_RECIP_ENDPT) {
         if (req->wIndex == 0x80) {
@@ -955,10 +948,10 @@ static void usb_get_endpoint_status_handler(__xdata struct usb_req_setup *req)
     }
 }
 
-static void usb_get_descriptor_handler(__xdata struct usb_req_setup *req)
+static void usb_get_descriptor_handler(struct usb_req_setup *req)
 {
-    uint8_t *__xdata addr = NULL;
-    uint16_t __xdata length;
+    uint8_t *addr = NULL;
+    uint16_t length;
 
     __xdata uint8_t      *buf   = scratch;
     uint8_t               type  = req->wValue >> 8;
@@ -1058,7 +1051,7 @@ static void usb_get_descriptor_handler(__xdata struct usb_req_setup *req)
         return;
     }
 
-    uint16_t __xdata received_length = req->wLength;
+    uint16_t received_length = req->wLength;
     // truncate data to the allowed lengths received from the host
     length = (received_length < length) ? received_length : length;
     setup_ep0_in_xfer(addr, length);
@@ -1092,7 +1085,7 @@ static void usb_hid_get_report_handler()
     STALL_EP0();
 }
 
-static void usb_hid_set_report_handler(__xdata struct usb_req_setup *req)
+static void usb_hid_set_report_handler(struct usb_req_setup *req)
 {
     switch (req->wValue >> 8) {
         case REPORT_TYPE_OUTPUT:
@@ -1126,7 +1119,7 @@ static void usb_hid_set_report_handler(__xdata struct usb_req_setup *req)
     }
 }
 
-static void usb_hid_set_idle_handler(__xdata struct usb_req_setup *req)
+static void usb_hid_set_idle_handler(struct usb_req_setup *req)
 {
     // TODO: finish implementaiton to use the set idle time
     idle_time = req->wValue >> 8;
@@ -1143,7 +1136,7 @@ static void usb_hid_get_idle_handler()
     SET_EP0_IN_RDY;
 }
 
-static void usb_hid_set_protocol_handler(__xdata struct usb_req_setup *req)
+static void usb_hid_set_protocol_handler(struct usb_req_setup *req)
 {
     if (req->wIndex == 0) {
         interface0_protocol = req->wValue & 0xff;
@@ -1155,7 +1148,7 @@ static void usb_hid_set_protocol_handler(__xdata struct usb_req_setup *req)
     SET_EP0_IN_RDY;
 }
 
-static void usb_hid_get_protocol_handler(__xdata struct usb_req_setup *req)
+static void usb_hid_get_protocol_handler(struct usb_req_setup *req)
 {
     if (req->wIndex == 0) {
         EP0_IN_BUF[0] = interface0_protocol;
@@ -1216,7 +1209,7 @@ void usb_ep0_in_irq()
     }
 }
 
-static void setup_ep0_in_xfer(uint8_t *src, uint16_t len) __reentrant
+static void setup_ep0_in_xfer(uint8_t *src, uint16_t len)
 {
     ep0_xfer_src        = src;
     ep0_xfer_bytes_left = len;
@@ -1253,7 +1246,7 @@ static void step_ep0_in_xfer()
 // EP buffers are touched from both the USB ISR (EP0/descriptors) and the main
 // loop (EP1/EP2 report sends). An ISR memcpy preempting a main-loop memcpy
 // corrupts the shared statics and hangs the main loop.
-static void set_ep0_in_buffer(uint8_t *src, uint8_t len) __reentrant
+static void set_ep0_in_buffer(uint8_t *src, uint8_t len)
 {
     if (len > EP0_BUF_SIZE) {
         return;

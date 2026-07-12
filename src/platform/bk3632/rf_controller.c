@@ -56,7 +56,7 @@ static uint8_t compute_byte9(bool curr_active)
 bool rf_get_status(uint8_t status_bytes[2]);
 void rf_set_link_mode(uint8_t mode, uint8_t pairing);
 bool rf_send_kro_report(uint8_t *buffer);
-void rf_send_nkro_report(__xdata uint8_t mods, __xdata uint8_t *nkro_buffer);
+void rf_send_nkro_report(uint8_t mods, __xdata uint8_t *nkro_buffer);
 // BT state-management command (internal — public callers go through
 // rf_factory_reset_bonds). arg=2 wipes all BT bonds and must be followed by
 // rf_init to reload the BT names the wipe clears.
@@ -76,7 +76,7 @@ uint8_t checksum(uint8_t *data, int len);
 
 void rf_init()
 {
-    __xdata uint8_t status_bytes[2];
+    uint8_t status_bytes[2];
 
     // The BK3632 takes ~1.5 s after VCC stabilizes to be ready for SPI;
     // commands sent before then are dropped.
@@ -171,8 +171,8 @@ void rf_send_pending_flush(void)
 
 void rf_send_nkro(__xdata report_nkro_t *report)
 {
-    __xdata bool blank = true;
-    for (__xdata int i = 1; i < NKRO_REPORT_SIZE - 1; i++) {
+    bool blank = true;
+    for (int i = 1; i < NKRO_REPORT_SIZE - 1; i++) {
         if (report->raw[i] != 0) {
             blank = false;
         }
@@ -180,7 +180,7 @@ void rf_send_nkro(__xdata report_nkro_t *report)
 
     if (blank) {
         // NKRO release: re-use the 6-byte cmd-02 buffer with all keys zero.
-        for (__xdata int i = 0; i < 6; i++) {
+        for (int i = 0; i < 6; i++) {
             kro6buffer[i] = 0;
         }
         rf_send_kro_report(kro6buffer);
@@ -203,7 +203,7 @@ void rf_send_extra(__xdata report_extra_t *report)
 
 bool rf_update_keyboard_state(keyboard_state_t *keyboard)
 {
-    __xdata uint8_t status_bytes[2];
+    uint8_t status_bytes[2];
 
     if (!rf_get_status(status_bytes)) {
         return false; // no fresh status — leave keyboard_state untouched
@@ -517,7 +517,7 @@ bool rf_send_kro_report(uint8_t *buffer)
     rf_tx_buf[8] = buffer[5];
 
     uint8_t active = 0;
-    for (__xdata int i = 0; i < 6; i++) {
+    for (int i = 0; i < 6; i++) {
         if (buffer[i] != 0) {
             active = 1;
             break;
@@ -546,7 +546,7 @@ bool rf_send_kro_report(uint8_t *buffer)
     return ack;
 }
 
-void rf_send_nkro_report(__xdata uint8_t mods, __xdata uint8_t *nkro_buffer)
+void rf_send_nkro_report(uint8_t mods, __xdata uint8_t *nkro_buffer)
 {
     const uint8_t len = 32;
 
@@ -563,7 +563,7 @@ void rf_send_nkro_report(__xdata uint8_t mods, __xdata uint8_t *nkro_buffer)
 
     uint8_t active = (mods != 0);
     if (!active) {
-        for (__xdata int i = 0; i < 20; i++) {
+        for (int i = 0; i < 20; i++) {
             if (nkro_buffer[i] != 0) {
                 active = 1;
                 break;
