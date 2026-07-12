@@ -126,7 +126,8 @@ cc_base_args = [
     '--std-c23',
 
     '-mmcs51',
-    '--model-small',
+    '--model-large',
+    '--stack-auto',
     '--xram-size', '0x1000',
     '--xram-loc', '0x0000',
     '--code-size', '0xec00', # cap code below the flash config sector (0xEC00) + bootloader
@@ -163,6 +164,11 @@ cc = find_program('sdcc', required : true)
 sdar = find_program('sdar', required : true)
 packihx = find_program('packihx', required : true)
 sinowisp = find_program('sinowisp', required : true)
+
+# experiment: --stack-auto needs libsdcc (_bp/_bpx frame pointers). This SDCC's
+# reported libpath is empty (nix quirk), so the linker can't find the model libs;
+# point it at the model-variant lib dir explicitly.
+sdcc_libdir = fs.parent(fs.parent(cc.full_path())) / 'share/sdcc/lib/large-stack-auto'
 
 # SDCC can't emit header dependencies as a compile side-effect (its -M family is
 # deps-only), so we drive it through a small wrapper that also writes a depfile —
@@ -317,7 +323,7 @@ foreach part : parts
             input : rel_main,
             output : ihx_smk_target_name,
             depends: [lib_user],
-            command : [cc, cc_args, '-o', '@OUTPUT@', '@INPUT@', '-l' + lib_user.full_path()],
+            command : [cc, cc_args, '--lib-path', sdcc_libdir, '-o', '@OUTPUT@', '@INPUT@', '-l' + lib_user.full_path()],
         )
 
         # Overlay/interrupt-safety gate: reads the just-linked .map + per-module .asm

@@ -81,7 +81,7 @@ void indicators_pre_update()
     indicators_pwm_disable();
 }
 
-bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step) __reentrant
+bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
 {
     current_step;
 
