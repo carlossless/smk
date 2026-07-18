@@ -525,16 +525,9 @@ bool rf_send_kro_report(uint8_t *buffer)
     }
     rf_tx_buf[9] = compute_byte9(active);
 
-    // rf_tx_buf[10..25] carries NKRO bit state even for 6KRO packets. Synthesize
-    // it from the 5 key bytes: keycode K sets bit (K & 7) of byte (10 + (K >> 3)).
+    // Leave the NKRO bitmap region zero: mirroring 6KRO keys here makes the dongle emit a modifier-less duplicate that breaks chords like cmd+space.
     for (int i = 10; i < 31; i++) {
         rf_tx_buf[i] = 0x00;
-    }
-    for (int j = 1; j <= 5; j++) {
-        uint8_t kc = buffer[j];
-        if (kc != 0 && (kc >> 3) < 16) {
-            rf_tx_buf[10 + (kc >> 3)] |= (uint8_t)(1u << (kc & 7));
-        }
     }
 
     rf_tx_buf[31] = checksum(rf_tx_buf, len - 1);
