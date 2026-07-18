@@ -424,12 +424,6 @@ bool rf_send_kro_report(uint8_t *buffer)
     for (int i = 10; i < 31; i++) {
         rf_tx_buf[i] = 0x00;
     }
-    for (int j = 1; j <= 5; j++) {
-        uint8_t kc = buffer[j];
-        if (kc != 0 && (kc >> 3) < 16) {
-            rf_tx_buf[10 + (kc >> 3)] |= (uint8_t)(1u << (kc & 7));
-        }
-    }
 
     rf_tx_buf[31] = checksum(rf_tx_buf, len - 1);
 
