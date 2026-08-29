@@ -250,7 +250,6 @@ uint8_t biton(uint8_t bits)
     return n;
 }
 
-/* keycode to system usage */
 uint16_t keycode_to_system(uint8_t key)
 {
     switch (key) {
@@ -265,7 +264,6 @@ uint16_t keycode_to_system(uint8_t key)
     }
 }
 
-/* keycode to consumer usage */
 uint16_t keycode_to_consumer(uint8_t key)
 {
     switch (key) {

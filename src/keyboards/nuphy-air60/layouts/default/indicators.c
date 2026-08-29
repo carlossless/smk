@@ -113,7 +113,6 @@ void indicators_battery_off()
     settings_mark_dirty();
 }
 
-// Factory reset: restore defaults and persist them so the next boot loads them too.
 void indicators_factory_reset()
 {
     indicators_apply_defaults();
