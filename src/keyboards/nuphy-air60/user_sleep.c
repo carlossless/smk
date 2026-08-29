@@ -1,6 +1,8 @@
-#include "kbdef.h" // sh68f90a.h (SFRs) + keycodes
+#include "kbdef.h"
 #include "user_sleep.h"
 #include "user_init.h"
+#include "gpio.h"
+#include "extint.h"
 
 #ifdef SLEEP_ENABLE
 
@@ -9,63 +11,82 @@ user_sleep_mode_t user_sleep_supported(void)
     return (CONN_MODE_SWITCH == 0) ? USER_SLEEP_RF : USER_SLEEP_USB;
 }
 
-void user_sleep_prepare(void)
+// Release the LED drivers and park the matrix so nothing sources current, then
+// leave the panel arranged so a keypress reaches the INT4 wake pin.
+static void park_panel(void)
 {
-    P1PCR &= 0xCF;
-    P1CR &= 0xCF;
-    P2PCR &= 0xC0;
-    P2CR &= 0xC0;
-    P3PCR &= 0xC0;
-    P3CR &= 0xC0;
-    P5PCR &= 0xF8;
-    P5CR &= 0xF8;
-    P5CR |= 0x47;
-    P5 &= 0xB8;
-    P3CR |= 0x3F;
-    P3 &= 0xC0;
-    P2CR |= 0x3F;
-    P2 &= 0xC0;
-    P1CR |= 0x38;
-    P1 &= 0xC0;
-    P0PCR &= 0xE3;
-    P0CR |= 0x1C;
-    P0 &= 0xE3;
-    P5PCR &= 0x7F;
-    P5CR |= 0xC0;
-    P5 &= 0x3F;
-    P6PCR = 0x00;
-    P6CR  = 0xFF;
-    P6    = 0x00;
-    P4PCR &= 0x84;
-    P4CR |= 0x7B;
-    P4 &= 0x84;
-    P5PCR &= 0x9F;
-    P5CR &= 0x9F;
-    P5 &= 0x9F;
-    P7PCR |= 0x80;
-    P7CR |= 0x80;
-    P7 &= 0x7F;
-    P4CR &= 0x7F;
-    P0CR &= 0x5F;
-    P7CR &= 0xEF;
+    GPIO_PULLUP_OFF(1, _P1_4 | KB_C15_P1_5);
+    GPIO_INPUT(1, _P1_4 | KB_C15_P1_5);
+
+    GPIO_PULLUP_OFF(2, KB_C14_P2_0 | KB_C13_P2_1 | KB_C12_P2_2 | KB_C11_P2_3 | KB_C10_P2_4 | KB_C9_P2_5);
+    GPIO_INPUT(2, KB_C14_P2_0 | KB_C13_P2_1 | KB_C12_P2_2 | KB_C11_P2_3 | KB_C10_P2_4 | KB_C9_P2_5);
+
+    GPIO_PULLUP_OFF(3, KB_C8_P3_0 | KB_C7_P3_1 | KB_C6_P3_2 | KB_C5_P3_3 | KB_C4_P3_4 | KB_C3_P3_5);
+    GPIO_INPUT(3, KB_C8_P3_0 | KB_C7_P3_1 | KB_C6_P3_2 | KB_C5_P3_3 | KB_C4_P3_4 | KB_C3_P3_5);
+
+    GPIO_PULLUP_OFF(5, KB_C0_P5_0 | KB_C1_P5_1 | KB_C2_P5_2);
+    GPIO_INPUT(5, KB_C0_P5_0 | KB_C1_P5_1 | KB_C2_P5_2);
+
+    GPIO_OUTPUT(5, KB_C0_P5_0 | KB_C1_P5_1 | KB_C2_P5_2 | OS_MODE_SWITCH_P5_6);
+    GPIO_LOW(5, KB_C0_P5_0 | KB_C1_P5_1 | KB_C2_P5_2 | OS_MODE_SWITCH_P5_6);
+
+    GPIO_OUTPUT(3, KB_C8_P3_0 | KB_C7_P3_1 | KB_C6_P3_2 | KB_C5_P3_3 | KB_C4_P3_4 | KB_C3_P3_5);
+    GPIO_LOW(3, KB_C8_P3_0 | KB_C7_P3_1 | KB_C6_P3_2 | KB_C5_P3_3 | KB_C4_P3_4 | KB_C3_P3_5);
+
+    GPIO_OUTPUT(2, KB_C14_P2_0 | KB_C13_P2_1 | KB_C12_P2_2 | KB_C11_P2_3 | KB_C10_P2_4 | KB_C9_P2_5);
+    GPIO_LOW(2, KB_C14_P2_0 | KB_C13_P2_1 | KB_C12_P2_2 | KB_C11_P2_3 | KB_C10_P2_4 | KB_C9_P2_5);
+
+    GPIO_OUTPUT(1, RGB_ULB_P1_3 | _P1_4 | KB_C15_P1_5);
+    GPIO_LOW(1, _P1_0 | RGB_ULR_P1_1 | RGB_ULG_P1_2 | RGB_ULB_P1_3 | _P1_4 | KB_C15_P1_5);
+
+    GPIO_PULLUP_OFF(0, RGB_R2R_P0_2 | RGB_R0B_P0_3 | RGB_R0R_P0_4);
+    GPIO_OUTPUT(0, RGB_R2R_P0_2 | RGB_R0B_P0_3 | RGB_R0R_P0_4);
+    GPIO_LOW(0, RGB_R2R_P0_2 | RGB_R0B_P0_3 | RGB_R0R_P0_4);
+
+    GPIO_PULLUP_OFF(5, RGB_R2B_P5_7);
+    GPIO_OUTPUT(5, OS_MODE_SWITCH_P5_6 | RGB_R2B_P5_7);
+    GPIO_LOW(5, OS_MODE_SWITCH_P5_6 | RGB_R2B_P5_7);
+
+    GPIO_PULLUP_WRITE(6, 0);
+    GPIO_DIR_WRITE(6, _P6_0 | RGB_R0G_P6_1 | RGB_R1G_P6_2 | RGB_R2G_P6_3 | RGB_R3G_P6_4 | RGB_R4G_P6_5 | RGB_R1B_P6_6 | RGB_R1R_P6_7);
+    GPIO_WRITE(6, 0);
+
+    GPIO_PULLUP_OFF(4, _P4_0 | _P4_1 | RGB_R4B_P4_3 | RGB_R4R_P4_4 | RGB_R3R_P4_5 | RGB_R3B_P4_6);
+    GPIO_OUTPUT(4, _P4_0 | _P4_1 | RGB_R4B_P4_3 | RGB_R4R_P4_4 | RGB_R3R_P4_5 | RGB_R3B_P4_6);
+    GPIO_LOW(4, _P4_0 | _P4_1 | RGB_R4B_P4_3 | RGB_R4R_P4_4 | RGB_R3R_P4_5 | RGB_R3B_P4_6);
+
+    GPIO_PULLUP_OFF(5, CONN_MODE_SWITCH_P5_5 | OS_MODE_SWITCH_P5_6);
+    GPIO_INPUT(5, CONN_MODE_SWITCH_P5_5 | OS_MODE_SWITCH_P5_6);
+    GPIO_LOW(5, CONN_MODE_SWITCH_P5_5 | OS_MODE_SWITCH_P5_6);
+
+    GPIO_PULLUP_ON(7, _P7_7);
+    GPIO_OUTPUT(7, _P7_7);
+    GPIO_LOW(7, _P7_7);
+
+    GPIO_INPUT(4, RF_BB_SPI_SCK_P4_7);
+    GPIO_INPUT(0, RF_BB_SPI_MOT_P0_5 | RF_BB_SPI_MOSI_P0_7);
+    GPIO_INPUT(7, RF_BB_SPI_CS_P7_4);
+
     P5_6 = 1;
     P1_3 = 1;
     P7_7 = 1;
     P7_6 = 0;
+}
 
-    EXF1 = 0;    // clear any latched P4.x edge flags
-    IENC = 0xF3; // interrupt edge/control config
-    EXF0 = 0x40; // INT4 trigger-mode select
-    EX4  = 1;    // enable external interrupt 4
+void user_sleep_prepare(void)
+{
+    park_panel();
+    extint_wake_arm();
 }
 
 void user_sleep_wake(void)
 {
-    EX4  = 0;
-    EXF1 = 0;
+    // The BK3632 ACK on P4.2 toggles constantly once RF is back up, so INT4 has
+    // to go before normal operation resumes.
+    extint_wake_disable();
 
     RF_BB_SPI_MOT = 0;
-    P0CR |= RF_BB_SPI_MOT_P0_5;
+    GPIO_OUTPUT(0, RF_BB_SPI_MOT_P0_5);
     RF_BB_SPI_MOT = 0;
 
     user_gpio_init();

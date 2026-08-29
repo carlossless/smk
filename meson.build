@@ -98,6 +98,7 @@ src_platform_sh68f90a = [
     'src/platform/sh68f90a/usb.c',
     'src/platform/sh68f90a/stack.c',
     'src/platform/sh68f90a/power.c',
+    'src/platform/sh68f90a/extint.c',
 ]
 
 inc_platform_bk3632 = [

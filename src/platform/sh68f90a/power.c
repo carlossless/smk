@@ -4,6 +4,7 @@
 #include "delay.h"
 #include "usb.h"
 #include "clock.h"
+#include "extint.h"
 
 static volatile uint8_t int4_woke;
 
@@ -100,6 +101,6 @@ void power_enter_powerdown(powerdown_mode_t mode)
 
 void int4_interrupt_handler(void) __interrupt(_INT_INT4)
 {
-    EXF1      = 0;
+    extint_wake_clear();
     int4_woke = 1;
 }
