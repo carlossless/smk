@@ -7,7 +7,7 @@
 extern void indicators_next_effect();
 extern void indicators_factory_reset();
 
-static __xdata bool reset_mode_active;
+static bool reset_mode_active;
 
 bool kb_process_record(uint16_t keycode, bool key_pressed)
 {

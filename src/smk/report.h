@@ -63,8 +63,8 @@ typedef union {
     };
 } report_extra_t;
 
-extern __xdata report_keyboard_t keyboard_report;
-extern __xdata report_nkro_t     nkro_report;
+extern report_keyboard_t keyboard_report;
+extern report_nkro_t     nkro_report;
 
 void send_keyboard_report();
 

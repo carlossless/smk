@@ -28,7 +28,7 @@ typedef struct {
     user_keyboard_os_mode_t   os_mode;
 } user_keyboard_state_t;
 
-volatile __xdata user_keyboard_state_t user_keyboard_state;
+volatile user_keyboard_state_t user_keyboard_state;
 
 void kb_init()
 {
@@ -80,8 +80,8 @@ static void kb_apply_os_mode(user_keyboard_os_mode_t mode)
 
 void kb_update_switches()
 {
-    static __xdata uint16_t conn_debounce;
-    static __xdata uint16_t os_debounce;
+    static uint16_t conn_debounce;
+    static uint16_t os_debounce;
 
     const uint8_t raw_conn = CONN_MODE_SWITCH;
     if (raw_conn == user_keyboard_state.conn_mode) {
@@ -134,17 +134,15 @@ extern void indicators_battery_flash();
 extern void indicators_battery_on();
 extern void indicators_battery_off();
 
-// While UL_MODE (the "?" key on the Fn layer) is held, the RGB_* chords adjust the
-// underglow instead of the main backlight. Held in xdata to spare internal RAM.
-static __xdata bool ul_mode_active;
+static bool ul_mode_active;
 
-static __xdata bool reset_mode_active;
+static bool reset_mode_active;
 
 #ifdef RF_ENABLED
 #    define LINK_PAIRING_HOLD_TICKS 60000
-static __xdata uint16_t link_hold_ticks    = 0;
-static __xdata uint16_t link_hold_keycode  = 0;
-static __xdata bool     link_pairing_armed = false;
+static uint16_t link_hold_ticks    = 0;
+static uint16_t link_hold_keycode  = 0;
+static bool     link_pairing_armed = false;
 #endif
 
 bool kb_process_record(uint16_t keycode, bool key_pressed)
@@ -307,7 +305,7 @@ void kb_send_extra(__xdata report_extra_t *report)
     }
 }
 
-__xdata uint16_t ticks = 0;
+uint16_t ticks = 0;
 
 void kb_update()
 {

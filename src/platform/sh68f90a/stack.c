@@ -34,8 +34,8 @@ static uint8_t stack_peak(void)
 
 void stack_task(void)
 {
-    static __xdata uint8_t reported = 0;
-    static __xdata uint8_t throttle = 0;
+    static uint8_t reported = 0;
+    static uint8_t throttle = 0;
 
     if (++throttle != 0) {
         return; // ~once every 256 main-loop iterations
