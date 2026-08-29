@@ -5,7 +5,7 @@
 #include "usb.h"
 #include "clock.h"
 
-static volatile __xdata uint8_t int4_woke;
+static volatile uint8_t int4_woke;
 
 static void usb_park(powerdown_mode_t mode)
 {

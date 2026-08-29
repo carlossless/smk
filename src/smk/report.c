@@ -9,11 +9,11 @@
 static uint8_t real_mods = 0;
 static uint8_t weak_mods = 0;
 
-__xdata report_keyboard_t keyboard_report;
-__xdata report_keyboard_t last_report;
+report_keyboard_t keyboard_report;
+report_keyboard_t last_report;
 
-__xdata report_nkro_t nkro_report;
-__xdata report_nkro_t last_nkro_report;
+report_nkro_t nkro_report;
+report_nkro_t last_nkro_report;
 
 uint8_t biton(uint8_t bits);
 

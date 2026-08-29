@@ -15,14 +15,14 @@
 
 typedef uint8_t matrix_col_t;
 
-__xdata matrix_col_t matrix[MATRIX_COLS];
-__xdata matrix_col_t matrix_previous[MATRIX_COLS];
+matrix_col_t matrix[MATRIX_COLS];
+matrix_col_t matrix_previous[MATRIX_COLS];
 
 volatile bool matrix_updated;
 
 uint8_t action_layer;
 
-__xdata uint8_t default_layer;
+uint8_t default_layer;
 
 void matrix_init()
 {

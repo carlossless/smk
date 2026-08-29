@@ -94,11 +94,11 @@ void console_printf(const __code char *fmt, ...) __reentrant
 #    define CONSOLE_BUF_SIZE 128 // must stay a power of two
 #    define CONSOLE_BUF_MASK (CONSOLE_BUF_SIZE - 1)
 
-static __xdata unsigned char    console_buf[CONSOLE_BUF_SIZE];
-static volatile __xdata uint8_t console_head; // producer (console_putc)
-static volatile __xdata uint8_t console_tail; // consumer (console_task)
+static unsigned char    console_buf[CONSOLE_BUF_SIZE];
+static volatile uint8_t console_head; // producer (console_putc)
+static volatile uint8_t console_tail; // consumer (console_task)
 
-static __xdata uint8_t console_attached;
+static uint8_t console_attached;
 
 void console_notify_attached(void)
 {
@@ -120,7 +120,7 @@ void console_putc(unsigned char c)
 
 void console_task(void)
 {
-    static __xdata unsigned char report[CONSOLE_REPORT_SIZE];
+    static unsigned char report[CONSOLE_REPORT_SIZE];
 
     if (!usb_is_configured()) {
         console_attached = 0; // require a fresh handshake once the link is back

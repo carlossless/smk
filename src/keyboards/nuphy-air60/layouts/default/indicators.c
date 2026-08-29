@@ -51,27 +51,27 @@
 #include LED_GEOMETRY_HEADER
 _Static_assert(LED_GEOMETRY_ROWS == LED_ROWS && LED_GEOMETRY_COLS == LED_COLS, "generated LED geometry size does not match the key matrix");
 
-static __xdata uint8_t led_fb[LED_ROWS][3][LED_COLS];
+static uint8_t led_fb[LED_ROWS][3][LED_COLS];
 
 // Separate framebuffer for the underglow ("user") LEDs, since they animate
 // independently of the main backlight.
-static __xdata uint8_t led_ul_fb[3][LED_COLS];
+static uint8_t led_ul_fb[3][LED_COLS];
 
-static __xdata uint8_t led_row;
-static __xdata uint8_t led_color;
+static uint8_t led_row;
+static uint8_t led_color;
 
-static __xdata uint8_t led_phase;
-static __xdata uint8_t ul_phase;
-static __xdata uint8_t regen_row;
-static __xdata uint8_t regen_col;
+static uint8_t led_phase;
+static uint8_t ul_phase;
+static uint8_t regen_row;
+static uint8_t regen_col;
 
-static __xdata uint8_t anim_ctr;
+static uint8_t anim_ctr;
 
-static volatile __xdata bool render_dirty;
+static volatile bool render_dirty;
 
-static __xdata uint8_t battery_flash_sweeps;
+static uint8_t battery_flash_sweeps;
 
-static __xdata uint8_t status_pulse_counter;
+static uint8_t status_pulse_counter;
 
 static __code const uint8_t breath_lut[32] = {0, 13, 26, 39, 51, 64, 76, 88, 100, 112, 124, 135, 146, 156, 166, 176, 185, 194, 202, 210, 217, 223, 229, 234, 239, 244, 247, 251, 253, 254, 255, 255};
 

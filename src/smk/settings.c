@@ -6,9 +6,9 @@
 
 _Static_assert(sizeof(user_settings_t) + 4u <= 512u, "user_settings_t too large for the settings sector");
 
-__xdata user_settings_t user_settings;
+user_settings_t user_settings;
 
-static __xdata bool settings_dirty;
+static bool settings_dirty;
 
 bool settings_load(void)
 {

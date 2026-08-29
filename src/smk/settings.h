@@ -14,7 +14,7 @@ typedef struct {
     uint8_t rf_link;
 } user_settings_t;
 
-extern __xdata user_settings_t user_settings;
+extern user_settings_t user_settings;
 
 bool settings_load(void);
 
