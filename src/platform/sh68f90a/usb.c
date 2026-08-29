@@ -44,7 +44,6 @@ const uint8_t hid_report_desc_keyboard[] = {
     HID_RI_USAGE_PAGE(8, 0x01),     // Generic Desktop Controls
     HID_RI_USAGE(8, 0x06),          // System Control
     HID_RI_COLLECTION(8, 0x01),     // Application
-        // Modifiers (8 bits)
         HID_RI_USAGE_PAGE(8, 0x07),     // Keyboard/Keypad
         HID_RI_USAGE_MINIMUM(8, 0xe0),  // Keyboard Left Control
         HID_RI_USAGE_MAXIMUM(8, 0xe7),  // Keyboard Right Gui
@@ -54,12 +53,10 @@ const uint8_t hid_report_desc_keyboard[] = {
         HID_RI_REPORT_COUNT(8, 0x08),
         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
 
-        // Reserved (1 byte)
         HID_RI_REPORT_SIZE(8, 0x08),
         HID_RI_REPORT_COUNT(8, 0x01),
         HID_RI_INPUT(8, HID_IOF_CONSTANT),
 
-        // Keycodes (6 bytes)
         HID_RI_USAGE_PAGE(8, 0x07),    // Keyboard/Keypad
         HID_RI_USAGE_MINIMUM(8, 0x00),
         HID_RI_USAGE_MAXIMUM(8, 0xFF),
@@ -69,7 +66,6 @@ const uint8_t hid_report_desc_keyboard[] = {
         HID_RI_REPORT_COUNT(8, 0x06),
         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_ARRAY | HID_IOF_ABSOLUTE),
 
-        // Status LEDs (5 bits)
         HID_RI_USAGE_PAGE(8, 0x08),    // LED
         HID_RI_USAGE_MINIMUM(8, 0x01), // Num Lock
         HID_RI_USAGE_MAXIMUM(8, 0x05), // Kana
@@ -79,7 +75,6 @@ const uint8_t hid_report_desc_keyboard[] = {
         HID_RI_REPORT_COUNT(8, 0x05),
         HID_RI_OUTPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE | HID_IOF_NON_VOLATILE),
 
-        // LED padding (3 bits)
         HID_RI_REPORT_SIZE(8, 0x03),
         HID_RI_REPORT_COUNT(8, 0x01),
         HID_RI_OUTPUT(8, HID_IOF_CONSTANT),
@@ -149,7 +144,6 @@ const uint8_t hid_report_desc_extra[] = {
     HID_RI_USAGE(8, 0x06),                // Keyboard
     HID_RI_COLLECTION(8, 0x01),           // Application
         HID_RI_REPORT_ID(8, REPORT_ID_NKRO),
-        // Modifiers (8 bits)
         HID_RI_USAGE_PAGE(8, 0x07),     // Keyboard/Keypad
         HID_RI_USAGE_MINIMUM(8, 0xe0),  // Keyboard Left Control
         HID_RI_USAGE_MAXIMUM(8, 0xe7),  // Keyboard Right Gui
@@ -159,7 +153,6 @@ const uint8_t hid_report_desc_extra[] = {
         HID_RI_REPORT_COUNT(8, 0x08),
         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
 
-        // NKRO
         HID_RI_USAGE_PAGE(8, 0x07),       // Keyboard/Keypad
         HID_RI_USAGE_MINIMUM(8, 0x00),
         HID_RI_USAGE_MAXIMUM(8, NKRO_REPORT_BITS * 8 - 1),
@@ -298,12 +291,10 @@ usb_descriptor_set_c usb_descriptor_set = {
     .strings      = usb_strings,
 };
 
-// interrupt handlers
 static void usb_setup_irq();
 static void usb_ep0_out_irq();
 static void usb_ep0_in_irq();
 
-// buffer utils
 static void setup_ep0_in_xfer(uint8_t *src, uint16_t len);
 static void step_ep0_in_xfer();
 static void set_ep0_in_buffer(uint8_t *src, uint8_t len);
@@ -313,7 +304,6 @@ static void get_ep1_out_buffer(uint8_t *dest);
 static void set_ep2_in_buffer(uint8_t *src, uint8_t len);
 static void get_ep2_out_buffer(uint8_t *dest);
 
-// request handlers
 static void usb_clear_remote_wakeup_handler(struct usb_req_setup *req);
 static void usb_clear_endpoint_halt_handler(struct usb_req_setup *req);
 static void usb_set_remote_wakeup_handler(struct usb_req_setup *req);
@@ -343,7 +333,6 @@ uint8_t scratch[512];
 uint16_t ep0_xfer_bytes_left;
 uint8_t *ep0_xfer_src;
 
-// usb state
 usb_device_state_t usb_device_state;
 uint8_t            received_usb_addr;
 uint8_t            active_configuration;
@@ -762,8 +751,6 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
     INSCON   = saved_inscon;
 }
 
-// request handlers
-
 static void usb_set_address_handler(struct usb_req_setup *req)
 {
     usb_ep0_state = USB_EP0_STATE_DEFAULT;
@@ -1004,7 +991,6 @@ static void usb_get_descriptor_handler(struct usb_req_setup *req)
             APPEND_DESC(config_item->generic);
         } while ((++config_item)->generic);
 
-        // Fix up wTotalLength so we don't need to calculate it explicitly.
         if (config_desc->wTotalLength == 0) {
             config_desc->wTotalLength = (uint16_t)(buf - scratch);
         }
@@ -1066,8 +1052,7 @@ static void usb_get_descriptor_handler(struct usb_req_setup *req)
     }
 
     uint16_t received_length = req->wLength;
-    // truncate data to the allowed lengths received from the host
-    length = (received_length < length) ? received_length : length;
+    length                   = (received_length < length) ? received_length : length;
     setup_ep0_in_xfer(addr, length);
     step_ep0_in_xfer();
 

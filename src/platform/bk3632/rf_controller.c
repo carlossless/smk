@@ -47,13 +47,13 @@ static uint8_t compute_byte9(bool curr_active)
     return 1;
 }
 
-bool rf_get_status(uint8_t status_bytes[2]);
-void rf_set_link_mode(uint8_t mode, uint8_t pairing);
-bool rf_send_kro_report(uint8_t *buffer);
-void rf_send_nkro_report(uint8_t mods, __xdata uint8_t *nkro_buffer);
-void rf_cmd_03(uint8_t param);
-void rf_cmd_04();
-void rf_send_consumer_system(uint16_t consumer, uint16_t system);
+bool    rf_get_status(uint8_t status_bytes[2]);
+void    rf_set_link_mode(uint8_t mode, uint8_t pairing);
+bool    rf_send_kro_report(uint8_t *buffer);
+void    rf_send_nkro_report(uint8_t mods, __xdata uint8_t *nkro_buffer);
+void    rf_cmd_03(uint8_t param);
+void    rf_cmd_04();
+void    rf_send_consumer_system(uint16_t consumer, uint16_t system);
 void    rf_cmd_06(uint8_t param);
 void    rf_prepare_sleep(uint8_t param);
 void    rf_set_bt_name(uint8_t type, char *name);
@@ -197,7 +197,7 @@ bool rf_update_keyboard_state(keyboard_state_t *keyboard)
 }
 
 #define RF_SUPERVISOR_TICK_INTERVAL 2000u
-#define RF_PAIRING_WINDOW_POLLS 600u
+#define RF_PAIRING_WINDOW_POLLS     600u
 
 static uint8_t  commanded_link       = RF_MODE_2_4G;
 static uint16_t pairing_window_polls = 0;
@@ -255,8 +255,8 @@ static bool lazy_init_pending;
 void rf_kbd_lazy_state_init(void)
 {
     lazy_init_pending = true;
-    kro_prev_active  = 0;
-    blanking_pending = 0;
+    kro_prev_active   = 0;
+    blanking_pending  = 0;
 }
 
 void rf_blanking_tick(void)

@@ -11,19 +11,12 @@
 #    include "rf_controller.h"
 #endif
 
-// The LED matrix follows the key matrix dimensions, so a differently-sized RGB board
-// only needs the right MATRIX_ROWS/MATRIX_COLS (kbdef.h), its geometry parameters in
-// meson.build, plus its own sink/column wiring below.
 #define LED_ROWS MATRIX_ROWS
 #define LED_COLS MATRIX_COLS
 
-// The underglow ("user") LEDs are wired as an extra sink group, scanned as one more
-// row after the key matrix. They mirror the bottom key row so they animate together
-// with whatever effect is active.
 #define LED_UL_ROW    LED_ROWS
 #define LED_SCAN_ROWS (LED_ROWS + 1)
 
-// Defaults / clamps for user_settings.led_speed (phase increment per ~73 Hz sweep).
 #define LED_SPEED_DEFAULT    4
 #define LED_UL_SPEED_DEFAULT 1 // underglow defaults slow - it's ambient
 #define LED_SPEED_MIN        1
@@ -33,7 +26,6 @@
 
 #define BAT_FLASH_SWEEPS 200
 
-// Brightness step for one Fn+Up / Fn+Down press (out of 256 levels).
 #define LED_BRIGHTNESS_DEFAULT 255
 #define LED_BRIGHTNESS_STEP    32
 
@@ -44,7 +36,6 @@
 // DUTY2=0xFF makes "off" subframes glow at full brightness.
 #define LED_DUTY(v) (uint16_t)(v)
 
-// Scale an 8-bit channel by the current brightness (main and underglow are independent).
 #define SCALE_BRI(v)    (uint8_t)(((uint16_t)(uint8_t)(v) * user_settings.led_brightness) >> 8)
 #define SCALE_UL_BRI(v) (uint8_t)(((uint16_t)(uint8_t)(v) * user_settings.ul_brightness) >> 8)
 
@@ -53,8 +44,6 @@ _Static_assert(LED_GEOMETRY_ROWS == LED_ROWS && LED_GEOMETRY_COLS == LED_COLS, "
 
 static uint8_t led_fb[LED_ROWS][3][LED_COLS];
 
-// Separate framebuffer for the underglow ("user") LEDs, since they animate
-// independently of the main backlight.
 static uint8_t led_ul_fb[3][LED_COLS];
 
 static uint8_t led_row;
@@ -81,7 +70,6 @@ static void led_regen_one();
 static void led_enable_sink();
 static bool led_set_columns();
 
-// Sets every field of user_settings to its factory default value.
 void indicators_apply_defaults()
 {
     user_settings.led_effect           = FX_RADIAL;
@@ -167,7 +155,6 @@ void indicators_start()
 
 void indicators_next_effect()
 {
-    // OFF -> FX_RADIAL -> ... -> FX_SOLID -> OFF -> ...
     if (++user_settings.led_effect > FX_OFF) {
         user_settings.led_effect = 0;
     }
@@ -177,7 +164,6 @@ void indicators_next_effect()
 
 void indicators_prev_effect()
 {
-    // OFF <- FX_RADIAL <- ... <- FX_SOLID <- OFF <- ...
     if (user_settings.led_effect == 0) {
         user_settings.led_effect = FX_OFF;
     } else {
@@ -224,9 +210,6 @@ void indicators_speed_down()
 
     settings_mark_dirty();
 }
-
-// Underglow / "user-light" controls. Identical logic to the main backlight ones,
-// but operating on the independent ul_* fields of user_settings.
 
 void indicators_ul_next_effect()
 {
@@ -289,7 +272,6 @@ void indicators_pre_update()
     P4 &= ~(RGB_R4B_P4_3 | RGB_R4R_P4_4 | RGB_R3R_P4_5 | RGB_R3B_P4_6);
     P5 &= ~(RGB_R2B_P5_7);
     P6 &= ~(RGB_R0G_P6_1 | RGB_R1G_P6_2 | RGB_R2G_P6_3 | RGB_R3G_P6_4 | RGB_R4G_P6_5 | RGB_R1B_P6_6 | RGB_R1R_P6_7);
-
 }
 
 void indicators_render()
@@ -358,7 +340,6 @@ void indicators_post_update()
 static void led_regen_one()
 {
     if (regen_row < LED_ROWS) {
-        // -------- MAIN backlight cell --------
         uint8_t rgb[3];
         if (led_effect_rgb((led_effect_t)user_settings.led_effect, regen_row, regen_col, led_phase, user_settings.led_brightness, rgb)) {
             led_fb[regen_row][0][regen_col] = rgb[0];
@@ -435,7 +416,6 @@ static void led_regen_one()
                         h = (uint8_t)(user_led_axis_x(regen_col) + ul_phase);
                         break;
                     case FX_VERTICAL:
-                        // UL is one strip, so vertical = whole strip cycling together
                         h = ul_phase;
                         break;
                     case FX_RADIAL:
@@ -526,7 +506,6 @@ static void led_enable_sink()
 
 static bool led_set_columns()
 {
-    // underglow uses its own framebuffer; key rows use the main one
     __xdata uint8_t *fb = (led_row == LED_UL_ROW) ? led_ul_fb[led_color] : led_fb[led_row][led_color];
 
     uint8_t any = 0;

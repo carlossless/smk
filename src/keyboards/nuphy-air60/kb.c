@@ -134,8 +134,6 @@ extern void indicators_battery_flash();
 extern void indicators_battery_on();
 extern void indicators_battery_off();
 
-// While UL_MODE (the "?" key on the Fn layer) is held, the RGB_* chords adjust the
-// underglow instead of the main backlight. Held in xdata to spare internal RAM.
 static bool ul_mode_active;
 
 static bool reset_mode_active;

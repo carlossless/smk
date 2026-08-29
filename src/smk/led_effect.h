@@ -10,7 +10,6 @@ typedef enum {
     FX_COUNT
 } led_effect_t;
 
-// The cycle key steps OFF -> each effect -> OFF -> ...; FX_OFF is the dark state.
 #define FX_OFF FX_COUNT
 
 uint8_t led_effect_index(led_effect_t fx, uint8_t row, uint8_t col, uint8_t phase);

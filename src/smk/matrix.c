@@ -82,7 +82,6 @@ static void send_keycode(uint16_t qcode, bool pressed)
         host_consumer_send(pressed ? keycode_to_consumer(qcode) : 0);
         return;
     }
-
 }
 
 static void process_key_state(uint8_t row, uint8_t col, bool pressed)

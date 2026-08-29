@@ -42,7 +42,6 @@ void user_gpio_init()
     P6CR = (uint8_t)(LED_R0_P6_1 | LED_R1_P6_2 | LED_R2_P6_3 | LED_R3_P6_4 | LED_R4_P6_5);
 
     P5PCR = (uint8_t)(KB_R3_P5_3 | KB_R4_P5_4);
-    // P6PCR  = (uint8_t)(LED_R0_P6_1 | LED_R1_P6_2 | LED_R2_P6_3 | LED_R3_P6_4 | LED_R4_P6_5);
     P7PCR = (uint8_t)(KB_R0_P7_1 | KB_R1_P7_2 | KB_R2_P7_3);
 
     P0 = (uint8_t)(LED_CAPS_P0_3);

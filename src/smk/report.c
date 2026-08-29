@@ -230,8 +230,6 @@ uint8_t get_weak_mods(void)
     return weak_mods;
 }
 
-// most significant on-bit - return highest location of on-bit
-// NOTE: return 0 when bit0 is on or all bits are off
 uint8_t biton(uint8_t bits)
 {
     uint8_t n = 0;

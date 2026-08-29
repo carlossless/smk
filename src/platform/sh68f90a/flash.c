@@ -7,8 +7,7 @@
 #define CFG_END    (CFG_ADDR + CFG_SIZE) // first address past the settings sector
 #define CFG_MAGIC0 0x5Au
 #define CFG_MAGIC1 0xA5u
-// record layout: [magic0][magic1][len][payload x len][checksum]
-#define CFG_HDR 3u // magic0, magic1, len precede the payload
+#define CFG_HDR    3u // magic0, magic1, len precede the payload
 
 _Static_assert((CFG_ADDR & (CFG_SIZE - 1)) == 0, "CFG_ADDR must be aligned to a 512-byte flash sector boundary");
 _Static_assert(CFG_END <= 0xEE00u, "CFG_END must not reach sector 119 (holds reset-vector redirect at 0xEFFC)");
@@ -101,7 +100,6 @@ bool flash_settings_load(__xdata uint8_t *dst, uint8_t len)
 
 void flash_settings_save(const __xdata uint8_t *src, uint8_t len)
 {
-
     if (stored_record_matches(src, len)) {
         return; // nothing changed; don't spend an erase cycle
     }
