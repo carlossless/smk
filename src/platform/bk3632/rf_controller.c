@@ -226,11 +226,9 @@ bool rf_update_keyboard_state(keyboard_state_t *keyboard)
     keyboard->paired    = (status_bytes[1] >> 4) & 1;
     keyboard->low_power = (status_bytes[1] >> 7) & 1;
 
-    uint8_t old_rf_link = keyboard->rf_link;
-    keyboard->rf_link   = ((status_bytes[1] & ((1 << 5) | (1 << 6))) >> 5);
-    if (old_rf_link != keyboard->rf_link) {
-        dprintf("rf link changed %02x\r\n", keyboard->rf_link);
-    }
+    const uint8_t old_rf_link = keyboard->rf_link;
+    keyboard->rf_link         = ((status_bytes[1] & ((1 << 5) | (1 << 6))) >> 5);
+    dprintf_if(old_rf_link != keyboard->rf_link, "rf link changed %02x\r\n", keyboard->rf_link);
 
     return true;
 }

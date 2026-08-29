@@ -58,10 +58,9 @@ void user_gpio_init()
     P5PCR = (uint8_t)(KB_R3_P5_3 | KB_R4_P5_4 | CONN_MODE_SWITCH_P5_5 | OS_MODE_SWITCH_P5_6);
     P7PCR = (uint8_t)(KB_R0_P7_1 | KB_R1_P7_2 | KB_R2_P7_3);
 
-    if (DEBUG) {
-        // UART TXD conflicts with CONN_MODE_SWITCH
-        // FIXME: make this configurable somehow
-    }
+    // FIXME: UART TXD shares its pin with CONN_MODE_SWITCH, so a
+    // DEBUG_SINK_UART build and the connection slider can't both work. Nothing
+    // here reconciles them yet.
 
     // BB SPI pins for RF. Pins idle as INPUT with pull-up enabled (idle HIGH).
     // During each SPI bit the bit-bang functions briefly switch the pin to OUTPUT
