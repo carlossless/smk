@@ -175,7 +175,7 @@ bool rf_update_keyboard_state(keyboard_state_t *keyboard)
     uint8_t status_bytes[2];
 
     if (!rf_get_status(status_bytes)) {
-        return false; // no fresh status — leave keyboard_state untouched
+        return false; // no fresh status - leave keyboard_state untouched
     }
 
     if (!(status_bytes[0] & 0x80)) {
@@ -276,6 +276,8 @@ void rf_blanking_tick(void)
     blanking_active = false;
 }
 
+// Module-static scratch for rf_set_link_pairing - keeps the loop's locals out
+// of internal RAM so SDCC's OSEG packer doesn't run out of slots.
 static uint8_t pairing_status_bytes[2];
 static uint8_t pairing_paired_now;
 
@@ -348,6 +350,11 @@ void rf_fetch_4()
     bb_spi_recv(rf_tx_buf, 4);
 }
 
+// Retry on no-ACK, looping in-place. DO NOT call rf_wake_nudge between
+// attempts: it builds its packet into rf_tx_buf - the same buffer being sent -
+// so a mid-retry nudge corrupts the report, the BK3632 drops it, and the key
+// gets stuck on the host. Capped at RF_SEND_MAX_ATTEMPTS (~2 ms worst case) so
+// a dead BK3632 doesn't brick the main loop.
 #define RF_SEND_MAX_ATTEMPTS 5
 
 static bool rf_send_or_retry(uint8_t *buf, int len)

@@ -351,6 +351,9 @@ uint8_t            interface0_protocol;
 uint8_t            interface1_protocol;
 // Host-controlled remote-wakeup enable, per SET/CLEAR_FEATURE.
 static __bit usb_remote_wakeup;
+// Set when the host suspends the bus (SUSPIF), cleared on the next SOF or bus
+// reset. The sleep feature only enters USB-suspend Power-Down once the host has
+// parked the bus itself - self-suspending mid-poll would break the link.
 __bit           usb_suspended;
 uint8_t         idle_time;
 usb_ep0_state_t usb_ep0_state;

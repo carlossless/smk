@@ -1,6 +1,9 @@
 #include "extint.h"
 #include "sh68f90a.h"
 
+// INT4's edge and trigger-mode encodings. Transcribed from the stock firmware's
+// sleep entry - the datasheet does not document these two registers, so the
+// values are known to work rather than known to be minimal.
 #define IENC_INT4_CONFIG  0xF3
 #define EXF0_INT4_TRIGGER 0x40
 

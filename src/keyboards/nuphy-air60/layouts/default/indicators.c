@@ -141,6 +141,9 @@ void indicators_validate_settings()
     }
 }
 
+// Power-on xdata is NOT guaranteed clear on a cold boot, so without this the
+// tick ISR blits uninitialised garbage to the LEDs between EA=1 and the first
+// foreground render - a one-time random-row flash. Must run before EA=1.
 void indicators_init()
 {
     memset(led_fb, 0, sizeof(led_fb));
@@ -313,10 +316,10 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
             battery_flash_sweeps--;
         }
         status_pulse_counter++;
-        render_dirty = true; // UL/status advanced — repaint the frame
+        render_dirty = true; // UL/status advanced - repaint the frame
     } else if (anim_ctr == (uint8_t)(LED_ROWS * LED_COLS)) {
         led_phase    = (uint8_t)(led_phase + user_settings.led_speed);
-        render_dirty = true; // main effect advanced — repaint the frame
+        render_dirty = true; // main effect advanced - repaint the frame
     }
 
     indicators_pwm_disable();
@@ -332,7 +335,7 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
 
     if (lit) {
         led_enable_sink();       // raise this subframe's sink while parked
-        indicators_pwm_enable(); // re-enable last — the selected row lights now
+        indicators_pwm_enable(); // re-enable last - the selected row lights now
     }
 
     bool frame_wrapped = false;
@@ -590,6 +593,12 @@ void indicators_pwm_enable()
     PWM42CON = PWM_SS;
 }
 
+// Settings-save quiesce hooks (declared in settings.h). The ~5 ms sector erase
+// stalls the CPU with interrupts off; the scan ISR would re-arm the column PWM
+// between flash ops, so we pause the scan and park the columns for the whole
+// write. With the PWM parked the muxed column pins revert to their input/high-Z
+// GPIO rest state (matrix.c releases them after every sweep) and float - no
+// source - so the frozen scan can't hold a row bright. Restore on the way out.
 void settings_save_pre(void)
 {
     tick_pause();

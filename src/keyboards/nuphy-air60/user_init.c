@@ -66,6 +66,9 @@ void user_gpio_init()
     P4 |= RF_BB_SPI_SCK_P4_7;
     P0 |= (RF_BB_SPI_MOSI_P0_7 | RF_BB_SPI_MOT_P0_5);
 
+    // DON'T set PxCR for these pins - they start as input. bb_spi will
+    // toggle the direction bits per cycle.
+
     P0PCR |= (RF_BB_SPI_MISO_P0_6 | RF_BB_SPI_MOSI_P0_7 | RF_BB_SPI_MOT_P0_5);
     P4PCR |= (RF_BB_SPI_ACK_P4_2 | RF_BB_SPI_SCK_P4_7);
     P7PCR |= RF_BB_SPI_CS_P7_4;

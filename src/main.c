@@ -72,6 +72,9 @@ void main(void)
     init();
 
 #if DEBUG == 1
+    // Paint the unused stack with a sentinel for stack_task()'s high-water
+    // measurement. Must run after init() - anything before clock_init() bricks
+    // the keyboard.
     stack_paint();
 #endif
 

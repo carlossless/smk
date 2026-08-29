@@ -169,7 +169,7 @@ packihx = find_program('packihx', required : true)
 sinowisp = find_program('sinowisp', required : true)
 
 # SDCC can't emit header dependencies as a compile side-effect (its -M family is
-# deps-only), so we drive it through a small wrapper that also writes a depfile —
+# deps-only), so we drive it through a small wrapper that also writes a depfile -
 # this is what makes ninja rebuild a .rel when one of its headers changes.
 py = find_program('python3', required : true)
 sdcc_compile = join_paths(meson.current_source_dir(), 'utils/sdcc_compile.py')
