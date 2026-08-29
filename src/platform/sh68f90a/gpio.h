@@ -15,7 +15,7 @@
 #define GPIO_DRIVE_25MA 0x00
 
 // Port primitives. The port number is a token, not a value, because the port
-// registers are SFRs and can't be indexed — so these expand to exactly the
+// registers are SFRs and can't be indexed - so these expand to exactly the
 // register write they describe and cost nothing over writing it by hand.
 //
 // `mask` is a set of pin bits (see a board's kbdef.h). PxCR selects direction

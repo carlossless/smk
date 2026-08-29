@@ -13,7 +13,7 @@ typedef enum {
 } powerdown_mode_t;
 
 // Enter Power-Down and return once a wake source fires. The caller MUST arm a
-// wake source first (the board hook arms INT4) — in Power-Down only INT2/3/4,
+// wake source first (the board hook arms INT4) - in Power-Down only INT2/3/4,
 // LPD, USB bus events, or reset can wake the core (datasheet 8.9.3). Owns the
 // generic clock/PLL/USB/regulator teardown and the wake rebuild.
 void power_enter_powerdown(powerdown_mode_t mode);

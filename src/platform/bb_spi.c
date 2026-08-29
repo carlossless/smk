@@ -91,7 +91,7 @@ uint8_t bb_spi_xfer_byte(uint8_t data)
     uint8_t recv = 0;
 
     // Per-bit open-drain bit-bang: SCK low, set MOSI, sample MISO, release SCK
-    // high. MISO is sampled while SCK is LOW — the slave latches it on the SCK
+    // high. MISO is sampled while SCK is LOW - the slave latches it on the SCK
     // falling edge, so the master must read before releasing SCK high again.
     for (uint8_t i = 0; i < 8; i++) {
         recv = recv << 1;

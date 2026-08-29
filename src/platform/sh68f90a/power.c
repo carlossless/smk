@@ -9,7 +9,7 @@
 // Datasheet 8.9.3 / 8.1: in Power-Down the HF oscillator stops and only
 // INT2/3/4, LPD, a USB bus event, or reset wakes the core. The regulator must be
 // off before entering Power-Down when it isn't needed, and takes 500 us to put
-// out a stable 3.3 V once switched back on — hence the wake delay below.
+// out a stable 3.3 V once switched back on - hence the wake delay below.
 //
 // This file owns the generic MCU teardown and wake rebuild only. Parking the
 // GPIO and arming the INT4 wake (the keypress pin P4.1 and the BK3632 ACK line
@@ -85,7 +85,7 @@ static void usb_resume(powerdown_mode_t mode)
     USBCON &= ~_GOSUSP;
 
     // A keypress woke us, so raise remote-wakeup whether or not the host armed
-    // it — otherwise that keystroke is lost to a bus that never resumes.
+    // it - otherwise that keystroke is lost to a bus that never resumes.
     if (int4_woke) {
         USBCON |= _WKUP;
         int4_woke = 0;

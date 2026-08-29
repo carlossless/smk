@@ -17,7 +17,7 @@
 // also sees the BK3632 ACK on P4.2, which is why sleep_task() puts the BK3632
 // to sleep (CMD_07) before we get here.
 //
-// _Px_y appears where a pin has no name in kbdef.h — those six are touched by
+// _Px_y appears where a pin has no name in kbdef.h - those six are touched by
 // the stock teardown but configured nowhere else in SMK.
 
 user_sleep_mode_t user_sleep_supported(void)

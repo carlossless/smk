@@ -21,7 +21,7 @@ typedef enum {
 #define FX_OFF FX_COUNT
 
 // Animated per-cell index for `fx` at animation `phase`: HORIZONTAL uses the
-// column hue, VERTICAL the row hue, RADIAL the radial distance — each + phase.
+// column hue, VERTICAL the row hue, RADIAL the radial distance - each + phase.
 // Geometry comes from the user_led_* primitives. Only meaningful for the three
 // animated effects; the caller handles FX_SOLID / FX_OFF itself.
 uint8_t led_effect_index(led_effect_t fx, uint8_t row, uint8_t col, uint8_t phase);
@@ -30,7 +30,7 @@ uint8_t led_effect_index(led_effect_t fx, uint8_t row, uint8_t col, uint8_t phas
 // (un-dimmed) RGB in out[0..2]. For RGB boards; the caller applies brightness.
 void led_color_wheel(uint8_t index, uint8_t out[3]);
 
-// Final per-cell value for one backlight LED — the whole animation for the cell,
+// Final per-cell value for one backlight LED - the whole animation for the cell,
 // so a board's render is just "call this, write the framebuffer". Both return
 // false for FX_OFF (leave the cell unchanged), true otherwise.
 //

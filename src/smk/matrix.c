@@ -161,7 +161,7 @@ uint8_t matrix_task()
 
     // Snapshot the scan-written matrix[], then diff it against
     // matrix_previous[]. No lock needed: each column byte reads atomically, so a
-    // concurrent scan lands cleanly on one side of the read — at worst a
+    // concurrent scan lands cleanly on one side of the read - at worst a
     // transition is split across two main-loop iterations, never lost.
     matrix_col_t snapshot[MATRIX_COLS];
     matrix_updated = false;

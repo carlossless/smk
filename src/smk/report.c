@@ -59,7 +59,7 @@ void send_nkro_report()
     nkro_report.mods |= weak_mods;
 
     if (memcmp(&nkro_report, &last_nkro_report, sizeof(report_nkro_t)) != 0) {
-        // Byte loop, not library memcpy — see send_6kro_report.
+        // Byte loop, not library memcpy - see send_6kro_report.
         for (uint8_t i = 0; i < NKRO_REPORT_SIZE; i++) {
             last_nkro_report.raw[i] = nkro_report.raw[i];
         }

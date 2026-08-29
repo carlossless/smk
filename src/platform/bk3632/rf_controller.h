@@ -19,7 +19,7 @@ void rf_send_extra(__xdata report_extra_t *report);
 // Poll the BK3632 once and apply the status frame to `keyboard`. Returns
 // true when a fresh, checksum-valid frame was applied. A frame is valid on
 // magic + checksum alone; status byte 0 bit 7 is the "awake" marker and only
-// triggers a wake-nudge — it does not invalidate the frame.
+// triggers a wake-nudge - it does not invalidate the frame.
 bool rf_update_keyboard_state(keyboard_state_t *keyboard);
 void rf_set_link(rf_mode_t link);
 // Switch to `link` and tell the BK3632 to start advertising / accepting new
@@ -29,13 +29,13 @@ void rf_set_link_pairing(rf_mode_t link, __xdata keyboard_state_t *keyboard);
 // Wipe BT bonds and re-init BT names. Recovery path for when BLE pairing keeps
 // failing (BK3632 stuck in rotating-MAC mode).
 void rf_factory_reset_bonds(void);
-// Periodic supervisor — call from the main loop every tick (rate-limits
+// Periodic supervisor - call from the main loop every tick (rate-limits
 // internally). While the BK3632 reports neither connected nor paired (or a
 // link mode other than commanded), re-fire set_link(commanded, 0) to kick it
 // back into operational state, clearing the bogus "pairing blink" after a power
 // cycle. Suppressed while an rf_set_link_pairing is pending.
 void rf_link_supervisor(keyboard_state_t *keyboard);
-// Re-fire the commanded link mode (no pairing flag) twice — re-primes the
+// Re-fire the commanded link mode (no pairing flag) twice - re-primes the
 // BK3632 after pair-complete.
 void rf_reassert_link(rf_mode_t link);
 

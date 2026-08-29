@@ -5,7 +5,7 @@
 
 // PWMnmCON layout. Clearing MODE_ENABLE parks the output at idle and hands the
 // pad back to GPIO while leaving the clock divider in place, which is how the
-// LED drive is silenced for a matrix sweep — so PWM_CLK_DIV_4 on its own is the
+// LED drive is silenced for a matrix sweep - so PWM_CLK_DIV_4 on its own is the
 // parked-channel value.
 #define PWM_CLK_DIV_4   0b010 // PWM_CLK = SYS_CLK / 4
 #define PWM_SS          (1 << 3)

@@ -6,14 +6,14 @@
 #include <stdint.h>
 
 // Two independent debug sinks, picked at build time via meson:
-//   - DEBUG_SINK_UART     — 8051 UART (SCON/SBUF). One blocking busy-wait per
+//   - DEBUG_SINK_UART     - 8051 UART (SCON/SBUF). One blocking busy-wait per
 //                           byte (~140 µs at 57600 bps); stalls the main loop
 //                           while the TX shift register drains.
-//   - DEBUG_SINK_CONSOLE  — HID console ring buffer drained over USB EP2 IN by
+//   - DEBUG_SINK_CONSOLE  - HID console ring buffer drained over USB EP2 IN by
 //                           console_task(). Non-blocking (drops on full buffer),
 //                           but useless until USB is enumerated.
 // Either, both, or neither may be enabled. With neither, dprintf() still expands
-// but putchar() drops every byte — lets a release build keep dprintf in source.
+// but putchar() drops every byte - lets a release build keep dprintf in source.
 
 #ifdef DEBUG_SINK_UART
 
@@ -129,6 +129,6 @@ void putchar(int c)
     console_putc((unsigned char)c);
 #endif
     // Without any sink, every byte goes to /dev/null. printf still works
-    // (no crash, no link error) — it just produces no visible output.
+    // (no crash, no link error) - it just produces no visible output.
     (void)c;
 }

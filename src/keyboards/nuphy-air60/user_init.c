@@ -73,7 +73,7 @@ void user_gpio_init()
     P4 |= RF_BB_SPI_SCK_P4_7;
     P0 |= (RF_BB_SPI_MOSI_P0_7 | RF_BB_SPI_MOT_P0_5);
 
-    // DON'T set PxCR for these pins — they start as input. bb_spi will
+    // DON'T set PxCR for these pins - they start as input. bb_spi will
     // toggle the direction bits per cycle.
 
     // Pull-ups: MISO + ACK (always input from BK3632), plus the SPI

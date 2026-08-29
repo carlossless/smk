@@ -13,6 +13,6 @@ void tick_init(void);
 void tick_dispatch(void);
 
 // Hold the matrix sweep and the backlight still without stopping time. Needed
-// around work they must not overlap — a blocking flash write, or sleep entry.
+// around work they must not overlap - a blocking flash write, or sleep entry.
 void tick_pause(void);
 void tick_resume(void);

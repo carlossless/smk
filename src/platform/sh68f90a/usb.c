@@ -353,7 +353,7 @@ uint8_t            interface1_protocol;
 static __bit usb_remote_wakeup;
 // Set when the host suspends the bus (SUSPIF), cleared on the next SOF or bus
 // reset. The sleep feature only enters USB-suspend Power-Down once the host has
-// parked the bus itself — self-suspending mid-poll would break the link.
+// parked the bus itself - self-suspending mid-poll would break the link.
 __bit           usb_suspended;
 uint8_t         idle_time;
 usb_ep0_state_t usb_ep0_state;
@@ -736,7 +736,7 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
                 USBIF1 &= ~_RESMIF;
             } else if (temp_usbif1 & _SUSPIF) { // SUSPIF
                 USBIF1 &= ~_SUSPIF;
-                // Only treat it as a real suspend once configured — spurious
+                // Only treat it as a real suspend once configured - spurious
                 // SUSPIF during enumeration shouldn't arm USB sleep.
                 if (usb_device_state == USB_DEVICE_STATE_CONFIGURED) {
                     usb_suspended = 1;
@@ -1054,7 +1054,7 @@ static void usb_get_descriptor_handler(struct usb_req_setup *req)
     } else if (type == USB_DESC_CLASS_REPORT) {
         uint8_t iface_index = req->wIndex;
 
-        // Stream the report descriptor straight out of __code — the EP0 streamer
+        // Stream the report descriptor straight out of __code - the EP0 streamer
         // copies 8 bytes per IN-IRQ. Bulk-copying the ~100+ byte descriptor into
         // scratch inside the ISR was long enough to starve the equal-priority LED
         // scan while it held a row sink, blipping when the HID driver fetches it.

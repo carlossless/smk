@@ -11,7 +11,7 @@
 // (~950 Hz, just under the 1 kHz USB poll ceiling) and costs backlight duty,
 // since the LEDs are blanked for the ~0.66 ms each sweep takes; raising it
 // trades scan rate back for brightness. A full LED frame is LED_SCAN_ROWS*3
-// subframes either way — interleaving only stretches it in time.
+// subframes either way - interleaving only stretches it in time.
 #define LED_SUBFRAMES_PER_SCAN 1
 
 static volatile bool    scan_due;

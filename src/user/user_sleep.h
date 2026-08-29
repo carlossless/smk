@@ -13,12 +13,12 @@ typedef enum {
 
 // Board sleep hooks. Only referenced when SLEEP_ENABLE is set.
 //
-// supported(): which sleep mode applies right now — queried live, side-effect free.
+// supported(): which sleep mode applies right now - queried live, side-effect free.
 //
 // prepare(): park every port into its low-power state and arm the wake source(s).
 //   Called with the LED scan already paused.
 //
-// wake(): undo prepare() — restore normal operating GPIO and disable the wake
+// wake(): undo prepare() - restore normal operating GPIO and disable the wake
 //   interrupt. Called immediately after wake, before the LED scan resumes.
 user_sleep_mode_t user_sleep_supported(void);
 void              user_sleep_prepare(void);

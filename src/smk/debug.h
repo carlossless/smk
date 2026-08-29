@@ -14,7 +14,7 @@
 
 // Log only when `cond` holds. Use this rather than wrapping dprintf in a plain
 // `if`: outside DEBUG builds that leaves a conditional with an empty body, which
-// SDCC folds away and reports as "conditional flow changed by optimizer" —
+// SDCC folds away and reports as "conditional flow changed by optimizer" -
 // a --Werror build failure. Here the condition is discarded instead, so any
 // variable that exists only to feed it still counts as used.
 #if DEBUG == 1

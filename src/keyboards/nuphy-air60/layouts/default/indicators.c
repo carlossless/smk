@@ -71,7 +71,7 @@ static uint8_t led_color;
 // main loop (indicators_render → led_regen_one) cycling through the main rows
 // then the underglow row (regen_row/regen_col). led_phase / ul_phase shift
 // their respective rainbow on a fixed cadence driven by anim_ctr in the scan
-// ISR — not by the (free-running) render cursor.
+// ISR - not by the (free-running) render cursor.
 static uint8_t led_phase;
 static uint8_t ul_phase;
 static uint8_t regen_row;
@@ -84,7 +84,7 @@ static uint8_t anim_ctr;
 
 // Set by the ISR when the phase advances; the main-loop render regenerates a
 // whole consistent frame on each set and clears it. Decouples the frame rate
-// from the (very uneven, in wireless mode) main-loop iteration rate — without
+// from the (very uneven, in wireless mode) main-loop iteration rate - without
 // it a slow loop refreshes only a cell or two per pass and the animation crawls
 // in line-by-line, with different parts of the frame at different phases.
 static volatile bool render_dirty;
@@ -177,7 +177,7 @@ void indicators_validate_settings()
 
 // Power-on xdata is NOT guaranteed clear on a cold boot, so without this the
 // tick ISR blits uninitialised garbage to the LEDs between EA=1 and the first
-// foreground render — a one-time random-row flash. Must run before EA=1.
+// foreground render - a one-time random-row flash. Must run before EA=1.
 void indicators_init()
 {
     memset(led_fb, 0, sizeof(led_fb));
@@ -328,7 +328,7 @@ void indicators_pre_update()
 
     // The per-subframe PWM park + re-enable lives in indicators_update_step().
     // We only drop the sinks here so the park that follows happens with no row
-    // selected — the LED then re-lights cleanly when update_step re-enables the
+    // selected - the LED then re-lights cleanly when update_step re-enables the
     // PWM as its last step.
 }
 
@@ -339,7 +339,7 @@ void indicators_pre_update()
 // We regenerate the ENTIRE framebuffer in one pass, and only when the ISR has
 // advanced the phase (render_dirty). That keeps every frame internally
 // consistent (all cells at one phase) and pins the frame rate to the ISR's
-// phase cadence (~50 Hz) instead of the main-loop iteration rate — which in
+// phase cadence (~50 Hz) instead of the main-loop iteration rate - which in
 // wireless mode is dominated by RF work and far too slow/uneven to drive a
 // cell-at-a-time render.
 void indicators_render()
@@ -374,10 +374,10 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
             battery_flash_sweeps--;
         }
         status_pulse_counter++;
-        render_dirty = true; // UL/status advanced — repaint the frame
+        render_dirty = true; // UL/status advanced - repaint the frame
     } else if (anim_ctr == (uint8_t)(LED_ROWS * LED_COLS)) {
         led_phase    = (uint8_t)(led_phase + user_settings.led_speed);
-        render_dirty = true; // main effect advanced — repaint the frame
+        render_dirty = true; // main effect advanced - repaint the frame
     }
 
     // Per-subframe PWM park, in order. The sinks were already dropped
@@ -408,7 +408,7 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
     // module-enable transient can't leak a faint glow.
     if (lit) {
         led_enable_sink();       // raise this subframe's sink while parked
-        indicators_pwm_enable(); // re-enable last — the selected row lights now
+        indicators_pwm_enable(); // re-enable last - the selected row lights now
     }
 
     bool frame_wrapped = false;
@@ -445,7 +445,7 @@ static void led_regen_one()
         // Resolve this UL cell's FINAL colour once, then write the three channels
         // in one shot. Priority: left-half connection/caps status, then (right
         // half) the battery indicator, else the underglow effect. Writing the cell
-        // twice — effect first, then a status/battery override — would let the scan
+        // twice (effect first, then a status/battery override) would let the scan
         // ISR sample the intermediate effect colour and flash it (a visible blink,
         // most obvious on the solid-red battery LEDs).
         uint8_t r, g, b;
@@ -502,7 +502,7 @@ static void led_regen_one()
         //   low_power or level <= 1 -> red; level >= 6 -> green; else yellow.
         // Suppressed on USB (CONN_MODE_SWITCH == 1): battery status is only
         // polled from the BK3632 in RF mode, so battery_level is stale (0) when
-        // wired — showing it would just render a permanent (bogus) red.
+        // wired - showing it would just render a permanent (bogus) red.
         else if (!CONN_MODE_SWITCH && (user_settings.battery_indicator_on || battery_flash_sweeps)) {
             if (keyboard_state.low_power || keyboard_state.battery_level <= 1) {
                 r = 255;
@@ -562,7 +562,7 @@ static void led_regen_one()
     }
 
     // Cursor advance: main rows 0..LED_ROWS-1 then the UL row, then back to 0.
-    // This only walks the regeneration cursor — the animation phase and status
+    // This only walks the regeneration cursor - the animation phase and status
     // counters advance separately on a fixed time base in the scan ISR.
     if (++regen_col >= LED_COLS) {
         regen_col = 0;
@@ -627,7 +627,7 @@ static void led_enable_sink()
 }
 
 // Load this subframe's 16 column duties from the framebuffer. Returns true if
-// any column is non-zero, i.e. this row-colour has something to light — the
+// any column is non-zero, i.e. this row-colour has something to light - the
 // caller skips the sink + PWM re-enable when it returns false, so an all-dark
 // subframe stays parked (no module-enable transient → no zero-brightness glow).
 static bool led_set_columns()
@@ -673,7 +673,7 @@ static bool led_set_columns()
 
 void indicators_pwm_enable()
 {
-    // Per-bank PWM IE = 0 across the board — no PWM ISRs fire.
+    // Per-bank PWM IE = 0 across the board - no PWM ISRs fire.
     PWM00CON = (uint8_t)(PWM_MODE_ENABLE | PWM_SS | PWM_CLK_DIV_4);
     PWM01CON = PWM_SS;
     PWM02CON = PWM_SS;
@@ -689,7 +689,7 @@ void indicators_pwm_enable()
     PWM15CON = PWM_SS;
 
     // PWM2 bank: separate-output mode (no SS bit on the master), 21..23 fully
-    // off — these pins are unused here, so SS=0 keeps the PWM output detached
+    // off - these pins are unused here, so SS=0 keeps the PWM output detached
     // and lets the GPIO drive.
     PWM20CON = (uint8_t)(PWM_MODE_ENABLE | PWM_CLK_DIV_4);
     PWM21CON = 0;
@@ -707,8 +707,8 @@ void indicators_pwm_enable()
 // stalls the CPU with interrupts off; the scan ISR would re-arm the column PWM
 // between flash ops, so we pause the scan and park the columns for the whole
 // write. With the PWM parked the muxed column pins revert to their input/high-Z
-// GPIO rest state (matrix.c releases them after every sweep) and float — no
-// source — so the frozen scan can't hold a row bright. Restore on the way out.
+// GPIO rest state (matrix.c releases them after every sweep) and float - no
+// source - so the frozen scan can't hold a row bright. Restore on the way out.
 void settings_save_pre(void)
 {
     tick_pause();

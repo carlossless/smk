@@ -23,7 +23,7 @@ uint8_t usb_device_state_get_protocol(void);
 
 // Block until the host has enumerated us and the bus has gone quiet again, or
 // until it's clear no host is attached. Bounded either way. Callers use it to
-// hold work that competes with enumeration — the LED scan — until it's over.
+// hold work that competes with enumeration (the LED scan) until it's over.
 // Busy-waits with interrupts on, so the scan and USB ISRs keep running.
 void usb_wait_for_enumeration(void);
 

@@ -94,7 +94,7 @@ bool flash_settings_load(__xdata uint8_t *dst, uint8_t len)
         return false;
     }
     if (flash_read(CFG_ADDR + 2) != len) {
-        return false; // different-sized record (struct changed) — ignore
+        return false; // different-sized record (struct changed) - ignore
     }
 
     uint8_t sum = 0;

@@ -55,7 +55,7 @@ void kb_init()
 // uncommitted value for SLIDER_DEBOUNCE_ITERS iterations in a row, we
 // commit the new value.
 //
-// At our ~20 kHz main-loop rate, 256 iters ≈ 13 ms — short enough to
+// At our ~20 kHz main-loop rate, 256 iters ≈ 13 ms - short enough to
 // feel instantaneous, long enough to filter mechanical contact noise
 // during a slide.
 #define SLIDER_DEBOUNCE_ITERS 256

@@ -41,7 +41,7 @@ void user_matrix_scan_post(void)
 {
     // Clear pull-control (PxPCR) then direction (PxCR) per port. The columns
     // carry no pull-up (user_init.c doesn't set their PxPCR), so the PCR clears
-    // are a no-op in practice — kept to guarantee a true float even if a pull is
+    // are a no-op in practice - kept to guarantee a true float even if a pull is
     // ever enabled on these pins.
     P1PCR &= (uint8_t)~KB_C_P1_MASK;
     P1CR &= (uint8_t)~KB_C_P1_MASK;
@@ -169,7 +169,7 @@ uint8_t user_matrix_read_rows(void)
     //   bit 2 ← P7.3 (KB_R2)
     //   bit 3 ← P5.3 (KB_R3)
     //   bit 4 ← P5.4 (KB_R4)
-    //   bits 5..7 = 1 (tag — keeps "no rows pressed" reading == 0xFF)
+    //   bits 5..7 = 1 (tag - keeps "no rows pressed" reading == 0xFF)
     return (uint8_t)(((P7 >> 1) & 0x07) | (P5 & 0x18) | 0xE0);
 }
 

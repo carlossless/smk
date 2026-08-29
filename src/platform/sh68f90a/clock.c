@@ -19,7 +19,7 @@ void clock_init()
 void clock_wake_restart()
 {
     // On a Power-Down wake the HF oscillator was fully stopped and needs a
-    // cold-start settle. Do NOT poll PLLSTA — it can return the instant the lock
+    // cold-start settle. Do NOT poll PLLSTA - it can return the instant the lock
     // comparator trips, before the oscillator is stable enough for USB-grade
     // (12 MHz ±0.25%) timing, and selecting that marginal clock stalls both the
     // LED scan and USB enumeration. Start HF+PLL, spin a FIXED warm-up, then

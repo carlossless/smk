@@ -22,7 +22,7 @@ void sleep_init(void);
 void sleep_note_frame(bool frame_completed);
 
 // Mark that the user did something (a key changed state). Resets the inactivity
-// counter on the next tick. Single-byte flag write — safe to call from either
+// counter on the next tick. Single-byte flag write - safe to call from either
 // the main loop or an ISR without guarding.
 void sleep_note_activity(void);
 

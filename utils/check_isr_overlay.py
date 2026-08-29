@@ -7,7 +7,7 @@ each non-reentrant function's locals/params into a shared "overlay" area (OSEG /
 BIT_BANK) to save RAM, reusing the same internal-RAM bytes for functions it thinks
 never run at once. That analysis does NOT account for interrupt preemption, so it
 will happily park a USB-ISR helper's pointer on the very bytes a main-loop function
-is using — and the ISR then corrupts it mid-render. The concrete failure was a hung
+is using - and the ISR then corrupts it mid-render. The concrete failure was a hung
 `__gptrput` (a stomped generic-pointer type byte → its code-space `sjmp .` trap).
 
 This check reconstructs the call graph from the generated .asm, marks every function
@@ -19,7 +19,7 @@ Assumptions / limits:
   * Interrupts are equal-priority (no nesting), so ISR<->ISR overlay sharing is
     safe and not flagged; only ISR<->main sharing is.
   * The call graph is built from direct lcall/ljmp edges. Calls made through
-    function pointers are invisible here — don't dispatch ISR work indirectly.
+    function pointers are invisible here - don't dispatch ISR work indirectly.
 """
 import argparse
 import glob
@@ -32,7 +32,7 @@ import sys
 SAFE = {"__gptrput", "__gptrget"}
 
 # Overlay areas that hold per-function locals/params. REG_BANK_* is saved/restored
-# by the ISR prologue; SSEG is the stack — neither is an overlay-collision hazard.
+# by the ISR prologue; SSEG is the stack - neither is an overlay-collision hazard.
 OVERLAY_AREAS = {"OSEG", "BIT_BANK"}
 
 
@@ -97,7 +97,7 @@ def overlay_slots(map_file):
 
     Every overlay entry appears under two symbols: a module-qualified `Lmod.func$var`
     form and a short `_func_...` form. The linker truncates the "Global" column at ~32
-    chars, which can cut the function name out of the long L-form — but the short form
+    chars, which can cut the function name out of the long L-form - but the short form
     (no module prefix) resolves, so a truncated L-form is always redundant and dropped
     silently. Anything else unresolved is a genuine blind spot and is returned.
     """
