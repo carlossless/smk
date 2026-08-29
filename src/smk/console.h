@@ -13,11 +13,6 @@
 void console_putc(unsigned char c);
 void console_task(void);
 
-// The host tool announces it is attached and ready to read; console_task() then
-// starts draining the buffered output.
 void console_notify_attached(void);
 
-// Minimal printf for debug output (prefer the dprintf() macro in debug.h).
-// Supports %%, %c, %s, and %d/%u/%x/%X with an optional '0' flag + single width
-// digit. 16-bit range.
 void console_printf(const __code char *fmt, ...) __reentrant;

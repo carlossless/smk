@@ -20,7 +20,4 @@ extern keymap_config_t           keymap_config;
 
 void keyboard_init(void);
 
-// Where a host link reports the lock-LED mask (caps / num / scroll) the host
-// wants lit. Called from the USB control-transfer ISR, so it stays a single
-// store and nothing more.
 void keyboard_set_led_state(uint8_t led_state);

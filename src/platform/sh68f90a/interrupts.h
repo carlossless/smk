@@ -19,7 +19,4 @@ void int4_interrupt_handler(void) __interrupt(_INT_INT4);
 #ifdef DEBUG_SINK_UART
 void uart_interrupt_handler(void) __interrupt(_INT_EUART0);
 #endif
-// PWM0's period interrupt. The handler is empty - nothing schedules work off it,
-// the systick ISR owns the LED scan - but eyooso-z11 still sets both enable bits
-// (PWM00CON.IE and IEN1.EPWM0), so the slot must exist and return cleanly.
 void pwm_interrupt_handler(void) __interrupt(_INT_PWM0);

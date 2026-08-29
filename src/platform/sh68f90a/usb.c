@@ -44,7 +44,6 @@ const uint8_t hid_report_desc_keyboard[] = {
     HID_RI_USAGE_PAGE(8, 0x01),     // Generic Desktop Controls
     HID_RI_USAGE(8, 0x06),          // System Control
     HID_RI_COLLECTION(8, 0x01),     // Application
-        // Modifiers (8 bits)
         HID_RI_USAGE_PAGE(8, 0x07),     // Keyboard/Keypad
         HID_RI_USAGE_MINIMUM(8, 0xe0),  // Keyboard Left Control
         HID_RI_USAGE_MAXIMUM(8, 0xe7),  // Keyboard Right Gui
@@ -54,12 +53,10 @@ const uint8_t hid_report_desc_keyboard[] = {
         HID_RI_REPORT_COUNT(8, 0x08),
         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
 
-        // Reserved (1 byte)
         HID_RI_REPORT_SIZE(8, 0x08),
         HID_RI_REPORT_COUNT(8, 0x01),
         HID_RI_INPUT(8, HID_IOF_CONSTANT),
 
-        // Keycodes (6 bytes)
         HID_RI_USAGE_PAGE(8, 0x07),    // Keyboard/Keypad
         HID_RI_USAGE_MINIMUM(8, 0x00),
         HID_RI_USAGE_MAXIMUM(8, 0xFF),
@@ -69,7 +66,6 @@ const uint8_t hid_report_desc_keyboard[] = {
         HID_RI_REPORT_COUNT(8, 0x06),
         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_ARRAY | HID_IOF_ABSOLUTE),
 
-        // Status LEDs (5 bits)
         HID_RI_USAGE_PAGE(8, 0x08),    // LED
         HID_RI_USAGE_MINIMUM(8, 0x01), // Num Lock
         HID_RI_USAGE_MAXIMUM(8, 0x05), // Kana
@@ -79,7 +75,6 @@ const uint8_t hid_report_desc_keyboard[] = {
         HID_RI_REPORT_COUNT(8, 0x05),
         HID_RI_OUTPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE | HID_IOF_NON_VOLATILE),
 
-        // LED padding (3 bits)
         HID_RI_REPORT_SIZE(8, 0x03),
         HID_RI_REPORT_COUNT(8, 0x01),
         HID_RI_OUTPUT(8, HID_IOF_CONSTANT),
@@ -149,7 +144,6 @@ const uint8_t hid_report_desc_extra[] = {
     HID_RI_USAGE(8, 0x06),                // Keyboard
     HID_RI_COLLECTION(8, 0x01),           // Application
         HID_RI_REPORT_ID(8, REPORT_ID_NKRO),
-        // Modifiers (8 bits)
         HID_RI_USAGE_PAGE(8, 0x07),     // Keyboard/Keypad
         HID_RI_USAGE_MINIMUM(8, 0xe0),  // Keyboard Left Control
         HID_RI_USAGE_MAXIMUM(8, 0xe7),  // Keyboard Right Gui
@@ -159,7 +153,6 @@ const uint8_t hid_report_desc_extra[] = {
         HID_RI_REPORT_COUNT(8, 0x08),
         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
 
-        // NKRO
         HID_RI_USAGE_PAGE(8, 0x07),       // Keyboard/Keypad
         HID_RI_USAGE_MINIMUM(8, 0x00),
         HID_RI_USAGE_MAXIMUM(8, NKRO_REPORT_BITS * 8 - 1),
@@ -298,12 +291,10 @@ usb_descriptor_set_c usb_descriptor_set = {
     .strings      = usb_strings,
 };
 
-// interrupt handlers
 static void usb_setup_irq();
 static void usb_ep0_out_irq();
 static void usb_ep0_in_irq();
 
-// buffer utils
 static void setup_ep0_in_xfer(uint8_t *src, uint16_t len);
 static void step_ep0_in_xfer();
 static void set_ep0_in_buffer(uint8_t *src, uint8_t len);
@@ -313,7 +304,6 @@ static void get_ep1_out_buffer(uint8_t *dest);
 static void set_ep2_in_buffer(uint8_t *src, uint8_t len);
 static void get_ep2_out_buffer(uint8_t *dest);
 
-// request handlers
 static void usb_clear_remote_wakeup_handler(struct usb_req_setup *req);
 static void usb_clear_endpoint_halt_handler(struct usb_req_setup *req);
 static void usb_set_remote_wakeup_handler(struct usb_req_setup *req);
@@ -343,7 +333,6 @@ uint8_t scratch[512];
 uint16_t ep0_xfer_bytes_left;
 uint8_t *ep0_xfer_src;
 
-// usb state
 usb_device_state_t usb_device_state;
 uint8_t            received_usb_addr;
 uint8_t            active_configuration;
@@ -358,11 +347,6 @@ __bit           usb_suspended;
 uint8_t         idle_time;
 usb_ep0_state_t usb_ep0_state;
 
-// Enumeration progress, in 1 ms SOF ticks. Reloaded on every SETUP and
-// decremented on every SOF, so it stays above zero for as long as the host is
-// running control transfers and reaches zero once the bus falls quiet.
-// `enum_seen` latches the first SETUP, which is what separates "the host hasn't
-// started asking yet" from "there is no host".
 #define ENUM_QUIET_MS   500
 #define ENUM_NO_HOST_MS 500
 #define ENUM_GIVE_UP_MS 4000
@@ -385,8 +369,6 @@ void usb_init()
     ep0_xfer_bytes_left = 0;
     ep0_xfer_src        = 0;
 
-    // Cold-boot xdata isn't guaranteed zero, and garbage here would read as
-    // "enumeration already finished".
     enum_quiet_ticks = 0;
     enum_seen        = false;
 
@@ -397,10 +379,6 @@ void usb_init()
     IEN1 |= _EUSB;
 }
 
-// Tear down the USB device state (counterpart to usb_init). Used by the RF-sleep
-// path: the regulator-off sleep drops the PHY, so reset the device-state machine
-// to DEFAULT and disable the module + interrupt. The un-configured state makes
-// the gate in usb_send_* block sends until the host re-enumerates on wake.
 void usb_deinit()
 {
     usb_device_state     = USB_DEVICE_STATE_DEFAULT;
@@ -418,8 +396,6 @@ void usb_deinit()
     IEN1 &= ~_EUSB;                          // disable the USB interrupt
 }
 
-// Wait out a report the host hasn't collected yet. Capped at ~10 ms: past that
-// the host is gone, and blocking longer only stalls the main loop on every key.
 #define EP_IN_DRAIN_TRIES 255
 
 static void ep1_in_drain(void)
@@ -450,8 +426,6 @@ static void ep2_in_send(uint8_t *raw, uint8_t len)
 
 void usb_send_report(__xdata report_keyboard_t *report)
 {
-    // Before SET_CONFIGURATION the host isn't reading the endpoint, so the write
-    // is lost AND the drain above spins its full timeout on every keypress.
     if (!usb_is_configured()) {
         return;
     }
@@ -527,8 +501,6 @@ static void usb_setup_irq()
 {
     struct usb_req_setup req;
 
-    // __critical (save+restore EA) instead of CLR/SETB so a nested entry
-    // (already EA=0) doesn't get interrupts silently re-enabled on return.
     __critical
     {
         get_ep0_out_buffer((uint8_t *)&req);
@@ -736,8 +708,6 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
                 USBIF1 &= ~_RESMIF;
             } else if (temp_usbif1 & _SUSPIF) { // SUSPIF
                 USBIF1 &= ~_SUSPIF;
-                // Only treat it as a real suspend once configured - spurious
-                // SUSPIF during enumeration shouldn't arm USB sleep.
                 if (usb_device_state == USB_DEVICE_STATE_CONFIGURED) {
                     usb_suspended = 1;
                 }
@@ -780,8 +750,6 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
     FLASHCON = saved_flashcon; // restore banking SFRs (see top)
     INSCON   = saved_inscon;
 }
-
-// request handlers
 
 static void usb_set_address_handler(struct usb_req_setup *req)
 {
@@ -1025,7 +993,6 @@ static void usb_get_descriptor_handler(struct usb_req_setup *req)
             APPEND_DESC(config_item->generic);
         } while ((++config_item)->generic);
 
-        // Fix up wTotalLength so we don't need to calculate it explicitly.
         if (config_desc->wTotalLength == 0) {
             config_desc->wTotalLength = (uint16_t)(buf - scratch);
         }
@@ -1054,10 +1021,6 @@ static void usb_get_descriptor_handler(struct usb_req_setup *req)
     } else if (type == USB_DESC_CLASS_REPORT) {
         uint8_t iface_index = req->wIndex;
 
-        // Stream the report descriptor straight out of __code - the EP0 streamer
-        // copies 8 bytes per IN-IRQ. Bulk-copying the ~100+ byte descriptor into
-        // scratch inside the ISR was long enough to starve the equal-priority LED
-        // scan while it held a row sink, blipping when the HID driver fetches it.
         if (iface_index == 0) {
             addr   = (uint8_t *)hid_report_desc_keyboard;
             length = sizeof(hid_report_desc_keyboard);
@@ -1091,8 +1054,7 @@ static void usb_get_descriptor_handler(struct usb_req_setup *req)
     }
 
     uint16_t received_length = req->wLength;
-    // truncate data to the allowed lengths received from the host
-    length = (received_length < length) ? received_length : length;
+    length                   = (received_length < length) ? received_length : length;
     setup_ep0_in_xfer(addr, length);
     step_ep0_in_xfer();
 
@@ -1141,9 +1103,6 @@ static void usb_hid_set_report_handler(struct usb_req_setup *req)
                 SET_EP0_OUT_RDY;
             }
 #if DEBUG == 1
-            // Host console tool's attach handshake: SET_REPORT(Feature, CONSOLE)
-            // carries a (don't-care) payload so there is an OUT data stage to
-            // accept; usb_ep0_out_irq() then flips the console "attached" flag.
             else if ((req->wValue & 0xff) == REPORT_ID_CONSOLE) {
                 usb_ep0_state = USB_EP0_STATE_CONSOLE;
                 SET_EP0_OUT_RDY;

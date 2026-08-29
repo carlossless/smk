@@ -61,9 +61,6 @@ static void restore_rf_link(void)
 {
     rf_set_link((rf_mode_t)user_settings.rf_link);
 
-    // Assume the link came up, so the indicator shows the right colour straight
-    // away instead of sitting on the default + unpaired blink until the first
-    // status poll lands. The supervisor downgrades these if the BK3632 disagrees.
     keyboard_state.rf_link   = user_settings.rf_link;
     keyboard_state.connected = 1;
     keyboard_state.paired    = 1;
@@ -96,9 +93,6 @@ void main(void)
     settings_dump();
 #endif
 
-    // Enumeration control transfers starve the LED scan and over-brighten
-    // whatever row is mid-sweep, so let the host finish while the framebuffer is
-    // still dark and the blip has nothing to land on.
     usb_wait_for_enumeration();
     indicators_start();
 
@@ -115,9 +109,6 @@ void main(void)
         kb_update();
         matrix_task();
 
-        // Regenerate the effect framebuffer here, out of the tick ISR, which
-        // only streams it. Animation phase is clocked in the ISR, so this
-        // free-runs at the loop rate without affecting animation speed.
         indicators_render();
 
         settings_task();

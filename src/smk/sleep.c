@@ -1,8 +1,6 @@
 #include "sleep.h"
 
 #ifndef SLEEP_ENABLE
-// With the feature off, sleep.h is all macros and this file would be an empty
-// translation unit (which ISO C forbids). One unused typedef keeps it non-empty.
 typedef int sleep_disabled_placeholder_t;
 #else
 
@@ -20,9 +18,6 @@ typedef int sleep_disabled_placeholder_t;
 #    include <stdbool.h>
 #    include <stdint.h>
 
-// Inactivity threshold, in LED frames. A frame completes once per LED sweep
-// (~59 Hz with LED_SUBFRAMES_PER_SCAN=1), so ~21,000 frames is roughly a
-// 6-minute idle timeout. Retune if the LED frame rate changes (see tick.c).
 #    define SLEEP_TIMEOUT 21000
 
 // `inactivity` is owned by sleep_note_frame(); the main loop only ever reads it
@@ -53,8 +48,6 @@ void sleep_note_frame(bool frame_completed)
         return;
     }
 
-    // Stop counting once the request is latched, so the 16-bit value can't wrap
-    // back around past the threshold.
     if (inactivity < SLEEP_TIMEOUT) {
         if (++inactivity >= SLEEP_TIMEOUT) {
             sleep_requested = 1;
@@ -72,8 +65,6 @@ static bool sleep_due(user_sleep_mode_t mode)
     switch (mode) {
         case USER_SLEEP_RF:
             return sleep_requested;
-        // On USB the host decides. Self-suspending a bus it is still polling
-        // would break the link, so the inactivity timer has no say here.
         case USER_SLEEP_USB:
             return usb_suspended;
         default:
@@ -104,9 +95,6 @@ void sleep_task(void)
     const user_sleep_mode_t mode = user_sleep_supported(); // tracks the conn slider live
 
     if (!sleep_due(mode)) {
-        // Outside RF mode the inactivity counter has no job, so park it at zero.
-        // Left to climb it would latch a request that then fires the instant the
-        // slider flips to RF.
         if (mode != USER_SLEEP_RF) {
             sleep_note_activity();
         }
@@ -118,8 +106,6 @@ void sleep_task(void)
     const powerdown_mode_t powerdown = (mode == USER_SLEEP_USB) ? POWERDOWN_KEEP_USB_ALIVE : POWERDOWN_RELEASE_USB;
 
 #    ifdef RF_ENABLED
-    // Tell the radio the MCU is going down so it stays awake and can wake us.
-    // Not needed on USB, where the radio isn't the active link.
     if (powerdown == POWERDOWN_RELEASE_USB) {
         rf_wake_from_sleep();
     }
@@ -141,8 +127,6 @@ void sleep_task(void)
     }
 #    endif
 
-    // Whatever woke us counts as activity; the next tick zeroes the counter so
-    // we don't immediately re-arm.
     sleep_note_activity();
 }
 

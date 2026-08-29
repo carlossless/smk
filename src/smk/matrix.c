@@ -18,15 +18,10 @@ typedef uint8_t matrix_col_t;
 matrix_col_t matrix[MATRIX_COLS];
 matrix_col_t matrix_previous[MATRIX_COLS];
 
-// Set by matrix_scan_full() each time a full column sweep completes; cleared by
-// matrix_task() after it has diffed the new sample against the previous one.
-// Volatile because the scan writes it asynchronously from the main loop's read.
 volatile bool matrix_updated;
 
 uint8_t action_layer;
 
-// Base layer the matrix resolves keys against when no momentary (MO) layer is
-// held. Defaults to 0; a keyboard can retarget it at runtime.
 uint8_t default_layer;
 
 void matrix_init()
@@ -87,8 +82,6 @@ static void send_keycode(uint16_t qcode, bool pressed)
         host_consumer_send(pressed ? keycode_to_consumer(qcode) : 0);
         return;
     }
-
-    // Anything else has no host representation, so there is nothing to send.
 }
 
 static void process_key_state(uint8_t row, uint8_t col, bool pressed)
@@ -118,10 +111,6 @@ static void process_key_state(uint8_t row, uint8_t col, bool pressed)
     send_keycode(qcode, pressed);
 }
 
-// Sweep the whole matrix once: for each column, select it, sample the rows
-// twice with a settle delay between, and commit only if both samples agree
-// (two-sample debounce). Board hooks wrap the sweep and the LED indicators are
-// quiesced across it so they can't bias the row reads.
 void matrix_scan_full(void)
 {
     indicators_pwm_disable();

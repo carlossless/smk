@@ -58,7 +58,6 @@ bool led_effect_mono(led_effect_t fx, uint8_t row, uint8_t col, uint8_t phase, u
     if (fx >= FX_OFF) {
         return false;
     }
-    // Triangle wave of the effect index: ramp up then down (0..254..0).
     uint8_t x = led_effect_index(fx, row, col, phase);
     *out      = (x < 128) ? (uint8_t)(x << 1) : (uint8_t)((uint8_t)(255 - x) << 1);
     return true;

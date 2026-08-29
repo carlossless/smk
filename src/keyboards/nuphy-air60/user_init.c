@@ -3,14 +3,8 @@
 #include "pwm.h"
 #include "gpio.h"
 
-// 256-tick period. At PWM_CLK = SYS_CLK / 4 = 6 MHz that gives ~23 kHz, well
-// above the flicker threshold (a 1024-tick period runs at ~5.9 kHz, visible).
-// The period must match the 8-bit DUTY2 range: 8-bit DUTY against 0x100 PERD
-// spans a usable 0..100%, whereas against 0x400 it would only reach 0..25%.
 #define PWM_PERD 0x0100
 
-// DUTY1=0, DUTY2 = framebuffer byte. With DUTY1=0 the PWM transitions at t=0
-// and again at DUTY2, so fb=0 → DUTY2=0 → LED off; fb=255 → DUTY2=255 → LED on.
 #define PWM_DUTY1 (uint16_t)0
 #define PWM_DUTY2 (uint16_t)0
 
@@ -32,7 +26,6 @@ void user_init()
 
 void user_gpio_init()
 {
-    // PxDRV is write-gated by DRVCON; see gpio.h.
     DRVCON = DRVCON_UNLOCK_P1;
     P1DRV  = GPIO_DRIVE_25MA;
 
@@ -76,8 +69,6 @@ void user_gpio_init()
     // DON'T set PxCR for these pins - they start as input. bb_spi will
     // toggle the direction bits per cycle.
 
-    // Pull-ups: MISO + ACK (always input from BK3632), plus the SPI
-    // output-side pins so they idle HIGH when in input mode.
     P0PCR |= (RF_BB_SPI_MISO_P0_6 | RF_BB_SPI_MOSI_P0_7 | RF_BB_SPI_MOT_P0_5);
     P4PCR |= (RF_BB_SPI_ACK_P4_2 | RF_BB_SPI_SCK_P4_7);
     P7PCR |= RF_BB_SPI_CS_P7_4;

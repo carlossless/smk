@@ -103,8 +103,6 @@ uint8_t get_first_key(report_keyboard_t *keyboard_report)
     return keyboard_report->keys[0];
 }
 
-// Returns true if `key` is pressed in the report. Does not support modifiers;
-// returns false for KC_NO.
 bool is_key_pressed(report_keyboard_t *keyboard_report, uint8_t key)
 {
     if (key == KC_NO) {
@@ -167,7 +165,6 @@ void add_key_bit(report_nkro_t *nkro_report, uint8_t code)
     if ((code >> 3) < NKRO_REPORT_BITS) {
         nkro_report->bits[code >> 3] |= 1 << (code & 7);
     }
-    // codes past the report range are silently dropped
 }
 
 void del_key_bit(report_nkro_t *nkro_report, uint8_t code)
@@ -237,8 +234,6 @@ uint8_t get_weak_mods(void)
     return weak_mods;
 }
 
-// most significant on-bit - return highest location of on-bit
-// NOTE: return 0 when bit0 is on or all bits are off
 uint8_t biton(uint8_t bits)
 {
     uint8_t n = 0;

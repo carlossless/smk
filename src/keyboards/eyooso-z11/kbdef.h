@@ -14,21 +14,18 @@ enum custom_keycodes {
     KB_SAFE_RANGE,
 };
 
-// Row Pin Bits
 #define KB_R0_P7_1 _P7_1
 #define KB_R1_P7_2 _P7_2
 #define KB_R2_P7_3 _P7_3
 #define KB_R3_P5_3 _P5_3
 #define KB_R4_P5_4 _P5_4
 
-// Row Pins
 #define KB_R0 P7_1
 #define KB_R1 P7_2
 #define KB_R2 P7_3
 #define KB_R3 P5_3
 #define KB_R4 P5_4
 
-// Column Pin Bits
 #define KB_C0_P1_4  _P1_4
 #define KB_C1_P1_5  _P1_5
 #define KB_C2_P2_0  _P2_0
@@ -44,7 +41,6 @@ enum custom_keycodes {
 #define KB_C12_P3_4 _P3_4
 #define KB_C13_P3_5 _P3_5
 
-// Column Pins
 #define KB_C0  P1_4
 #define KB_C1  P1_5
 #define KB_C2  P2_0
@@ -60,7 +56,6 @@ enum custom_keycodes {
 #define KB_C12 P3_4
 #define KB_C13 P3_5
 
-// LED PWM Registers
 #define LED_PWM_C0  PWM24
 #define LED_PWM_C1  PWM25
 #define LED_PWM_C2  PWM10
@@ -76,22 +71,18 @@ enum custom_keycodes {
 #define LED_PWM_C12 PWM04
 #define LED_PWM_C13 PWM05
 
-// LED Row Pin Bits
 #define LED_R0_P6_1 _P6_1
 #define LED_R1_P6_2 _P6_2
 #define LED_R2_P6_3 _P6_3
 #define LED_R3_P6_4 _P6_4
 #define LED_R4_P6_5 _P6_5
 
-// LED Row Pins
 #define LED_R0 P6_1
 #define LED_R1 P6_2
 #define LED_R2 P6_3
 #define LED_R3 P6_4
 #define LED_R4 P6_5
 
-// KC_CAPS LED Pin
 #define LED_CAPS P0_3
 
-// KC_CAPS LED Pin Bit
 #define LED_CAPS_P0_3 _P0_3

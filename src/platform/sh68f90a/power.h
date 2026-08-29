@@ -7,8 +7,6 @@ typedef enum {
     // The host parked the bus itself. Keep the regulator and PHY powered so the
     // device stays enumerated and can resume via remote-wakeup.
     POWERDOWN_KEEP_USB_ALIVE,
-    // Running on battery. Power the USB regulator and PHY all the way down; the
-    // host re-enumerates when we come back.
     POWERDOWN_RELEASE_USB,
 } powerdown_mode_t;
 

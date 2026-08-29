@@ -3,8 +3,6 @@
 #include "keyboard.h"
 #include "usb.h"
 
-// System and consumer usages are level-triggered: the host holds the last usage
-// until we send a different one, so a repeat send is redundant traffic.
 static uint16_t last_system_usage;
 static uint16_t last_consumer_usage;
 

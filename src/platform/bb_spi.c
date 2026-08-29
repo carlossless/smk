@@ -6,15 +6,9 @@
 
 uint8_t bb_spi_xfer_byte(uint8_t data);
 
-// After CS rises, poll RF_BB_SPI_ACK for the BK3632 to toggle the line
-// (~150 µs total).
 #define RF_BB_SPI_ACK_POLL_MAX 50
 #define RF_BB_SPI_ACK_POLL_US  3
 
-// Open-drain SPI: SCK/MOSI/CS/MOT idle as INPUT with pull-up (high). To
-// drive LOW, we briefly switch the pin's PxCR direction bit to OUTPUT while
-// the latch holds 0. To release HIGH, we switch back to INPUT and let the
-// pull-up take it.
 #define MOT_DRIVE_LOW()    \
     do {                   \
         RF_BB_SPI_MOT = 0; \
@@ -38,9 +32,6 @@ uint8_t bb_spi_xfer_byte(uint8_t data);
         RF_BB_SPI_CS = 1;        \
     } while (0)
 
-// Sequence shared between send and receive: drive MOT low, 3 µs wakeup,
-// drive CS low, bit-bang `len` bytes, release CS/MOSI/MOT high. The
-// byte loop runs under __critical iff `lock`.
 static void bb_spi_burst(uint8_t *data, int len, bool lock)
 {
     MOT_DRIVE_LOW();

@@ -4,15 +4,10 @@
 #    include "debug.h" // dprintf
 #endif
 
-// The persisted record is a 4-byte header + payload; if the struct outgrows the
-// storage sector the build fails here instead of corrupting adjacent storage.
 _Static_assert(sizeof(user_settings_t) + 4u <= 512u, "user_settings_t too large for the settings sector");
 
 user_settings_t user_settings;
 
-// Deferred-save dirty flag. Handlers set it and return; settings_task() flushes
-// and clears. Multiple marks between flushes coalesce into one write, so a fast
-// brightness ramp produces a single persist instead of one per step.
 static bool settings_dirty;
 
 bool settings_load(void)

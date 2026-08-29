@@ -2,10 +2,6 @@
 
 #include "console.h"
 
-// Debug-only printf, compiled out entirely outside DEBUG builds (console_printf
-// only exists there). Format subset: %% %c %s %d %u %x %X, with an optional '0'
-// flag and one width digit.
-
 #if DEBUG == 1
 #    define dprintf(...) console_printf(__VA_ARGS__)
 #else

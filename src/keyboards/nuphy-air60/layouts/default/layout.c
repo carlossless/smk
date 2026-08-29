@@ -100,8 +100,6 @@ const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 // clang-format on
 
-// Map the OS_MODE_SWITCH slider position to the base keymap layer. Lives here so
-// the layer enum above stays the single source of truth for the indices.
 uint8_t layout_os_base_layer(bool is_mac)
 {
     return is_mac ? _MAC_BL : _WIN_BL;

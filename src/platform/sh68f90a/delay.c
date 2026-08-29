@@ -78,11 +78,6 @@ void delay_us(uint16_t cnt) __naked
     // clang-format on
 }
 
-// delay_ms uses delay_us(1000) for each ms. Per-iter cost is ~24030 cycles
-// (LCALL 7c + delay_us body ~24008c + while-loop overhead ~15c) so the total
-// error is roughly +1c per ms (~0.13%), well within tolerance for the
-// millisecond-scale waits this is used for (RF reset timing, USB enumeration,
-// etc.).
 void delay_ms(uint16_t cnt)
 {
     while (cnt--) {

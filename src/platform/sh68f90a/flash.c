@@ -11,8 +11,7 @@
 #define CFG_END    (CFG_ADDR + CFG_SIZE) // first address past the settings sector
 #define CFG_MAGIC0 0x5Au
 #define CFG_MAGIC1 0xA5u
-// record layout: [magic0][magic1][len][payload x len][checksum]
-#define CFG_HDR 3u // magic0, magic1, len precede the payload
+#define CFG_HDR    3u // magic0, magic1, len precede the payload
 
 // Belt-and-suspenders compile-time checks. If any of these fail, the build
 // stops before we can flash a binary that might wipe the bootloader.
@@ -29,10 +28,6 @@ static uint8_t flash_read(uint16_t addr)
     return *p;
 }
 
-// SSP unlock + trigger. IB_CON2..5 must be written 0x05,0x0A,0x09,0x06 in order
-// with no intervening writes; the NOPs cover the auto-IDLE while the op runs.
-// __critical (save+restore EA) so callers already running EA=0 don't get
-// interrupts silently re-enabled on return.
 static void ssp_run(uint16_t addr, uint8_t op, uint8_t data)
 {
     // Address gate: refuse any SSP op outside the settings sector, so a corrupted
@@ -105,7 +100,6 @@ bool flash_settings_load(__xdata uint8_t *dst, uint8_t len)
         return false; // checksum mismatch
     }
 
-    // Commit to dst only now, so a bad record never corrupts the caller's data.
     for (uint8_t i = 0; i < len; i++) {
         dst[i] = flash_read((uint16_t)(CFG_ADDR + CFG_HDR + i));
     }
@@ -114,10 +108,6 @@ bool flash_settings_load(__xdata uint8_t *dst, uint8_t len)
 
 void flash_settings_save(const __xdata uint8_t *src, uint8_t len)
 {
-    // No runtime length check: `len` is uint8_t so the record caps at 259 bytes,
-    // well inside the 512-byte sector. The compile-time assertion in settings.c
-    // enforces the bound if the struct ever grows.
-
     if (stored_record_matches(src, len)) {
         return; // nothing changed; don't spend an erase cycle
     }

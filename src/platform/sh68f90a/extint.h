@@ -14,5 +14,4 @@ void extint_wake_arm(void);
 // Stop INT4 firing during normal operation and drop whatever it latched.
 void extint_wake_disable(void);
 
-// Clear the latched P4.x edge flags without changing the enable.
 void extint_wake_clear(void);

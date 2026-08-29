@@ -6,25 +6,18 @@
 #include "led_effect.h"
 #include "user_led.h"
 
-// Single-colour LEDs: one brightness channel per LED instead of R/G/B, so
-// effects are moving brightness waves rather than hues.
 #define LED_ROWS MATRIX_ROWS
 #define LED_COLS MATRIX_COLS
 
-// Phase increment per full framebuffer sweep. Larger = faster.
 #define LED_PHASE_SPEED 4
 
-// 8-bit framebuffer brightness -> 10-bit column PWM duty (0 = full on, 0x400 = off)
 #define LED_DUTY(v) (uint16_t)(0x0400u - ((uint16_t)(v) << 2))
 
-// All LED rows, used to disable the whole matrix between substeps. Rows are
-// active-low (driven low = lit), so "disable" means driving them high.
 #define LED_ALL_ROWS (uint8_t)(LED_R0_P6_1 | LED_R1_P6_2 | LED_R2_P6_3 | LED_R3_P6_4 | LED_R4_P6_5)
 
 #include LED_GEOMETRY_HEADER
 _Static_assert(LED_GEOMETRY_ROWS == LED_ROWS && LED_GEOMETRY_COLS == LED_COLS, "generated LED geometry size does not match the key matrix");
 
-// Single-channel framebuffer (brightness per LED).
 static uint8_t led_fb[LED_ROWS][LED_COLS];
 
 static uint8_t led_row;
@@ -45,7 +38,6 @@ void indicators_start()
     regen_row = 0;
     regen_col = 0;
 
-    // restore the last saved effect (defaults to radial on a fresh flash)
     user_settings.led_effect = FX_RADIAL;
     settings_load();
     if (user_settings.led_effect > FX_OFF) {
@@ -57,7 +49,6 @@ void indicators_start()
 
 void indicators_next_effect()
 {
-    // OFF -> FX_RADIAL -> ... -> FX_SOLID -> OFF -> ...
     if (++user_settings.led_effect > FX_OFF) {
         user_settings.led_effect = 0;
     }
@@ -73,7 +64,6 @@ void indicators_factory_reset()
 
 void indicators_pre_update()
 {
-    // disable every LED row (active-low: high = off); the step re-enables one
     P6 |= LED_ALL_ROWS;
 
     indicators_pwm_disable();
@@ -83,18 +73,14 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
 {
     current_step;
 
-    // caps-lock indicator works regardless of backlight state
     LED_CAPS = !(keyboard->led_state & (1 << 1));
 
     if (user_settings.led_effect >= FX_OFF) {
-        // backlight off: pre_update already disabled every row, so nothing lights
         return false;
     }
 
-    // regenerate one LED of the framebuffer per ISR, spreading the work out
     led_regen_one();
 
-    // light one row this substep, with per-column brightness from the framebuffer
     led_enable_row();
     led_set_columns();
 
@@ -107,7 +93,6 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
 
 void indicators_post_update()
 {
-    // clear pwm isr flag
     PWM00CON &= ~(1 << 5);
 
     indicators_pwm_enable();
@@ -119,7 +104,6 @@ static void led_regen_one()
     if (led_effect_mono((led_effect_t)user_settings.led_effect, regen_row, regen_col, led_phase, &v)) {
         led_fb[regen_row][regen_col] = v;
     }
-    // FX_OFF -> false -> leave stale (the scan blanks when the effect is off)
 
     if (++regen_col >= LED_COLS) {
         regen_col = 0;

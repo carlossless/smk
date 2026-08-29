@@ -31,8 +31,6 @@ void clock_wake_restart()
         PLLCON |= _PLLON;
         watchdog_kick();
 
-        // Fixed settle. SYSCLK is still the slow pre-PLL clock, so these
-        // iterations run far longer than the needed ~20 µs.
         for (uint8_t i = 0; i < 200; i++) {
             // clang-format off
             __asm

@@ -1,21 +1,11 @@
 #include "kbdef.h"
 #include "user_matrix.h"
 
-// The Air60 matrix has columns scattered across four ports and rows on two:
-//
-//   cols on P1.5 (KB_C15), P2.0..2.5 (KB_C14..C9), P3.0..3.5 (KB_C8..C3),
-//   P5.0..5.2 (KB_C2..C0).
-//   rows on P7.1..7.3 (KB_R0..R2), P5.3..5.4 (KB_R3, KB_R4).
-//
-// The column pins are PWM-output multiplexed; when the LED PWM channels are
-// disabled the same pins act as GPIO and drive the matrix.
-
 #define KB_C_P1_MASK (uint8_t)(KB_C15_P1_5)
 #define KB_C_P2_MASK (uint8_t)(KB_C14_P2_0 | KB_C13_P2_1 | KB_C12_P2_2 | KB_C11_P2_3 | KB_C10_P2_4 | KB_C9_P2_5)
 #define KB_C_P3_MASK (uint8_t)(KB_C8_P3_0 | KB_C7_P3_1 | KB_C6_P3_2 | KB_C5_P3_3 | KB_C4_P3_4 | KB_C3_P3_5)
 #define KB_C_P5_MASK (uint8_t)(KB_C0_P5_0 | KB_C1_P5_1 | KB_C2_P5_2)
 
-// Air60 columns are active-LOW: idle (deselected) = HIGH, selected = LOW.
 void user_matrix_cols_deselect_all(void)
 {
     P1 |= KB_C_P1_MASK;
@@ -24,11 +14,6 @@ void user_matrix_cols_deselect_all(void)
     P5 |= KB_C_P5_MASK;
 }
 
-// Per-sweep hooks (matrix.c). PxCR bit set = output, clear = input (high-Z);
-// the column pins carry no pull-up (see user_init.c), so input is a true float.
-// Drive the columns only during the sweep (scan_pre) and release them to high-Z
-// at rest (scan_post) so a parked PWM column can't source. (PxCR shares bit
-// positions with the Px data masks.)
 void user_matrix_scan_pre(void)
 {
     P1CR |= KB_C_P1_MASK;
@@ -39,10 +24,6 @@ void user_matrix_scan_pre(void)
 
 void user_matrix_scan_post(void)
 {
-    // Clear pull-control (PxPCR) then direction (PxCR) per port. The columns
-    // carry no pull-up (user_init.c doesn't set their PxPCR), so the PCR clears
-    // are a no-op in practice - kept to guarantee a true float even if a pull is
-    // ever enabled on these pins.
     P1PCR &= (uint8_t)~KB_C_P1_MASK;
     P1CR &= (uint8_t)~KB_C_P1_MASK;
     P2PCR &= (uint8_t)~KB_C_P2_MASK;
@@ -163,13 +144,6 @@ void user_matrix_col_deselect(uint8_t col) // active-low: drive HIGH (idle)
 
 uint8_t user_matrix_read_rows(void)
 {
-    // Pack 5 row bits into a single byte:
-    //   bit 0 ← P7.1 (KB_R0)
-    //   bit 1 ← P7.2 (KB_R1)
-    //   bit 2 ← P7.3 (KB_R2)
-    //   bit 3 ← P5.3 (KB_R3)
-    //   bit 4 ← P5.4 (KB_R4)
-    //   bits 5..7 = 1 (tag - keeps "no rows pressed" reading == 0xFF)
     return (uint8_t)(((P7 >> 1) & 0x07) | (P5 & 0x18) | 0xE0);
 }
 

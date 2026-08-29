@@ -54,8 +54,6 @@ static void wake_sources_arm(powerdown_mode_t mode)
     }
 }
 
-// Halts the core. Everything after the PCON write runs on the far side of the
-// wake interrupt.
 static void halt_until_wake(void)
 {
     // Datasheet 8.9.3: SUSLO = 0x55 must be followed by PCON.PD on the very next
@@ -92,17 +90,12 @@ static void usb_resume(powerdown_mode_t mode)
     }
 
     if (mode == POWERDOWN_KEEP_USB_ALIVE) {
-        // Still enumerated, so re-arming the interrupts is the whole of it: the
-        // waking keypress is reported the moment the bus resumes.
         USBIE1 = 0x5F;
         IEN1 |= _EUSB;
-        // Drop the flag so the main loop doesn't re-sleep before the first SOF.
-        // A host that is still suspended re-arms it on the next SUSPIF (~3 ms).
         usb_suspended = 0;
         return;
     }
 
-    // The PHY lost power, so the host will re-enumerate us from address 0.
     REGCON |= _REGEN;
     delay_us(500); // regulator settle, per datasheet 8.1
     usb_init();
@@ -127,7 +120,6 @@ void power_enter_powerdown(powerdown_mode_t mode)
 
 void int4_interrupt_handler(void) __interrupt(_INT_INT4)
 {
-    // The waking P4.x edge latched a flag; clear it so the ISR doesn't re-fire.
     extint_wake_clear();
     int4_woke = 1;
 }

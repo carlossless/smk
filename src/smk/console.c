@@ -7,7 +7,6 @@
 #    include <stdint.h>
 #    include <stdarg.h>
 
-// Emit a 16-bit value in `base` (10 or 16), padded to `width` with `pad`.
 static void console_emit_num(uint16_t val, uint8_t base, uint8_t width, char pad, uint8_t upper) __reentrant
 {
     char    buf[5];
@@ -25,8 +24,6 @@ static void console_emit_num(uint16_t val, uint8_t base, uint8_t width, char pad
     }
 }
 
-// Minimal printf for debug output. Supports %%, %c, %s, and %d/%u/%x/%X with an
-// optional '0' flag + single width digit (e.g. %02x, %5u). 16-bit range only.
 void console_printf(const __code char *fmt, ...) __reentrant
 {
     va_list ap;
@@ -101,8 +98,6 @@ static unsigned char    console_buf[CONSOLE_BUF_SIZE];
 static volatile uint8_t console_head; // producer (console_putc)
 static volatile uint8_t console_tail; // consumer (console_task)
 
-// Set once the host tool has handshaked; cleared when the link drops, so a
-// re-attach must handshake again and re-flushes whatever has queued.
 static uint8_t console_attached;
 
 void console_notify_attached(void)
@@ -139,8 +134,6 @@ void console_task(void)
     if (console_head == console_tail) {
         return;
     }
-    // Check before draining the ring: bytes taken out of it have nowhere to go
-    // back to if the send can't happen.
     if (!usb_console_ready()) {
         return;
     }

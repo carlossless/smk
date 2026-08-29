@@ -7,10 +7,6 @@
 #    include <stdint.h>
 
 #    define STACK_SENTINEL 0xAA
-// The stack (SSEG) sits just above the data segment, so its start shifts
-// whenever globals change; derive the base from the linker's stack-start symbol
-// rather than hardcoding it. SP resets to start-1, so that is the base
-// stack_peak() measures against.
 extern uint8_t _start__stack;
 #    define STACK_BASE ((uint8_t)((uint16_t)&_start__stack - 1u))
 #    define STACK_TOP  0xFF // top of the SH68F90A's 256-byte internal RAM
@@ -27,8 +23,6 @@ void stack_paint(void)
     } while (addr != STACK_TOP);
 }
 
-// Highest address the stack has ever written = first non-sentinel byte
-// scanning down from STACK_TOP. Returns bytes used at that peak.
 static uint8_t stack_peak(void)
 {
     uint8_t addr = STACK_TOP;

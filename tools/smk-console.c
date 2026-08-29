@@ -42,7 +42,6 @@ static int already_open(const char *path)
     return 0;
 }
 
-// Open any matching /dev/hidraw* nodes we are not already listening on.
 static void scan(unsigned vid, unsigned pid)
 {
     DIR *d = opendir("/dev");
@@ -53,17 +52,12 @@ static void scan(unsigned vid, unsigned pid)
         char path[300];
         snprintf(path, sizeof(path), "/dev/%s", e->d_name);
         if (already_open(path)) continue;
-        // O_RDWR so we can send the attach handshake; fall back to read-only.
         int fd = open(path, O_RDWR);
         if (fd < 0) fd = open(path, O_RDONLY);
         if (fd < 0) continue;
         struct hidraw_devinfo info;
         if (ioctl(fd, HIDIOCGRAWINFO, &info) == 0 && (uint16_t)info.vendor == vid && (uint16_t)info.product == pid) {
             fprintf(stderr, "[smk-console] connected %s\n", path);
-            // Announce ourselves so the firmware flushes its buffered console
-            // (incl. the boot banner). The feature report id selects the console;
-            // the payload is don't-care. Harmless on the wrong interface, a
-            // read-only fd, or non-DEBUG firmware.
             unsigned char hello[5] = {REPORT_ID_CONSOLE, 'S', 'M', 'K', 0};
             ioctl(fd, HIDIOCSFEATURE(sizeof(hello)), hello);
             fds[nfds].fd      = fd;
@@ -78,7 +72,6 @@ static void scan(unsigned vid, unsigned pid)
     closedir(d);
 }
 
-// Drop a dead node (device gone) so a later scan can pick up its replacement.
 static void drop(int i)
 {
     fprintf(stderr, "[smk-console] disconnected %s\n", paths[i]);
@@ -101,11 +94,8 @@ int main(int argc, char **argv)
 
     uint8_t buf[64];
     for (;;) {
-        // Pick up newly-arrived matching nodes every cycle.
         scan(vid, pid);
 
-        // poll() doubles as the rescan timer: with no devices it just sleeps
-        // RESCAN_MS and loops back to scan() again.
         int r = poll(fds, nfds, RESCAN_MS);
         if (r < 0) {
             perror("poll");
@@ -113,7 +103,6 @@ int main(int argc, char **argv)
         }
         if (r == 0) continue;
 
-        // Walk high-to-low so drop()'s swap-with-last never skips an entry.
         for (int i = nfds - 1; i >= 0; i--) {
             short re = fds[i].revents;
             if (re & (POLLHUP | POLLERR | POLLNVAL)) {

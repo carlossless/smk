@@ -8,21 +8,18 @@
 #define MATRIX_ROWS 5
 #define MATRIX_COLS 16
 
-// Row Pin Bits
 #define KB_R0_P7_1 _P7_1
 #define KB_R1_P7_2 _P7_2
 #define KB_R2_P7_3 _P7_3
 #define KB_R3_P5_3 _P5_3
 #define KB_R4_P5_4 _P5_4
 
-// Row Pins
 #define KB_R0 P7_1
 #define KB_R1 P7_2
 #define KB_R2 P7_3
 #define KB_R3 P5_3
 #define KB_R4 P5_4
 
-// Column Pin Bits
 #define KB_C0_P5_0  _P5_0
 #define KB_C1_P5_1  _P5_1
 #define KB_C2_P5_2  _P5_2
@@ -40,7 +37,6 @@
 #define KB_C14_P2_0 _P2_0
 #define KB_C15_P1_5 _P1_5
 
-// Column Pins
 #define KB_C0  P5_0
 #define KB_C1  P5_1
 #define KB_C2  P5_2
@@ -58,7 +54,6 @@
 #define KB_C14 P2_0
 #define KB_C15 P1_5
 
-// LED PWM Registers
 #define LED_PWM_C0  PWM40
 #define LED_PWM_C1  PWM41
 #define LED_PWM_C2  PWM42
@@ -76,7 +71,6 @@
 #define LED_PWM_C14 PWM10
 #define LED_PWM_C15 PWM25
 
-// RGB Row Pins
 #define RGB_R0R P0_4
 #define RGB_R0G P6_1
 #define RGB_R0B P0_3
@@ -96,7 +90,6 @@
 #define RGB_ULG P1_2
 #define RGB_ULB P1_3
 
-// RGB Row Pin Bits
 #define RGB_R0R_P0_4 _P0_4
 #define RGB_R0G_P6_1 _P6_1
 #define RGB_R0B_P0_3 _P0_3
@@ -116,16 +109,12 @@
 #define RGB_ULG_P1_2 _P1_2
 #define RGB_ULB_P1_3 _P1_3
 
-// Config Switch Pins
 #define CONN_MODE_SWITCH P5_5 // 1 - USB, 0 - RF
 #define OS_MODE_SWITCH   P5_6 // 1 - MAC, 0 - WIN
 
-// Config Switch Pin Bits
 #define CONN_MODE_SWITCH_P5_5 _P5_5 // 1 - USB, 0 - RF
 #define OS_MODE_SWITCH_P5_6   _P5_6 // 1 - MAC, 0 - WIN
 
-// OS_MODE_SWITCH slider → base keymap layer. Defined in layouts/default/layout.c
-// (which owns the layer enum); kb.c feeds the result to set_default_layer().
 uint8_t layout_os_base_layer(bool is_mac);
 
 #define RF_BB_SPI_CS   P7_4

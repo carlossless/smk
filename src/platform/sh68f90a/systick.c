@@ -3,12 +3,6 @@
 #include "tick.h"
 #include <stdint.h>
 
-// Timer 2 in 16-bit auto-reload mode, clocked at SYS_CLK/12 = 2 MHz.
-//
-// The LED slot gets the full subframe dwell. The matrix slot is armed much
-// shorter than the sweep it precedes, so the timer has already overflowed by the
-// time the sweep returns and the next LED subframe starts immediately instead of
-// idling out a whole period in the dark.
 #define RELOAD_LED_SUBFRAME 0xFCDF // 65536 - 801, 400 us
 #define RELOAD_MATRIX_SCAN  0xFF37 // 65536 - 201, ~100 us against a ~320 us sweep
 
