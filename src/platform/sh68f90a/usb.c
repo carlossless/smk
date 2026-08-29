@@ -1,4 +1,5 @@
 #include "usb.h"
+#include "interrupts.h"
 #include "watchdog.h"
 #include "isp.h"
 #include "usbdef.h"
@@ -348,14 +349,18 @@ uint8_t __xdata            received_usb_addr;
 uint8_t __xdata            active_configuration;
 uint8_t __xdata            interface0_protocol;
 uint8_t __xdata            interface1_protocol;
-__bit                      usb_remote_wakeup;
-__bit                      usb_suspended;
-uint8_t __xdata            idle_time;
-usb_ep0_state_t __xdata    usb_ep0_state;
+// Host-controlled remote-wakeup enable, per SET/CLEAR_FEATURE.
+static __bit            usb_remote_wakeup;
+__bit                   usb_suspended;
+uint8_t __xdata         idle_time;
+usb_ep0_state_t __xdata usb_ep0_state;
 
-__xdata uint16_t usb_enum_active_ticks;
-__xdata bool     usb_enum_seen;
-#define USB_ENUM_ACTIVE_RELOAD 500
+#define ENUM_QUIET_MS   500
+#define ENUM_NO_HOST_MS 500
+#define ENUM_GIVE_UP_MS 4000
+
+static __xdata uint16_t enum_quiet_ticks;
+static __xdata bool     enum_seen;
 
 void usb_init()
 {
@@ -372,8 +377,8 @@ void usb_init()
     ep0_xfer_bytes_left = 0;
     ep0_xfer_src        = 0;
 
-    usb_enum_active_ticks = 0;
-    usb_enum_seen         = false;
+    enum_quiet_ticks = 0;
+    enum_seen        = false;
 
     USBADDR = 0;
     USBIE1  = (_OVERIE | _SETUPIE | _SOFIA | _RESMIE | _SUSPIE | _PBRSTIE);
@@ -399,71 +404,106 @@ void usb_deinit()
     IEN1 &= ~_EUSB;                          // disable the USB interrupt
 }
 
+#define EP_IN_DRAIN_TRIES 255
+
+static void ep1_in_drain(void)
+{
+    uint8_t tries = 0;
+    while (tries < EP_IN_DRAIN_TRIES && (EP1CON & _IEP1RDY)) {
+        delay_us(40);
+        tries++;
+    }
+}
+
+static void ep2_in_drain(void)
+{
+    uint8_t tries = 0;
+    while (tries < EP_IN_DRAIN_TRIES && (EP2CON & _IEP2RDY)) {
+        delay_us(40);
+        tries++;
+    }
+}
+
+static void ep2_in_send(uint8_t *raw, uint8_t len)
+{
+    ep2_in_drain();
+    set_ep2_in_buffer(raw, len);
+    SET_EP2_CNT(len);
+    SET_EP2_IN_RDY;
+}
+
 void usb_send_report(__xdata report_keyboard_t *report)
 {
-    if (usb_device_state != USB_DEVICE_STATE_CONFIGURED) {
+    if (!usb_is_configured()) {
         return;
     }
 
-    uint8_t timeout = 0;
-    while (timeout < 255 && EP1CON & _IEP1RDY) {
-        delay_us(40);
-        timeout++;
-    }
-
+    ep1_in_drain();
     set_ep1_in_buffer(report->raw, KEYBOARD_REPORT_SIZE);
-
     SET_EP1_CNT(KEYBOARD_REPORT_SIZE);
     SET_EP1_IN_RDY;
 }
 
 void usb_send_nkro(__xdata report_nkro_t *report)
 {
-    if (usb_device_state != USB_DEVICE_STATE_CONFIGURED) {
+    if (!usb_is_configured()) {
         return;
     }
-
-    uint8_t timeout = 0;
-    while (timeout < 255 && EP2CON & _IEP2RDY) {
-        delay_us(40);
-        timeout++;
-    }
-
-    set_ep2_in_buffer(report->raw, NKRO_REPORT_SIZE);
-
-    SET_EP2_CNT(NKRO_REPORT_SIZE);
-    SET_EP2_IN_RDY;
+    ep2_in_send(report->raw, NKRO_REPORT_SIZE);
 }
 
 void usb_send_extra(__xdata report_extra_t *report)
 {
-    if (usb_device_state != USB_DEVICE_STATE_CONFIGURED) {
+    if (!usb_is_configured()) {
         return;
     }
+    ep2_in_send(report->raw, EXTRA_REPORT_SIZE);
+}
 
-    uint8_t timeout = 0;
-    while (timeout < 255 && EP2CON & _IEP2RDY) {
-        delay_us(40);
-        timeout++;
+void usb_wait_for_enumeration(void)
+{
+    for (uint16_t ms = 0; ms < ENUM_GIVE_UP_MS; ms++) {
+        watchdog_kick();
+
+        if (enum_seen) {
+            if (enum_quiet_ticks == 0) {
+                return;
+            }
+        } else if (ms >= ENUM_NO_HOST_MS) {
+            return; // no SETUP ever arrived: nothing is driving the bus
+        }
+
+        delay_ms(1);
+    }
+}
+
+#if DEBUG == 1
+bool usb_console_ready(void)
+{
+    return usb_is_configured() && !(EP2CON & _IEP2RDY);
+}
+
+void usb_console_send(const __xdata uint8_t *data, uint8_t len)
+{
+    EP2_IN_BUF[0] = REPORT_ID_CONSOLE;
+    for (uint8_t i = 0; i < CONSOLE_REPORT_SIZE; i++) {
+        EP2_IN_BUF[1 + i] = (i < len) ? data[i] : 0;
     }
 
-    set_ep2_in_buffer(report->raw, EXTRA_REPORT_SIZE);
-
-    SET_EP2_CNT(EXTRA_REPORT_SIZE);
+    SET_EP2_CNT(1 + CONSOLE_REPORT_SIZE);
     SET_EP2_IN_RDY;
 }
+#endif
 
 uint8_t usb_device_state_get_protocol()
 {
     return interface0_protocol;
 }
 
-#if DEBUG == 1
-bool usb_is_configured()
+bool usb_is_configured(void)
 {
     return usb_device_state == USB_DEVICE_STATE_CONFIGURED;
 }
-#endif // DEBUG
 
 static void usb_setup_irq()
 {
@@ -656,8 +696,8 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
     if (temp_usbif1 != 0x00) {
         if (temp_usbif1 & _SOFIF) {
             USBIF1 &= ~_SOFIF;
-            if (usb_enum_active_ticks) {
-                usb_enum_active_ticks--;
+            if (enum_quiet_ticks) {
+                enum_quiet_ticks--;
             }
             usb_suspended = 0; // a SOF means the host is driving the bus again
         } else {
@@ -669,8 +709,8 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
                 usb_init();
             } else if (temp_usbif1 & _SETUPIF) {
                 USBIF1 &= ~_SETUPIF;
-                usb_enum_active_ticks = USB_ENUM_ACTIVE_RELOAD;
-                usb_enum_seen         = true;
+                enum_quiet_ticks = ENUM_QUIET_MS;
+                enum_seen        = true;
                 usb_setup_irq();
             } else if (temp_usbif1 & _RESMIF) { // RESMIF
                 USBIF1 &= ~_RESMIF;
@@ -1133,7 +1173,7 @@ void usb_ep0_out_irq()
     if (usb_ep0_state == USB_EP0_STATE_LED) {
         usb_ep0_state = 0;
 
-        keyboard_state.led_state = EP0_OUT_BUF[0];
+        keyboard_set_led_state(EP0_OUT_BUF[0]);
 
         CLEAR_EP0_CNT;
         SET_EP0_IN_RDY;

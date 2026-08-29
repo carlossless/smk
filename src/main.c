@@ -1,11 +1,7 @@
 #include "clock.h"
 #include "ldo.h"
 #include "watchdog.h"
-#include "delay.h"
-#include "isp.h"
-#ifdef DEBUG_SINK_UART
-#    include "uart.h"
-#endif
+#include "interrupts.h"
 #include "usb.h"
 #include "debug.h"
 #include "console.h"
@@ -17,16 +13,15 @@
 #include "kb.h"
 #include "stack.h"
 #include "settings.h"
+#include "tick.h"
+#include "sleep.h"
+#ifdef DEBUG_SINK_UART
+#    include "uart.h"
+#endif
 #ifdef RF_ENABLED
 #    include "rf_controller.h"
 #endif
-
-#include "pwm.h"
-#include "timer2.h"
-#include "sleep.h"
-#include "power.h"
-
-void init()
+void init(void)
 {
     ldo_init();
     clock_init();
@@ -39,19 +34,38 @@ void init()
     matrix_init();
     keyboard_init();
     usb_init();
-
     indicators_init();
 
-    timer2_init();
+    tick_init();
 
     EA = 1;
 }
 
-void main()
+static void restore_settings(void)
+{
+    if (!settings_load()) {
+        indicators_apply_defaults();
+    }
+    indicators_validate_settings();
+}
+
+#ifdef RF_ENABLED
+static void restore_rf_link(void)
+{
+    rf_set_link((rf_mode_t)user_settings.rf_link);
+
+    keyboard_state.rf_link   = user_settings.rf_link;
+    keyboard_state.connected = 1;
+    keyboard_state.paired    = 1;
+}
+#endif
+
+void main(void)
 {
     init();
 
 #if DEBUG == 1
+    // Must run after init(): anything before clock_init() bricks the keyboard.
     stack_paint();
 #endif
 
@@ -65,39 +79,22 @@ void main()
     rf_init();
 #endif
 
-    if (!settings_load()) {
-        indicators_apply_defaults();
-    }
-    indicators_validate_settings();
+    restore_settings();
 #if DEBUG == 1
     settings_dump();
 #endif
 
-    for (uint16_t i = 0; i < 4000; i++) {
-        CLR_WDT();
-        if (usb_enum_seen) {
-            if (usb_enum_active_ticks == 0) {
-                break;
-            }
-        } else if (i >= 500) {
-            break;
-        }
-        delay_ms(1);
-    }
-
+    usb_wait_for_enumeration();
     indicators_start();
 
 #ifdef RF_ENABLED
-    rf_set_link((rf_mode_t)user_settings.rf_link);
-    keyboard_state.rf_link   = user_settings.rf_link;
-    keyboard_state.connected = 1;
-    keyboard_state.paired    = 1;
+    restore_rf_link();
 #endif
 
-    sleep_init();
+    sleep_init(); // needs the board's GPIO and RF up
 
     while (1) {
-        CLR_WDT();
+        watchdog_kick();
 
         kb_update_switches();
         kb_update();
@@ -106,7 +103,6 @@ void main()
         indicators_render();
 
         settings_task();
-
         sleep_task();
 
 #if DEBUG == 1

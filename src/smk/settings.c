@@ -15,19 +15,6 @@ bool settings_load(void)
     return flash_settings_load((__xdata uint8_t *)&user_settings, (uint8_t)sizeof(user_settings));
 }
 
-void settings_save(void)
-{
-    settings_save_pre();
-    flash_settings_save((const __xdata uint8_t *)&user_settings, (uint8_t)sizeof(user_settings));
-    settings_save_post();
-    settings_dirty = false;
-}
-
-void settings_mark_dirty(void)
-{
-    settings_dirty = true;
-}
-
 #if DEBUG == 1
 void settings_dump(void)
 {
@@ -35,16 +22,27 @@ void settings_dump(void)
 }
 #endif
 
-void settings_task(void)
+void settings_save(void)
 {
-    if (!settings_dirty) {
-        return;
-    }
-    settings_dirty = false;
+    settings_dirty = false; // clear first: a mark during the write is not lost
+
 #if DEBUG == 1
     settings_dump();
 #endif
+
     settings_save_pre();
     flash_settings_save((const __xdata uint8_t *)&user_settings, (uint8_t)sizeof(user_settings));
     settings_save_post();
+}
+
+void settings_mark_dirty(void)
+{
+    settings_dirty = true;
+}
+
+void settings_task(void)
+{
+    if (settings_dirty) {
+        settings_save();
+    }
 }

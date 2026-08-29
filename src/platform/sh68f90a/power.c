@@ -1,4 +1,5 @@
 #include "power.h"
+#include "interrupts.h"
 #include "watchdog.h"
 #include "delay.h"
 #include "usb.h"
@@ -10,33 +11,39 @@
 
 static volatile __xdata uint8_t int4_woke;
 
-void power_enter_powerdown(bool usb_keep_alive)
+static void usb_park(powerdown_mode_t mode)
 {
-    if (usb_keep_alive) {
+    if (mode == POWERDOWN_KEEP_USB_ALIVE) {
         USBCON |= _GOSUSP;
-    } else {
-        usb_deinit();
+        return;
     }
 
+    usb_deinit();
+}
+
+static void clock_tree_stop(void)
+{
     CLKCON &= ~_FS;
     PLLCON &= ~_PLLFS;
     PLLCON &= ~_PLLON;
     CLKCON &= ~_HFON;
+}
 
+static void wake_sources_arm(powerdown_mode_t mode)
+{
     USBIE1 |= (_BOOTS | _RESMIE | _PBRSTIE);
     USBIF1 &= USBIF1_BUS_EVENTS_CLEAR;
 
-    if (usb_keep_alive) {
+    if (mode == POWERDOWN_KEEP_USB_ALIVE) {
         IEN1 = _EUSB;
     } else {
         IEN1 = 0;
         REGCON &= ~_REGEN;
     }
+}
 
-    CLR_WDT();
-
-    int4_woke = 0;
-
+static void halt_until_wake(void)
+{
     // The key write and PCON.PD must be consecutive instructions; nothing may
     // come between them.
     // clang-format off
@@ -56,28 +63,46 @@ void power_enter_powerdown(bool usb_keep_alive)
         nop
     __endasm;
     // clang-format on
+}
 
-    clock_wake_restart();
-
+static void usb_resume(powerdown_mode_t mode)
+{
     USBIF1 &= ~_SUSPIF;
     USBCON &= ~_GOSUSP;
+
     if (int4_woke) {
         USBCON |= _WKUP;
         int4_woke = 0;
     }
 
-    if (usb_keep_alive) {
+    if (mode == POWERDOWN_KEEP_USB_ALIVE) {
         USBIE1 = USBIE1_RESUME_ARM;
         IEN1 |= _EUSB;
         usb_suspended = 0;
-    } else {
-        REGCON |= _REGEN;
-        delay_us(500);
-        usb_init();
+        return;
     }
+
+    REGCON |= _REGEN;
+    delay_us(500);
+    usb_init();
 }
 
-void int4_isr(void) __interrupt(_INT_INT4)
+void power_enter_powerdown(powerdown_mode_t mode)
+{
+    usb_park(mode);
+    clock_tree_stop();
+    wake_sources_arm(mode);
+
+    watchdog_kick();
+    int4_woke = 0;
+
+    halt_until_wake();
+
+    clock_wake_restart();
+    usb_resume(mode);
+}
+
+void int4_interrupt_handler(void) __interrupt(_INT_INT4)
 {
     EXF1      = 0;
     int4_woke = 1;

@@ -1,4 +1,4 @@
-#include "pwm.h"
-#include <stdint.h>
+#include "interrupts.h"
 
-void pwm_interrupt_handler() __interrupt(_INT_PWM0) {}
+// Safety net for a bank left with IE set; nothing is scheduled off this vector.
+void pwm_interrupt_handler(void) __interrupt(_INT_PWM0) {}
