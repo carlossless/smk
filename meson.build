@@ -46,6 +46,7 @@ src_smk = [
     'src/smk/settings.c',
     'src/smk/led_effect.c',
     'src/smk/sleep.c',
+    'src/smk/tick.c',
 ]
 
 # USER DEFAULTS
@@ -92,7 +93,7 @@ src_platform_sh68f90a = [
     'src/platform/sh68f90a/isp.c',
     'src/platform/sh68f90a/ldo.c',
     'src/platform/sh68f90a/pwm.c',
-    'src/platform/sh68f90a/timer2.c',
+    'src/platform/sh68f90a/systick.c',
     'src/platform/sh68f90a/uart.c',
     'src/platform/sh68f90a/usb.c',
     'src/platform/sh68f90a/stack.c',

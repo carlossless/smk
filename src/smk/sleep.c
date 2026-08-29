@@ -5,7 +5,7 @@ typedef int sleep_disabled_placeholder_t;
 #else
 
 #    include "indicators.h"
-#    include "timer2.h"
+#    include "tick.h"
 #    include "power.h"
 #    include "usb.h"
 #    include "user_sleep.h"
@@ -15,10 +15,15 @@ typedef int sleep_disabled_placeholder_t;
 #        include "delay.h"
 #    endif
 
+#    include <stdbool.h>
 #    include <stdint.h>
 
 #    define SLEEP_TIMEOUT 21000
 
+// `inactivity` is owned by sleep_note_frame(); the main loop only ever reads it
+// indirectly via `sleep_requested`. Activity reaches the tick through the
+// single-byte `activity_seen` flag, so there is no read-modify-write race on the
+// 16-bit counter across contexts.
 static volatile __xdata uint16_t inactivity;
 static volatile __xdata uint8_t  activity_seen;
 static volatile __xdata uint8_t  sleep_requested;
@@ -30,8 +35,12 @@ void sleep_init(void)
     sleep_requested = 0;
 }
 
-void sleep_tick(void)
+void sleep_note_frame(bool frame_completed)
 {
+    if (!frame_completed) {
+        return;
+    }
+
     if (activity_seen) {
         activity_seen   = 0;
         inactivity      = 0;
@@ -51,59 +60,74 @@ void sleep_note_activity(void)
     activity_seen = 1;
 }
 
+static bool sleep_due(user_sleep_mode_t mode)
+{
+    switch (mode) {
+        case USER_SLEEP_RF:
+            return sleep_requested;
+        case USER_SLEEP_USB:
+            return usb_suspended;
+        default:
+            return false;
+    }
+}
+
+#    ifdef RF_ENABLED
+#        define RF_RESYNC_TRIES 10
+
+static void rf_resync_after_wake(void)
+{
+    static __xdata uint8_t tries;
+
+    for (tries = RF_RESYNC_TRIES; tries > 0; tries--) {
+        rf_wake_nudge();
+        delay_ms(10);
+        if (rf_update_keyboard_state(&keyboard_state) && keyboard_state.connected) {
+            return;
+        }
+        delay_ms(10);
+    }
+}
+#    endif
+
 void sleep_task(void)
 {
-    const user_sleep_mode_t mode = user_sleep_supported();
+    const user_sleep_mode_t mode = user_sleep_supported(); // tracks the conn slider live
 
-    bool go = false;
-    if (mode == USER_SLEEP_RF) {
-        go = sleep_requested;
-    } else if (mode == USER_SLEEP_USB) {
-        go = usb_suspended;
-    }
-
-    if (!go) {
+    if (!sleep_due(mode)) {
         if (mode != USER_SLEEP_RF) {
-            activity_seen = 1;
+            sleep_note_activity();
         }
         return;
     }
 
-    sleep_requested = 0; // consume the latch now that we're about to sleep
+    sleep_requested = 0;
 
-    const bool usb_mode = (mode == USER_SLEEP_USB);
+    const powerdown_mode_t powerdown = (mode == USER_SLEEP_USB) ? POWERDOWN_KEEP_USB_ALIVE : POWERDOWN_RELEASE_USB;
 
 #    ifdef RF_ENABLED
-    if (!usb_mode) {
+    if (powerdown == POWERDOWN_RELEASE_USB) {
         rf_wake_from_sleep();
     }
 #    endif
 
-    timer2_scan_pause();
+    tick_pause();
     indicators_pwm_disable();
 
-    user_sleep_prepare();
-    power_enter_powerdown(usb_mode);
+    user_sleep_prepare(); // parks the board's hardware and arms the wake source
+    power_enter_powerdown(powerdown);
     user_sleep_wake();
 
     indicators_pwm_enable();
-    timer2_scan_resume();
+    tick_resume();
 
 #    ifdef RF_ENABLED
-    if (!usb_mode) {
-        static __xdata uint8_t resync_tries;
-        for (resync_tries = 10; resync_tries > 0; resync_tries--) {
-            rf_wake_nudge();
-            delay_ms(10);
-            if (rf_update_keyboard_state(&keyboard_state) && keyboard_state.connected) {
-                break;
-            }
-            delay_ms(10);
-        }
+    if (powerdown == POWERDOWN_RELEASE_USB) {
+        rf_resync_after_wake();
     }
 #    endif
 
-    activity_seen = 1;
+    sleep_note_activity();
 }
 
 #endif // SLEEP_ENABLE

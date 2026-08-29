@@ -3,6 +3,13 @@
 #include "sh68f90a.h"
 #include <stdint.h>
 
+#define PWM_CLK_DIV_4   0b010 // PWM_CLK = SYS_CLK / 4
+#define PWM_SS          (1 << 3)
+#define PWM_MOD         (1 << 4)
+#define PWM_INT_ENABLE  (1 << 6)
+#define PWM_MODE_ENABLE (1 << 7)
+#define PWM_CON_PARKED  PWM_CLK_DIV_4
+
 #define PWM_DUTY_REG(pwm, duty, bit) pwm##DUTY##duty##bit
 #define SET_PWM_DUTY_1(pwm, value)                       \
     do {                                                 \
@@ -19,5 +26,3 @@
         SET_PWM_DUTY_1(pwm, duty1);     \
         SET_PWM_DUTY_2(pwm, duty2);     \
     } while (0)
-
-void pwm_interrupt_handler() __interrupt(_INT_PWM0);

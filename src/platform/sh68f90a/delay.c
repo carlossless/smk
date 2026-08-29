@@ -8,7 +8,7 @@
 //
 // Inner loop is tuned so the per-iteration cost is exactly 24 cycles:
 //   body (19c) + DJNZ Rn taken (5c) = 24c
-// where the body is either `MOV direct,#data` CLR_WDT (3c) + 16 NOPs (16c)
+// where the body is either `MOV direct,#data` watchdog kick (3c) + 16 NOPs (16c)
 // or 19 NOPs when WDT is disabled.
 //
 // Entry/exit add a fixed ~18+14 cycles, so delay_us(N) takes 24*N + ~8 cycles
@@ -31,7 +31,7 @@ void delay_us(uint16_t cnt) __naked
         sjmp    00002$                  ; 4c
 00001$:
 #ifdef WATCHDOG_ENABLE
-        mov     _RSTSTAT, #0x00         ; 3c     -- CLR_WDT
+        mov     _RSTSTAT, #0x00         ; 3c     -- watchdog kick
         nop
         nop
         nop

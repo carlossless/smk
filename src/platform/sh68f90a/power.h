@@ -1,8 +1,10 @@
 #pragma once
 
 #include "sh68f90a.h"
-#include <stdbool.h>
 
-void power_enter_powerdown(bool usb_keep_alive);
+typedef enum {
+    POWERDOWN_KEEP_USB_ALIVE,
+    POWERDOWN_RELEASE_USB,
+} powerdown_mode_t;
 
-void int4_isr(void) __interrupt(_INT_INT4);
+void power_enter_powerdown(powerdown_mode_t mode);

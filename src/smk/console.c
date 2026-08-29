@@ -4,7 +4,6 @@
 
 #    include "report.h"
 #    include "usb.h"
-#    include "usbregs.h"
 #    include <stdint.h>
 #    include <stdarg.h>
 
@@ -121,7 +120,7 @@ void console_putc(unsigned char c)
 
 void console_task(void)
 {
-    uint8_t len;
+    static __xdata unsigned char report[CONSOLE_REPORT_SIZE];
 
     if (!usb_is_configured()) {
         console_attached = 0; // require a fresh handshake once the link is back
@@ -131,23 +130,19 @@ void console_task(void)
         return; // host tool hasn't announced itself yet; keep buffering
     }
     if (console_head == console_tail) {
-        return; // nothing buffered
+        return;
     }
-    if (EP2CON & _IEP2RDY) {
-        return; // previous report still pending; retry next iteration
-    }
-
-    EP2_IN_BUF[0] = REPORT_ID_CONSOLE;
-    for (len = 0; len < CONSOLE_REPORT_SIZE && console_tail != console_head; len++) {
-        EP2_IN_BUF[1 + len] = console_buf[console_tail];
-        console_tail        = (console_tail + 1) & CONSOLE_BUF_MASK;
-    }
-    for (; len < CONSOLE_REPORT_SIZE; len++) {
-        EP2_IN_BUF[1 + len] = 0; // zero-pad to the fixed HID report size
+    if (!usb_console_ready()) {
+        return;
     }
 
-    SET_EP2_CNT(1 + CONSOLE_REPORT_SIZE);
-    SET_EP2_IN_RDY;
+    uint8_t len = 0;
+    while (len < CONSOLE_REPORT_SIZE && console_tail != console_head) {
+        report[len++] = console_buf[console_tail];
+        console_tail  = (console_tail + 1) & CONSOLE_BUF_MASK;
+    }
+
+    usb_console_send(report, len);
 }
 
 #endif // DEBUG

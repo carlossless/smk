@@ -1,9 +1,9 @@
 #include "kbdef.h"
 #include "user_init.h"
 #include "pwm.h"
+#include "gpio.h"
 
-// TODO: move these defines out
-#define PWM_PERD 0x0400 // 1024 / PWM_CLK ~= 43 us
+#define PWM_PERD 0x0400
 
 #define PWM_DUTY1 (uint16_t)PWM_PERD
 #define PWM_DUTY2 (uint16_t)0
@@ -19,22 +19,21 @@ void user_init()
     user_gpio_init();
     user_pwm_init();
 
-    IEN1 |= (1 << 1); // EPWM0
+    IEN1 |= _EPWM0;
 }
 
 void user_gpio_init()
 {
-    // configure driving capabilities
-    DRVCON = 0x05; // allow P1 to be changed
-    P1DRV  = 0x00; // 25mA
+    DRVCON = DRVCON_UNLOCK_P1;
+    P1DRV  = GPIO_DRIVE_25MA;
 
-    DRVCON = 0x45; // allow P2 to be changed
-    P2DRV  = 0x00; // 25mA
+    DRVCON = DRVCON_UNLOCK_P2;
+    P2DRV  = GPIO_DRIVE_25MA;
 
-    DRVCON = 0x85; // allow P3 to be changed
-    P3DRV  = 0x00; // 25mA
+    DRVCON = DRVCON_UNLOCK_P3;
+    P3DRV  = GPIO_DRIVE_25MA;
 
-    DRVCON = 0;
+    DRVCON = DRVCON_LOCK;
 
     P0CR = (uint8_t)(LED_CAPS_P0_3);
     P1CR = (uint8_t)(KB_C0_P1_4 | KB_C1_P1_5);

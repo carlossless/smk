@@ -4,8 +4,6 @@
 #include "keycodes.h"
 #include <string.h>
 #include "kb.h"
-#include "usb.h"
-#include "keyboard.h"
 #include "debug.h"
 
 static uint8_t real_mods = 0;
@@ -27,7 +25,7 @@ void send_nkro_report();
 void send_keyboard_report()
 {
 #ifdef NKRO_ENABLE
-    if (usb_device_state_get_protocol() == USB_PROTOCOL_REPORT && keymap_config.nkro) {
+    if (host_nkro_active()) {
         send_nkro_report();
     } else {
         send_6kro_report();
@@ -73,7 +71,7 @@ uint8_t has_anykey(report_keyboard_t *keyboard_report)
     uint8_t  lp  = sizeof(keyboard_report->keys);
 
 #ifdef NKRO_ENABLE
-    if (usb_device_state_get_protocol() == USB_PROTOCOL_REPORT && keymap_config.nkro) {
+    if (host_nkro_active()) {
         p  = nkro_report.bits;
         lp = sizeof(nkro_report.bits);
     }
@@ -91,7 +89,7 @@ uint8_t has_anykey(report_keyboard_t *keyboard_report)
 uint8_t get_first_key(report_keyboard_t *keyboard_report)
 {
 #ifdef NKRO_ENABLE
-    if (usb_device_state_get_protocol() == USB_PROTOCOL_REPORT && keymap_config.nkro) {
+    if (host_nkro_active()) {
         uint8_t i = 0;
         for (; i < NKRO_REPORT_BITS && !nkro_report.bits[i]; i++)
             ;
@@ -108,7 +106,7 @@ bool is_key_pressed(report_keyboard_t *keyboard_report, uint8_t key)
     }
 
 #ifdef NKRO_ENABLE
-    if (usb_device_state_get_protocol() == USB_PROTOCOL_REPORT && keymap_config.nkro) {
+    if (host_nkro_active()) {
         if ((key >> 3) < NKRO_REPORT_BITS) {
             return nkro_report.bits[key >> 3] & 1 << (key & 7);
         } else {
@@ -176,7 +174,7 @@ void del_key_bit(report_nkro_t *nkro_report, uint8_t code)
 void add_key_to_report(report_keyboard_t *keyboard_report, uint8_t key)
 {
 #ifdef NKRO_ENABLE
-    if (usb_device_state_get_protocol() == USB_PROTOCOL_REPORT && keymap_config.nkro) {
+    if (host_nkro_active()) {
         add_key_bit(&nkro_report, key);
         return;
     }
@@ -187,7 +185,7 @@ void add_key_to_report(report_keyboard_t *keyboard_report, uint8_t key)
 void del_key_from_report(report_keyboard_t *keyboard_report, uint8_t key)
 {
 #ifdef NKRO_ENABLE
-    if (usb_device_state_get_protocol() == USB_PROTOCOL_REPORT && keymap_config.nkro) {
+    if (host_nkro_active()) {
         del_key_bit(&nkro_report, key);
         return;
     }
@@ -198,7 +196,7 @@ void del_key_from_report(report_keyboard_t *keyboard_report, uint8_t key)
 void clear_keys_from_report(report_keyboard_t *keyboard_report)
 {
 #ifdef NKRO_ENABLE
-    if (usb_device_state_get_protocol() == USB_PROTOCOL_REPORT && keymap_config.nkro) {
+    if (host_nkro_active()) {
         memset(nkro_report.bits, 0, sizeof(nkro_report.bits));
         return;
     }
