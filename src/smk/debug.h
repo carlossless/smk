@@ -2,7 +2,17 @@
 
 #include "console.h"
 
-#define dprintf(...)                            \
-    do {                                        \
-        if (DEBUG) console_printf(__VA_ARGS__); \
-    } while (0)
+#if DEBUG == 1
+#    define dprintf(...) console_printf(__VA_ARGS__)
+#else
+#    define dprintf(...) ((void)0)
+#endif
+
+#if DEBUG == 1
+#    define dprintf_if(cond, ...)           \
+        do {                                \
+            if (cond) dprintf(__VA_ARGS__); \
+        } while (0)
+#else
+#    define dprintf_if(cond, ...) ((void)(cond))
+#endif
