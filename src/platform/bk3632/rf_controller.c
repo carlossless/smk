@@ -3,7 +3,6 @@
 #include "delay.h"
 #include "debug.h"
 #include "bb_spi.h" // FIXME: should be conditional?
-#include "sh68f90a.h"
 
 #define MAGIC_BYTE 0xaa
 #define CMD_REPORT 0x02

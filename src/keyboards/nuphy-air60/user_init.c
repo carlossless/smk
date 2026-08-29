@@ -1,6 +1,7 @@
 #include "kbdef.h"
 #include "user_init.h"
 #include "pwm.h"
+#include "gpio.h"
 
 // 256-tick period. At PWM_CLK = SYS_CLK / 4 = 6 MHz that gives ~23 kHz, well
 // above the flicker threshold (a 1024-tick period runs at ~5.9 kHz, visible).
@@ -24,27 +25,27 @@ void user_init()
     user_gpio_init();
     user_pwm_init();
 
-    // PWM0 IRQ is intentionally not enabled — all PWM banks run with per-bank
-    // IE = 0 (the hardware drives the waveform; no ISR needed). The Timer 2 ISR
-    // handles the LED scan + animation and INT4 handles matrix wake.
+    // PWM0 IRQ is deliberately left off: every bank runs with per-bank IE = 0
+    // because the hardware drives the waveform on its own. The LED scan and
+    // animation ride the systick ISR, and INT4 handles the matrix wake.
 }
 
 void user_gpio_init()
 {
-    // configure driving capabilities
-    DRVCON = 0x05; // allow P1 to be changed
-    P1DRV  = 0x00; // 25mA
+    // PxDRV is write-gated by DRVCON; see gpio.h.
+    DRVCON = DRVCON_UNLOCK_P1;
+    P1DRV  = GPIO_DRIVE_25MA;
 
-    DRVCON = 0x45; // allow P2 to be changed
-    P2DRV  = 0x00; // 25mA
+    DRVCON = DRVCON_UNLOCK_P2;
+    P2DRV  = GPIO_DRIVE_25MA;
 
-    DRVCON = 0x85; // allow P3 to be changed
-    P3DRV  = 0x00; // 25mA
+    DRVCON = DRVCON_UNLOCK_P3;
+    P3DRV  = GPIO_DRIVE_25MA;
 
-    DRVCON = 0xc5; // allow P5 to be changed
-    P5DRV  = 0x00; // 25mA
+    DRVCON = DRVCON_UNLOCK_P5;
+    P5DRV  = GPIO_DRIVE_25MA;
 
-    DRVCON = 0;
+    DRVCON = DRVCON_LOCK;
 
     P0CR = (uint8_t)(RGB_R2R_P0_2 | RGB_R0B_P0_3 | RGB_R0R_P0_4);
     P1CR = (uint8_t)(RGB_ULR_P1_1 | RGB_ULG_P1_2 | RGB_ULB_P1_3 | KB_C15_P1_5);

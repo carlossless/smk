@@ -65,9 +65,9 @@ class TestSourceLevelBreakpoints(unittest.TestCase):
         """A `file:line` breakpoint stops the CPU at exactly the address the .cdb
         assigns to that line -- the core proof that source-level breakpoints work
         and that the .cdb addresses line up with the running .hex."""
-        # CLR_WDT() is the first statement of the main while-loop, reached after
-        # the full boot/init path.
-        line = main_c_line("CLR_WDT();")
+        # watchdog_kick() is the first statement of the main while-loop, reached
+        # after the full boot/init path.
+        line = main_c_line("watchdog_kick();")
         addr = SIM.addr_of_line("main.c", line)
         out = SIM.run(["reset", SIM.break_line("main.c", line), "run"], timeout=30)
         self.assertEqual(SIM.stopped_at(out), addr,

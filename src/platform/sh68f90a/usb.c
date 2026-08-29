@@ -1,4 +1,5 @@
 #include "usb.h"
+#include "interrupts.h"
 #include "watchdog.h"
 #include "isp.h"
 #include "usbdef.h"
@@ -348,7 +349,8 @@ uint8_t __xdata            received_usb_addr;
 uint8_t __xdata            active_configuration;
 uint8_t __xdata            interface0_protocol;
 uint8_t __xdata            interface1_protocol;
-__bit                      usb_remote_wakeup;
+// Host-controlled remote-wakeup enable, per SET/CLEAR_FEATURE.
+static __bit usb_remote_wakeup;
 // Set when the host suspends the bus (SUSPIF), cleared on the next SOF or bus
 // reset. The sleep feature only enters USB-suspend Power-Down once the host has
 // parked the bus itself — self-suspending mid-poll would break the link.
@@ -356,13 +358,17 @@ __bit                   usb_suspended;
 uint8_t __xdata         idle_time;
 usb_ep0_state_t __xdata usb_ep0_state;
 
-// See usb.h. Reloaded on each SETUP, decremented on each SOF; main() keeps the
-// backlight dark until enumeration is seen and has gone quiet (~500 ms), so the
-// boot scan-blip lands on a dark frame. usb_enum_seen latches the first SETUP so
-// the boot race (quiet before enumeration starts) doesn't defeat the gate.
-__xdata uint16_t usb_enum_active_ticks;
-__xdata bool     usb_enum_seen;
-#define USB_ENUM_ACTIVE_RELOAD 500
+// Enumeration progress, in 1 ms SOF ticks. Reloaded on every SETUP and
+// decremented on every SOF, so it stays above zero for as long as the host is
+// running control transfers and reaches zero once the bus falls quiet.
+// `enum_seen` latches the first SETUP, which is what separates "the host hasn't
+// started asking yet" from "there is no host".
+#define ENUM_QUIET_MS   500
+#define ENUM_NO_HOST_MS 500
+#define ENUM_GIVE_UP_MS 4000
+
+static __xdata uint16_t enum_quiet_ticks;
+static __xdata bool     enum_seen;
 
 void usb_init()
 {
@@ -379,10 +385,10 @@ void usb_init()
     ep0_xfer_bytes_left = 0;
     ep0_xfer_src        = 0;
 
-    // Reset the boot LED gate (cold-boot xdata isn't guaranteed zero, and a
-    // garbage value would make main() think enumeration already finished).
-    usb_enum_active_ticks = 0;
-    usb_enum_seen         = false;
+    // Cold-boot xdata isn't guaranteed zero, and garbage here would read as
+    // "enumeration already finished".
+    enum_quiet_ticks = 0;
+    enum_seen        = false;
 
     USBADDR = 0;
     USBIE1  = (_OVERIE | _SETUPIE | _SOFIA | _RESMIE | _SUSPIE | _PBRSTIE);
@@ -412,74 +418,110 @@ void usb_deinit()
     IEN1 &= ~_EUSB;                          // disable the USB interrupt
 }
 
+// Wait out a report the host hasn't collected yet. Capped at ~10 ms: past that
+// the host is gone, and blocking longer only stalls the main loop on every key.
+#define EP_IN_DRAIN_TRIES 255
+
+static void ep1_in_drain(void)
+{
+    uint8_t tries = 0;
+    while (tries < EP_IN_DRAIN_TRIES && (EP1CON & _IEP1RDY)) {
+        delay_us(40);
+        tries++;
+    }
+}
+
+static void ep2_in_drain(void)
+{
+    uint8_t tries = 0;
+    while (tries < EP_IN_DRAIN_TRIES && (EP2CON & _IEP2RDY)) {
+        delay_us(40);
+        tries++;
+    }
+}
+
+static void ep2_in_send(uint8_t *raw, uint8_t len)
+{
+    ep2_in_drain();
+    set_ep2_in_buffer(raw, len);
+    SET_EP2_CNT(len);
+    SET_EP2_IN_RDY;
+}
+
 void usb_send_report(__xdata report_keyboard_t *report)
 {
-    // Don't touch the endpoint until configured. Before SET_CONFIGURATION the
-    // host isn't reading EP1, so a write is lost AND the IEP1RDY wait below spins
-    // its full ~10 ms timeout, stalling the main loop on every keypress.
-    if (usb_device_state != USB_DEVICE_STATE_CONFIGURED) {
+    // Before SET_CONFIGURATION the host isn't reading the endpoint, so the write
+    // is lost AND the drain above spins its full timeout on every keypress.
+    if (!usb_is_configured()) {
         return;
     }
 
-    uint8_t timeout = 0;
-    while (timeout < 255 && EP1CON & _IEP1RDY) {
-        delay_us(40);
-        timeout++;
-    }
-
+    ep1_in_drain();
     set_ep1_in_buffer(report->raw, KEYBOARD_REPORT_SIZE);
-
     SET_EP1_CNT(KEYBOARD_REPORT_SIZE);
     SET_EP1_IN_RDY;
 }
 
 void usb_send_nkro(__xdata report_nkro_t *report)
 {
-    if (usb_device_state != USB_DEVICE_STATE_CONFIGURED) {
-        return; // not enumerated/configured — see usb_send_report
+    if (!usb_is_configured()) {
+        return;
     }
-
-    uint8_t timeout = 0;
-    while (timeout < 255 && EP2CON & _IEP2RDY) {
-        delay_us(40);
-        timeout++;
-    }
-
-    set_ep2_in_buffer(report->raw, NKRO_REPORT_SIZE);
-
-    SET_EP2_CNT(NKRO_REPORT_SIZE);
-    SET_EP2_IN_RDY;
+    ep2_in_send(report->raw, NKRO_REPORT_SIZE);
 }
 
 void usb_send_extra(__xdata report_extra_t *report)
 {
-    if (usb_device_state != USB_DEVICE_STATE_CONFIGURED) {
-        return; // not enumerated/configured — see usb_send_report
+    if (!usb_is_configured()) {
+        return;
+    }
+    ep2_in_send(report->raw, EXTRA_REPORT_SIZE);
+}
+
+void usb_wait_for_enumeration(void)
+{
+    for (uint16_t ms = 0; ms < ENUM_GIVE_UP_MS; ms++) {
+        watchdog_kick();
+
+        if (enum_seen) {
+            if (enum_quiet_ticks == 0) {
+                return;
+            }
+        } else if (ms >= ENUM_NO_HOST_MS) {
+            return; // no SETUP ever arrived: nothing is driving the bus
+        }
+
+        delay_ms(1);
+    }
+}
+
+#if DEBUG == 1
+bool usb_console_ready(void)
+{
+    return usb_is_configured() && !(EP2CON & _IEP2RDY);
+}
+
+void usb_console_send(const __xdata uint8_t *data, uint8_t len)
+{
+    EP2_IN_BUF[0] = REPORT_ID_CONSOLE;
+    for (uint8_t i = 0; i < CONSOLE_REPORT_SIZE; i++) {
+        EP2_IN_BUF[1 + i] = (i < len) ? data[i] : 0;
     }
 
-    uint8_t timeout = 0;
-    while (timeout < 255 && EP2CON & _IEP2RDY) {
-        delay_us(40);
-        timeout++;
-    }
-
-    set_ep2_in_buffer(report->raw, EXTRA_REPORT_SIZE);
-
-    SET_EP2_CNT(EXTRA_REPORT_SIZE);
+    SET_EP2_CNT(1 + CONSOLE_REPORT_SIZE);
     SET_EP2_IN_RDY;
 }
+#endif
 
 uint8_t usb_device_state_get_protocol()
 {
     return interface0_protocol;
 }
 
-#if DEBUG == 1
-bool usb_is_configured()
+bool usb_is_configured(void)
 {
     return usb_device_state == USB_DEVICE_STATE_CONFIGURED;
 }
-#endif // DEBUG
 
 static void usb_setup_irq()
 {
@@ -674,9 +716,8 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
     if (temp_usbif1 != 0x00) {
         if (temp_usbif1 & _SOFIF) {
             USBIF1 &= ~_SOFIF;
-            // 1 ms heartbeat — ages out the "USB busy" window set by each SETUP.
-            if (usb_enum_active_ticks) {
-                usb_enum_active_ticks--;
+            if (enum_quiet_ticks) {
+                enum_quiet_ticks--;
             }
             usb_suspended = 0; // a SOF means the host is driving the bus again
         } else {
@@ -688,10 +729,8 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
                 usb_init();
             } else if (temp_usbif1 & _SETUPIF) {
                 USBIF1 &= ~_SETUPIF;
-                // Refresh the "USB busy" window so the backlight stays dark
-                // through enumeration + HID attach.
-                usb_enum_active_ticks = USB_ENUM_ACTIVE_RELOAD;
-                usb_enum_seen         = true;
+                enum_quiet_ticks = ENUM_QUIET_MS;
+                enum_seen        = true;
                 usb_setup_irq();
             } else if (temp_usbif1 & _RESMIF) { // RESMIF
                 USBIF1 &= ~_RESMIF;
@@ -1165,7 +1204,7 @@ void usb_ep0_out_irq()
     if (usb_ep0_state == USB_EP0_STATE_LED) {
         usb_ep0_state = 0;
 
-        keyboard_state.led_state = EP0_OUT_BUF[0];
+        keyboard_set_led_state(EP0_OUT_BUF[0]);
 
         CLEAR_EP0_CNT;
         SET_EP0_IN_RDY;

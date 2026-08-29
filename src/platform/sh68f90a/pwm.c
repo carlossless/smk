@@ -1,6 +1,4 @@
-#include "pwm.h"
-#include <stdint.h>
+#include "interrupts.h"
 
-// PWM00CON.IE and IEN1 EPWM0 are both 0, so this vector is never reached. The
-// empty handler stays as a safety net and to reserve the SDCC vector slot.
-void pwm_interrupt_handler() __interrupt(_INT_PWM0) {}
+// Empty on purpose; see interrupts.h.
+void pwm_interrupt_handler(void) __interrupt(_INT_PWM0) {}

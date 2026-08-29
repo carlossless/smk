@@ -2,7 +2,7 @@
 #include "kbdef.h"
 #include "pwm.h"
 #include "settings.h"
-#include "timer2.h"
+#include "tick.h"
 #include "keyboard.h"
 #include "led_effect.h"
 #include "user_led.h"
@@ -10,13 +10,6 @@
 #ifdef RF_ENABLED
 #    include "rf_controller.h"
 #endif
-
-// TODO: move these defines out
-#define PWM_CLK_DIV         0b010 // PWM_CLK = SYS_CLK / 4
-#define PWM_SS_BIT          (1 << 3)
-#define PWM_MOD_BIT         (1 << 4)
-#define PWM_INT_ENABLE_BIT  (1 << 6)
-#define PWM_MODE_ENABLE_BIT (1 << 7)
 
 // The LED matrix follows the key matrix dimensions, so a differently-sized RGB board
 // only needs the right MATRIX_ROWS/MATRIX_COLS (kbdef.h), its geometry parameters in
@@ -181,10 +174,9 @@ void indicators_validate_settings()
     }
 }
 
-// Zero the LED framebuffers before the Timer-2 scan ISR starts streaming them.
-// Power-on xdata is NOT guaranteed clear on a cold boot, so without this the scan
-// blits uninitialised garbage to the LEDs for the brief window between EA=1 and
-// the first foreground render — a one-time random-row flash. Must run before EA=1.
+// Power-on xdata is NOT guaranteed clear on a cold boot, so without this the
+// tick ISR blits uninitialised garbage to the LEDs between EA=1 and the first
+// foreground render — a one-time random-row flash. Must run before EA=1.
 void indicators_init()
 {
     memset(led_fb, 0, sizeof(led_fb));
@@ -681,33 +673,33 @@ static bool led_set_columns()
 void indicators_pwm_enable()
 {
     // Per-bank PWM IE = 0 across the board — no PWM ISRs fire.
-    PWM00CON = (uint8_t)(PWM_MODE_ENABLE_BIT | PWM_SS_BIT | PWM_CLK_DIV);
-    PWM01CON = PWM_SS_BIT;
-    PWM02CON = PWM_SS_BIT;
-    PWM03CON = PWM_SS_BIT;
-    PWM04CON = PWM_SS_BIT;
-    PWM05CON = PWM_SS_BIT;
+    PWM00CON = (uint8_t)(PWM_MODE_ENABLE | PWM_SS | PWM_CLK_DIV_4);
+    PWM01CON = PWM_SS;
+    PWM02CON = PWM_SS;
+    PWM03CON = PWM_SS;
+    PWM04CON = PWM_SS;
+    PWM05CON = PWM_SS;
 
-    PWM10CON = (uint8_t)(PWM_MODE_ENABLE_BIT | PWM_SS_BIT | PWM_CLK_DIV);
-    PWM11CON = PWM_SS_BIT;
-    PWM12CON = PWM_SS_BIT;
-    PWM13CON = PWM_SS_BIT;
-    PWM14CON = PWM_SS_BIT;
-    PWM15CON = PWM_SS_BIT;
+    PWM10CON = (uint8_t)(PWM_MODE_ENABLE | PWM_SS | PWM_CLK_DIV_4);
+    PWM11CON = PWM_SS;
+    PWM12CON = PWM_SS;
+    PWM13CON = PWM_SS;
+    PWM14CON = PWM_SS;
+    PWM15CON = PWM_SS;
 
     // PWM2 bank: separate-output mode (no SS bit on the master), 21..23 fully
     // off — these pins are unused here, so SS=0 keeps the PWM output detached
     // and lets the GPIO drive.
-    PWM20CON = (uint8_t)(PWM_MODE_ENABLE_BIT | PWM_CLK_DIV);
+    PWM20CON = (uint8_t)(PWM_MODE_ENABLE | PWM_CLK_DIV_4);
     PWM21CON = 0;
     PWM22CON = 0;
     PWM23CON = 0;
-    PWM24CON = PWM_SS_BIT;
-    PWM25CON = PWM_SS_BIT;
+    PWM24CON = PWM_SS;
+    PWM25CON = PWM_SS;
 
-    PWM40CON = (uint8_t)(PWM_MODE_ENABLE_BIT | PWM_SS_BIT | PWM_CLK_DIV);
-    PWM41CON = PWM_SS_BIT;
-    PWM42CON = PWM_SS_BIT;
+    PWM40CON = (uint8_t)(PWM_MODE_ENABLE | PWM_SS | PWM_CLK_DIV_4);
+    PWM41CON = PWM_SS;
+    PWM42CON = PWM_SS;
 }
 
 // Settings-save quiesce hooks (declared in settings.h). The ~5 ms sector erase
@@ -718,39 +710,37 @@ void indicators_pwm_enable()
 // source — so the frozen scan can't hold a row bright. Restore on the way out.
 void settings_save_pre(void)
 {
-    timer2_scan_pause();
+    tick_pause();
     indicators_pwm_disable();
 }
 
 void settings_save_post(void)
 {
     indicators_pwm_enable();
-    timer2_scan_resume();
+    tick_resume();
 }
 
 void indicators_pwm_disable()
 {
-    // Every LED-column PWM channel CON = 2 (EN=0, output parked at idle;
-    // PWM_CLK_DIV == 2 leaves the clock-div bits). Used both for the matrix-scan
-    // hand-off (columns revert to GPIO) and the per-subframe park in
-    // indicators_update_step. Parking *all* channels — not just the bank masters
-    // — keeps the per-subframe re-enable glitch-free.
-    PWM00CON = 2;
-    PWM01CON = 2;
-    PWM02CON = 2;
-    PWM03CON = 2;
-    PWM04CON = 2;
-    PWM05CON = 2;
-    PWM10CON = 2;
-    PWM11CON = 2;
-    PWM12CON = 2;
-    PWM13CON = 2;
-    PWM14CON = 2;
-    PWM15CON = 2;
-    PWM20CON = 2;
-    PWM24CON = 2;
-    PWM25CON = 2;
-    PWM40CON = 2;
-    PWM41CON = 2;
-    PWM42CON = 2;
+    // Park every channel, not just the bank masters: that is what keeps the
+    // per-subframe re-enable glitch-free. Used both for the matrix-scan hand-off
+    // (the columns revert to GPIO) and for the park in indicators_update_step.
+    PWM00CON = PWM_CON_PARKED;
+    PWM01CON = PWM_CON_PARKED;
+    PWM02CON = PWM_CON_PARKED;
+    PWM03CON = PWM_CON_PARKED;
+    PWM04CON = PWM_CON_PARKED;
+    PWM05CON = PWM_CON_PARKED;
+    PWM10CON = PWM_CON_PARKED;
+    PWM11CON = PWM_CON_PARKED;
+    PWM12CON = PWM_CON_PARKED;
+    PWM13CON = PWM_CON_PARKED;
+    PWM14CON = PWM_CON_PARKED;
+    PWM15CON = PWM_CON_PARKED;
+    PWM20CON = PWM_CON_PARKED;
+    PWM24CON = PWM_CON_PARKED;
+    PWM25CON = PWM_CON_PARKED;
+    PWM40CON = PWM_CON_PARKED;
+    PWM41CON = PWM_CON_PARKED;
+    PWM42CON = PWM_CON_PARKED;
 }

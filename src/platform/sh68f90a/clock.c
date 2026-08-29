@@ -10,7 +10,7 @@ void clock_init()
     PLLCON = _PLLON;
 
     while (!(PLLCON & _PLLSTA)) { // wait for PLL phase lock
-        CLR_WDT();
+        watchdog_kick();
     }
 
     PLLCON |= _PLLFS;
@@ -30,7 +30,7 @@ void clock_wake_restart()
     {
         CLKCON |= _HFON;
         PLLCON |= _PLLON;
-        CLR_WDT();
+        watchdog_kick();
 
         // Fixed settle. SYSCLK is still the slow pre-PLL clock, so these
         // iterations run far longer than the needed ~20 µs.
@@ -44,6 +44,6 @@ void clock_wake_restart()
 
         PLLCON = _PLLFS | _PLLON;
         CLKCON = _FS | _HFON; // SYSCLK = HF/PLL
-        CLR_WDT();
+        watchdog_kick();
     }
 }

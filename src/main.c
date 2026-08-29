@@ -1,11 +1,7 @@
 #include "clock.h"
 #include "ldo.h"
 #include "watchdog.h"
-#include "delay.h"
-#include "isp.h"
-#ifdef DEBUG_SINK_UART
-#    include "uart.h"
-#endif
+#include "interrupts.h"
 #include "usb.h"
 #include "debug.h"
 #include "console.h"
@@ -17,16 +13,18 @@
 #include "kb.h"
 #include "stack.h"
 #include "settings.h"
+#include "tick.h"
+#include "sleep.h"
+#ifdef DEBUG_SINK_UART
+#    include "uart.h"
+#endif
 #ifdef RF_ENABLED
 #    include "rf_controller.h"
 #endif
 
-#include "pwm.h"    // TODO: centralise interrupt definitions
-#include "timer2.h" // ISR vector slot must be visible where main() is compiled
-#include "sleep.h"
-#include "power.h" // int4_isr ISR vector slot — same reason
-
-void init()
+// Not static: tests/sim.py breakpoints on the `LCALL _init` in main() to run
+// assertions against a fully initialised device.
+void init(void)
 {
     ldo_init();
     clock_init();
@@ -40,18 +38,39 @@ void init()
     keyboard_init();
     usb_init();
 
-    // Zero the LED framebuffers before EA=1 starts the scan ISR — cold boots
-    // don't guarantee cleared xdata, and the scan would stream garbage until
-    // the first render.
+    // Zero the LED framebuffers before EA=1 lets the tick ISR start streaming
+    // them: a cold boot doesn't guarantee cleared xdata, so the first frames
+    // would go out as garbage.
     indicators_init();
 
-    // Timer 2 drives the matrix scan + LED PWM in a single alternating ISR.
-    timer2_init();
+    tick_init();
 
     EA = 1;
 }
 
-void main()
+static void restore_settings(void)
+{
+    if (!settings_load()) {
+        indicators_apply_defaults();
+    }
+    indicators_validate_settings();
+}
+
+#ifdef RF_ENABLED
+static void restore_rf_link(void)
+{
+    rf_set_link((rf_mode_t)user_settings.rf_link);
+
+    // Assume the link came up, so the indicator shows the right colour straight
+    // away instead of sitting on the default + unpaired blink until the first
+    // status poll lands. The supervisor downgrades these if the BK3632 disagrees.
+    keyboard_state.rf_link   = user_settings.rf_link;
+    keyboard_state.connected = 1;
+    keyboard_state.paired    = 1;
+}
+#endif
+
+void main(void)
 {
     init();
 
@@ -72,73 +91,36 @@ void main()
     rf_init();
 #endif
 
-    // Load user_settings from flash; if the record fails its magic/length/
-    // checksum check, seed factory defaults. Either way, clamp out-of-range
-    // LED fields.
-    if (!settings_load()) {
-        indicators_apply_defaults();
-    }
-    indicators_validate_settings();
+    restore_settings();
 #if DEBUG == 1
     settings_dump();
 #endif
 
-    // Hold the backlight dark until USB finishes enumerating: enumeration
-    // control-transfer traffic starves the LED scan, over-brightening whatever
-    // row is mid-scan (the "boot blip"). delay_ms busy-waits with interrupts on,
-    // so the scan (dark, framebuffer zeroed) and USB ISRs keep running.
-    //   - USB present: usb_enum_seen latches on the first SETUP; wait for
-    //     usb_enum_active_ticks to hit 0 (~500 ms quiet = enum + HID attach done).
-    //   - Battery / power-only: no SETUP ever — light up after a short window.
-    //   - Hard cap so a pathological host can't keep the backlight off forever.
-    for (uint16_t i = 0; i < 4000; i++) {
-        CLR_WDT();
-        if (usb_enum_seen) {
-            if (usb_enum_active_ticks == 0) {
-                break; // enumerated and gone quiet
-            }
-        } else if (i >= 500) {
-            break; // no enumeration seen — not on a USB host
-        }
-        delay_ms(1);
-    }
-
+    // Enumeration control transfers starve the LED scan and over-brighten
+    // whatever row is mid-sweep, so let the host finish while the framebuffer is
+    // still dark and the blip has nothing to land on.
+    usb_wait_for_enumeration();
     indicators_start();
 
 #ifdef RF_ENABLED
-    // Re-establish the last link the user was on.
-    rf_set_link((rf_mode_t)user_settings.rf_link);
-    // Optimistically prime keyboard_state to the commanded link so the indicator
-    // shows the right colour immediately, instead of the default + unpaired-blink
-    // window while the first status poll lags. The supervisor downgrades these
-    // if the BK3632 disagrees.
-    keyboard_state.rf_link   = user_settings.rf_link;
-    keyboard_state.connected = 1;
-    keyboard_state.paired    = 1;
+    restore_rf_link();
 #endif
 
-    // Must run after the board's GPIO/RF are up.
-    sleep_init();
+    sleep_init(); // needs the board's GPIO and RF up
 
     while (1) {
-        CLR_WDT();
+        watchdog_kick();
 
         kb_update_switches();
         kb_update();
         matrix_task();
 
-        // Regenerate the effect framebuffer here, out of the scan ISR (which
-        // only streams it to the PWM). Animation phase is clocked in the ISR, so
-        // this free-runs at the loop rate without affecting animation speed.
+        // Regenerate the effect framebuffer here, out of the tick ISR, which
+        // only streams it. Animation phase is clocked in the ISR, so this
+        // free-runs at the loop rate without affecting animation speed.
         indicators_render();
 
-        // Deferred settings save: handlers flip a dirty bit; the flush happens
-        // here once per iteration, coalescing rapid changes into one erase +
-        // program so the ~5 ms erase stall doesn't fire on every keypress.
         settings_task();
-
-        // Inactivity sleep: on timeout, drops the MCU into Power-Down and blocks
-        // until a keypress (INT4) or USB event wakes it. No-op otherwise.
         sleep_task();
 
 #if DEBUG == 1
