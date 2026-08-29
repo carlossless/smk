@@ -965,6 +965,7 @@ static void usb_get_descriptor_handler(struct usb_req_setup *req)
     uint8_t               index = req->wValue & 0xff;
     usb_descriptor_set_c *set   = &usb_descriptor_set;
 
+// Sources are the __code descriptor tables (usb_descriptor_set_c).
 #define APPEND(addr, length)                          \
     do {                                              \
         for (uint16_t _i = 0; _i < (length); _i++) {  \
