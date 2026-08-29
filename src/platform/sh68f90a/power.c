@@ -17,7 +17,7 @@
 // Set when an INT4 edge woke the core, cleared before each Power-Down. Remote
 // wakeup is only signalled for an INT4 wake, never when the host resumed the bus
 // itself.
-static volatile __xdata uint8_t int4_woke;
+static volatile uint8_t int4_woke;
 
 static void usb_park(powerdown_mode_t mode)
 {

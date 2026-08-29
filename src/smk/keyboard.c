@@ -1,9 +1,9 @@
 #include "keyboard.h"
 #include "debug.h"
 
-volatile __xdata keyboard_state_t keyboard_state;
+volatile keyboard_state_t keyboard_state;
 
-__xdata keymap_config_t keymap_config;
+keymap_config_t keymap_config;
 
 void keyboard_init(void)
 {

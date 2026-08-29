@@ -8,7 +8,7 @@ extern void indicators_next_effect();
 extern void indicators_factory_reset();
 
 // While RST_HLD (Fn+Tab) is held, pressing FCT_RST (V) factory-resets settings.
-static __xdata bool reset_mode_active;
+static bool reset_mode_active;
 
 bool kb_process_record(uint16_t keycode, bool key_pressed)
 {

@@ -338,25 +338,25 @@ static void usb_hid_get_protocol_handler(struct usb_req_setup *req);
 /**
  * 0.5KB of general purpose scratch RAM.
  */
-__xdata uint8_t scratch[512];
+uint8_t scratch[512];
 
 uint16_t ep0_xfer_bytes_left;
 uint8_t *ep0_xfer_src;
 
 // usb state
-usb_device_state_t __xdata usb_device_state;
-uint8_t __xdata            received_usb_addr;
-uint8_t __xdata            active_configuration;
-uint8_t __xdata            interface0_protocol;
-uint8_t __xdata            interface1_protocol;
+usb_device_state_t usb_device_state;
+uint8_t            received_usb_addr;
+uint8_t            active_configuration;
+uint8_t            interface0_protocol;
+uint8_t            interface1_protocol;
 // Host-controlled remote-wakeup enable, per SET/CLEAR_FEATURE.
 static __bit usb_remote_wakeup;
 // Set when the host suspends the bus (SUSPIF), cleared on the next SOF or bus
 // reset. The sleep feature only enters USB-suspend Power-Down once the host has
 // parked the bus itself — self-suspending mid-poll would break the link.
-__bit                   usb_suspended;
-uint8_t __xdata         idle_time;
-usb_ep0_state_t __xdata usb_ep0_state;
+__bit           usb_suspended;
+uint8_t         idle_time;
+usb_ep0_state_t usb_ep0_state;
 
 // Enumeration progress, in 1 ms SOF ticks. Reloaded on every SETUP and
 // decremented on every SOF, so it stays above zero for as long as the host is
@@ -367,8 +367,8 @@ usb_ep0_state_t __xdata usb_ep0_state;
 #define ENUM_NO_HOST_MS 500
 #define ENUM_GIVE_UP_MS 4000
 
-static __xdata uint16_t enum_quiet_ticks;
-static __xdata bool     enum_seen;
+static uint16_t enum_quiet_ticks;
+static bool     enum_seen;
 
 void usb_init()
 {

@@ -56,48 +56,48 @@
 _Static_assert(LED_GEOMETRY_ROWS == LED_ROWS && LED_GEOMETRY_COLS == LED_COLS, "generated LED geometry size does not match the key matrix");
 
 // Per-LED RGB framebuffer for the main key matrix, indexed [row][color][col].
-static __xdata uint8_t led_fb[LED_ROWS][3][LED_COLS];
+static uint8_t led_fb[LED_ROWS][3][LED_COLS];
 
 // Separate framebuffer for the underglow ("user") LEDs, since they animate
 // independently of the main backlight.
-static __xdata uint8_t led_ul_fb[3][LED_COLS];
+static uint8_t led_ul_fb[3][LED_COLS];
 
 // LED scan cursor, advanced one (row,color) substep per PWM ISR. Decoupled from
 // the key-matrix column scan (current_step).
-static __xdata uint8_t led_row;
-static __xdata uint8_t led_color;
+static uint8_t led_row;
+static uint8_t led_color;
 
 // Animation state. The framebuffers are regenerated one LED at a time in the
 // main loop (indicators_render → led_regen_one) cycling through the main rows
 // then the underglow row (regen_row/regen_col). led_phase / ul_phase shift
 // their respective rainbow on a fixed cadence driven by anim_ctr in the scan
 // ISR — not by the (free-running) render cursor.
-static __xdata uint8_t led_phase;
-static __xdata uint8_t ul_phase;
-static __xdata uint8_t regen_row;
-static __xdata uint8_t regen_col;
+static uint8_t led_phase;
+static uint8_t ul_phase;
+static uint8_t regen_row;
+static uint8_t regen_col;
 
 // Animation clock, advanced one step per scanned subframe in the ISR. Drives
 // the phase / status-counter cadence independently of how fast the main-loop
 // render walks the framebuffer.
-static __xdata uint8_t anim_ctr;
+static uint8_t anim_ctr;
 
 // Set by the ISR when the phase advances; the main-loop render regenerates a
 // whole consistent frame on each set and clears it. Decouples the frame rate
 // from the (very uneven, in wireless mode) main-loop iteration rate — without
 // it a slow loop refreshes only a cell or two per pass and the animation crawls
 // in line-by-line, with different parts of the frame at different phases.
-static volatile __xdata bool render_dirty;
+static volatile bool render_dirty;
 
 // FN+[ momentary battery indicator: counts down once per UL sweep; while non-zero
 // the right-side UL LEDs show the battery colour regardless of the persistent
 // `user_settings.battery_indicator_on` flag.
-static __xdata uint8_t battery_flash_sweeps;
+static uint8_t battery_flash_sweeps;
 
 // Free-running counter incremented once per UL sweep (~73 Hz). Used to drive
 // the unpaired (fast blink) / disconnected (slow breath) status indicator
 // on the left-side UL LEDs.
-static __xdata uint8_t status_pulse_counter;
+static uint8_t status_pulse_counter;
 
 // Quarter-sine LUT used to drive the disconnected "breathing" effect. 32
 // entries, 0..255 amplitude over 0..π/2. Mirrored at runtime to produce a

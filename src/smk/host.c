@@ -5,10 +5,10 @@
 
 // System and consumer usages are level-triggered: the host holds the last usage
 // until we send a different one, so a repeat send is redundant traffic.
-static __xdata uint16_t last_system_usage;
-static __xdata uint16_t last_consumer_usage;
+static uint16_t last_system_usage;
+static uint16_t last_consumer_usage;
 
-static __xdata report_extra_t extra_report;
+static report_extra_t extra_report;
 
 bool host_nkro_active(void)
 {

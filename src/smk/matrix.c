@@ -15,8 +15,8 @@
 
 typedef uint8_t matrix_col_t;
 
-__xdata matrix_col_t matrix[MATRIX_COLS];
-__xdata matrix_col_t matrix_previous[MATRIX_COLS];
+matrix_col_t matrix[MATRIX_COLS];
+matrix_col_t matrix_previous[MATRIX_COLS];
 
 // Set by matrix_scan_full() each time a full column sweep completes; cleared by
 // matrix_task() after it has diffed the new sample against the previous one.
@@ -27,7 +27,7 @@ uint8_t action_layer;
 
 // Base layer the matrix resolves keys against when no momentary (MO) layer is
 // held. Defaults to 0; a keyboard can retarget it at runtime.
-__xdata uint8_t default_layer;
+uint8_t default_layer;
 
 void matrix_init()
 {

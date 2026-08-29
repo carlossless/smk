@@ -28,7 +28,7 @@ typedef struct {
     user_keyboard_os_mode_t   os_mode;
 } user_keyboard_state_t;
 
-volatile __xdata user_keyboard_state_t user_keyboard_state;
+volatile user_keyboard_state_t user_keyboard_state;
 
 void kb_init()
 {
@@ -101,8 +101,8 @@ static void kb_apply_os_mode(user_keyboard_os_mode_t mode)
 
 void kb_update_switches()
 {
-    static __xdata uint16_t conn_debounce;
-    static __xdata uint16_t os_debounce;
+    static uint16_t conn_debounce;
+    static uint16_t os_debounce;
 
     const uint8_t raw_conn = CONN_MODE_SWITCH;
     if (raw_conn == user_keyboard_state.conn_mode) {
@@ -157,10 +157,10 @@ extern void indicators_battery_off();
 
 // While UL_MODE (the "?" key on the Fn layer) is held, the RGB_* chords adjust the
 // underglow instead of the main backlight. Held in xdata to spare internal RAM.
-static __xdata bool ul_mode_active;
+static bool ul_mode_active;
 
 // While RST_HLD (Fn+Tab) is held, pressing FCT_RST (V) factory-resets settings.
-static __xdata bool reset_mode_active;
+static bool reset_mode_active;
 
 #ifdef RF_ENABLED
 // Track a LNK_BT* / LNK_24G being held so kb_update can fire the pairing
@@ -171,9 +171,9 @@ static __xdata bool reset_mode_active;
 // per FN-key press and don't periodically re-fire: re-firing rotates the
 // BK3632's BLE advertising MAC and disrupts hosts mid-SMP.
 #    define LINK_PAIRING_HOLD_TICKS 60000
-static __xdata uint16_t link_hold_ticks    = 0;
-static __xdata uint16_t link_hold_keycode  = 0;
-static __xdata bool     link_pairing_armed = false;
+static uint16_t link_hold_ticks    = 0;
+static uint16_t link_hold_keycode  = 0;
+static bool     link_pairing_armed = false;
 #endif
 
 bool kb_process_record(uint16_t keycode, bool key_pressed)
@@ -341,7 +341,7 @@ void kb_send_extra(__xdata report_extra_t *report)
     }
 }
 
-__xdata uint16_t ticks = 0;
+uint16_t ticks = 0;
 
 void kb_update()
 {

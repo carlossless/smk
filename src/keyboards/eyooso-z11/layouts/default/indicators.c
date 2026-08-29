@@ -25,12 +25,12 @@
 _Static_assert(LED_GEOMETRY_ROWS == LED_ROWS && LED_GEOMETRY_COLS == LED_COLS, "generated LED geometry size does not match the key matrix");
 
 // Single-channel framebuffer (brightness per LED).
-static __xdata uint8_t led_fb[LED_ROWS][LED_COLS];
+static uint8_t led_fb[LED_ROWS][LED_COLS];
 
-static __xdata uint8_t led_row;
-static __xdata uint8_t led_phase;
-static __xdata uint8_t regen_row;
-static __xdata uint8_t regen_col;
+static uint8_t led_row;
+static uint8_t led_phase;
+static uint8_t regen_row;
+static uint8_t regen_col;
 
 void        indicators_pwm_enable();
 void        indicators_pwm_disable();

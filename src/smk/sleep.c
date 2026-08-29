@@ -29,9 +29,9 @@ typedef int sleep_disabled_placeholder_t;
 // indirectly via `sleep_requested`. Activity reaches the tick through the
 // single-byte `activity_seen` flag, so there is no read-modify-write race on the
 // 16-bit counter across contexts.
-static volatile __xdata uint16_t inactivity;
-static volatile __xdata uint8_t  activity_seen;
-static volatile __xdata uint8_t  sleep_requested;
+static volatile uint16_t inactivity;
+static volatile uint8_t  activity_seen;
+static volatile uint8_t  sleep_requested;
 
 void sleep_init(void)
 {
@@ -86,7 +86,7 @@ static bool sleep_due(user_sleep_mode_t mode)
 
 static void rf_resync_after_wake(void)
 {
-    static __xdata uint8_t tries;
+    static uint8_t tries;
 
     for (tries = RF_RESYNC_TRIES; tries > 0; tries--) {
         rf_wake_nudge();

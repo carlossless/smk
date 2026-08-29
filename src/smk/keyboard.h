@@ -15,8 +15,8 @@ typedef struct {
     uint8_t nkro;
 } keymap_config_t;
 
-extern volatile __xdata keyboard_state_t keyboard_state;
-extern __xdata keymap_config_t           keymap_config;
+extern volatile keyboard_state_t keyboard_state;
+extern keymap_config_t           keymap_config;
 
 void keyboard_init(void);
 

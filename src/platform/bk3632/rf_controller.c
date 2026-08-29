@@ -22,17 +22,17 @@ typedef enum {
 static const __code char rf_bt5_name[] = "SMK BT5.0";
 static const __code char rf_bt3_name[] = "SMK BT3.0";
 
-__xdata uint8_t rf_tx_buf[32];
+uint8_t rf_tx_buf[32];
 
-static __xdata uint8_t kro_prev_active;
-static __xdata uint8_t blanking_pending;
-static __xdata bool    blanking_active;
+static uint8_t kro_prev_active;
+static uint8_t blanking_pending;
+static bool    blanking_active;
 
 // byte9 override flags. mac_mode_compat forces byte9 to 0 ("active"); macOS
 // needs every packet flagged active, else the BK3632 dedupes idle packets and
 // the host misses releases. byte9_disable skips only the idle branch.
-static __xdata bool mac_mode_compat;
-static __xdata bool byte9_disable;
+static bool mac_mode_compat;
+static bool byte9_disable;
 
 void rf_set_mac_mode_compat(bool is_mac)
 {
@@ -137,14 +137,14 @@ void rf_factory_reset_bonds(void)
     delay_ms(200);
 }
 
-__xdata uint8_t kro6buffer[6];
+uint8_t kro6buffer[6];
 
 // Send queue. rf_send_report stashes the 6KRO snapshot here and sends
 // immediately; if the send fails (unresponsive after RF_SEND_MAX_ATTEMPTS),
 // rf_pending stays set and rf_send_pending_flush retries from the same buffer.
 // Each new matrix event overwrites the buffer, so retries converge to current.
-static __xdata uint8_t rf_pending_buf[6];
-static __xdata bool    rf_pending;
+static uint8_t rf_pending_buf[6];
+static bool    rf_pending;
 
 void rf_send_report(__xdata report_keyboard_t *report)
 {
@@ -249,11 +249,11 @@ bool rf_update_keyboard_state(keyboard_state_t *keyboard)
 // Link mode last commanded by us — the re-assert target. keyboard->rf_link
 // can't serve here: it mirrors what the BK3632 *reports*, and the point is to
 // correct the chip when the two disagree.
-static __xdata uint8_t  commanded_link       = RF_MODE_2_4G;
-static __xdata uint16_t pairing_window_polls = 0;
+static uint8_t  commanded_link       = RF_MODE_2_4G;
+static uint16_t pairing_window_polls = 0;
 
-static __xdata uint16_t supervisor_ticks      = 0;
-static __xdata uint8_t  supervisor_was_paired = 0;
+static uint16_t supervisor_ticks      = 0;
+static uint8_t  supervisor_was_paired = 0;
 
 void rf_link_supervisor(keyboard_state_t *keyboard)
 {
@@ -308,7 +308,7 @@ void rf_apply_usb_mode(void)
     rf_cmd_06(1);
 }
 
-static __xdata bool lazy_init_pending;
+static bool lazy_init_pending;
 
 void rf_kbd_lazy_state_init(void)
 {
@@ -332,9 +332,9 @@ void rf_blanking_tick(void)
     // decrement). pending == 6,4,2 → phantom (HID key 0x01 down).
     // pending == 5,3,1 → blank (all-zero release).
     //   buffer layout: [mods, key0, key1, key2, key3, key4]
-    static __xdata uint8_t phantom_buf[6] = {0, 0x01, 0, 0, 0, 0};
-    static __xdata uint8_t blank_buf[6]   = {0, 0, 0, 0, 0, 0};
-    uint8_t               *buf            = ((blanking_pending & 1) == 0) ? phantom_buf : blank_buf;
+    static uint8_t phantom_buf[6] = {0, 0x01, 0, 0, 0, 0};
+    static uint8_t blank_buf[6]   = {0, 0, 0, 0, 0, 0};
+    uint8_t       *buf            = ((blanking_pending & 1) == 0) ? phantom_buf : blank_buf;
 
     blanking_pending--;
 
@@ -347,8 +347,8 @@ void rf_blanking_tick(void)
 
 // Module-static scratch for rf_set_link_pairing — keeps the loop's locals out
 // of internal RAM so SDCC's OSEG packer doesn't run out of slots.
-static __xdata uint8_t pairing_status_bytes[2];
-static __xdata uint8_t pairing_paired_now;
+static uint8_t pairing_status_bytes[2];
+static uint8_t pairing_paired_now;
 
 void rf_set_link_pairing(rf_mode_t link, __xdata keyboard_state_t *keyboard)
 {
@@ -497,7 +497,7 @@ bool rf_send_kro_report(uint8_t *buffer)
 
     // On pending lazy init, override the buffer with an all-zero baseline so
     // the BK3632 gets a clean release; held keys re-detect on the next sweep.
-    static __xdata uint8_t empty_buf[6] = {0, 0, 0, 0, 0, 0};
+    static uint8_t empty_buf[6] = {0, 0, 0, 0, 0, 0};
     if (lazy_init_pending) {
         lazy_init_pending = false;
         buffer            = empty_buf;

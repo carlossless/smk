@@ -25,7 +25,7 @@ typedef struct {
     uint8_t rf_link;
 } user_settings_t;
 
-extern __xdata user_settings_t user_settings;
+extern user_settings_t user_settings;
 
 // Overwrites `user_settings` with the persisted values if a valid record
 // exists. Returns true on success; on false the caller is responsible for

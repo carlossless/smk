@@ -8,12 +8,12 @@
 // storage sector the build fails here instead of corrupting adjacent storage.
 _Static_assert(sizeof(user_settings_t) + 4u <= 512u, "user_settings_t too large for the settings sector");
 
-__xdata user_settings_t user_settings;
+user_settings_t user_settings;
 
 // Deferred-save dirty flag. Handlers set it and return; settings_task() flushes
 // and clears. Multiple marks between flushes coalesce into one write, so a fast
 // brightness ramp produces a single persist instead of one per step.
-static __xdata bool settings_dirty;
+static bool settings_dirty;
 
 bool settings_load(void)
 {
