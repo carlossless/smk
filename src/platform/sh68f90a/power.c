@@ -4,6 +4,7 @@
 #include "delay.h"
 #include "usb.h"
 #include "clock.h"
+#include "extint.h"
 
 // Datasheet 8.9.3 / 8.1: in Power-Down the HF oscillator stops and only
 // INT2/3/4, LPD, a USB bus event, or reset wakes the core. The regulator must be
@@ -126,8 +127,7 @@ void power_enter_powerdown(powerdown_mode_t mode)
 
 void int4_interrupt_handler(void) __interrupt(_INT_INT4)
 {
-    // The waking P4.x edge latched a flag in EXF1; clear them all so the ISR
-    // doesn't immediately re-fire.
-    EXF1      = 0;
+    // The waking P4.x edge latched a flag; clear it so the ISR doesn't re-fire.
+    extint_wake_clear();
     int4_woke = 1;
 }
