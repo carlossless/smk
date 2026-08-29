@@ -3,7 +3,6 @@
 #include "delay.h"
 #include "watchdog.h"
 
-// Set up HRCCLK/PLL and use it as SYSCLK.
 void clock_init()
 {
     CLKCON = _HFON;

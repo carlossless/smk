@@ -94,7 +94,6 @@ void user_sleep_wake(void)
     P0CR |= RF_BB_SPI_MOT_P0_5;
     RF_BB_SPI_MOT = 0;
 
-    // Restore the normal operating GPIO configuration.
     user_gpio_init();
 }
 

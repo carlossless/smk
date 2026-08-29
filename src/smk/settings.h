@@ -9,7 +9,6 @@
 // small (it shares one storage sector) and note that a firmware reflash resets
 // it to the defaults the caller seeds before settings_load().
 typedef struct {
-    // main backlight
     uint8_t led_effect;     // selected backlight effect (or "off")
     uint8_t led_brightness; // 0 (dark) .. 255 (full)
     uint8_t led_speed;      // animation phase increment (1 = slowest)

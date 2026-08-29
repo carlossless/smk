@@ -96,12 +96,10 @@ uint8_t bb_spi_xfer_byte(uint8_t data)
     for (uint8_t i = 0; i < 8; i++) {
         recv = recv << 1;
 
-        // SCK low
         RF_BB_SPI_SCK = 0;
         P4CR |= _P4_7;
         RF_BB_SPI_SCK = 0;
 
-        // MOSI (open-drain)
         if (data & (1 << 7)) {
             P0CR &= (uint8_t)~_P0_7; // MOSI -> input, pull-up to high
             RF_BB_SPI_MOSI = 1;
@@ -115,7 +113,6 @@ uint8_t bb_spi_xfer_byte(uint8_t data)
             recv |= 0x01;
         }
 
-        // SCK release high (input + pull-up)
         P4CR &= (uint8_t)~_P4_7;
         RF_BB_SPI_SCK = 1;
 

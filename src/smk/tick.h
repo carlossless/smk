@@ -9,7 +9,7 @@
 
 void tick_init(void);
 
-// Run whichever slot is due. Called from the platform's tick interrupt.
+// Called from the platform's tick interrupt.
 void tick_dispatch(void);
 
 // Hold the matrix sweep and the backlight still without stopping time. Needed

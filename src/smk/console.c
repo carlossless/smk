@@ -125,7 +125,6 @@ void console_putc(unsigned char c)
     }
 }
 
-// Drains buffered bytes to the host as one console HID report per call.
 void console_task(void)
 {
     static __xdata unsigned char report[CONSOLE_REPORT_SIZE];

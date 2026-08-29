@@ -46,8 +46,6 @@ void set_default_layer(uint8_t layer)
     default_layer = layer;
 }
 
-// Resolve what a key means right now: the base layer, unless a momentary layer
-// is held and defines something other than KC_TRANSPARENT there.
 static uint16_t resolve_keycode(uint16_t base, uint8_t row, uint8_t col)
 {
     if (!action_layer) {

@@ -40,7 +40,6 @@ void send_6kro_report()
     keyboard_report.mods = real_mods;
     keyboard_report.mods |= weak_mods;
 
-    // Only send the report when something changed.
     if (memcmp(&keyboard_report, &last_report, sizeof(report_keyboard_t)) != 0) {
         // Byte loop, not library memcpy: memcpy is non-reentrant here, and an
         // interrupt-driven copy can preempt this one and corrupt it. Keeping the
@@ -59,7 +58,6 @@ void send_nkro_report()
     nkro_report.mods      = real_mods;
     nkro_report.mods |= weak_mods;
 
-    // Only send the report when something changed.
     if (memcmp(&nkro_report, &last_nkro_report, sizeof(report_nkro_t)) != 0) {
         // Byte loop, not library memcpy — see send_6kro_report.
         for (uint8_t i = 0; i < NKRO_REPORT_SIZE; i++) {
@@ -259,7 +257,6 @@ uint8_t biton(uint8_t bits)
     return n;
 }
 
-/* keycode to system usage */
 uint16_t keycode_to_system(uint8_t key)
 {
     switch (key) {
@@ -274,7 +271,6 @@ uint16_t keycode_to_system(uint8_t key)
     }
 }
 
-/* keycode to consumer usage */
 uint16_t keycode_to_consumer(uint8_t key)
 {
     switch (key) {
