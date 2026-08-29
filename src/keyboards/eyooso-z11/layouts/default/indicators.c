@@ -1,6 +1,7 @@
 #include "indicators.h"
 #include "sh68f90a.h"
 #include "kbdef.h"
+#include "gpio.h"
 #include "pwm.h"
 #include "settings.h"
 #include "led_effect.h"
@@ -64,7 +65,7 @@ void indicators_factory_reset()
 
 void indicators_pre_update()
 {
-    P6 |= LED_ALL_ROWS;
+    GPIO_HIGH(6, LED_ALL_ROWS);
 
     indicators_pwm_disable();
 }

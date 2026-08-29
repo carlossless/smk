@@ -6,6 +6,11 @@
 
 #ifdef SLEEP_ENABLE
 
+// HARDWARE NOTE: this parking sequence cannot be verified without the physical
+// keyboard, and it is transcribed from the stock firmware's teardown, so the
+// order of the writes is preserved exactly. If a pin here is wrong the board
+// will not wake and will need a reflash to recover.
+
 user_sleep_mode_t user_sleep_supported(void)
 {
     return (CONN_MODE_SWITCH == 0) ? USER_SLEEP_RF : USER_SLEEP_USB;
@@ -51,9 +56,9 @@ static void park_panel(void)
     GPIO_OUTPUT(6, RGB_R0G_P6_1 | RGB_R1G_P6_2 | RGB_R2G_P6_3 | RGB_R3G_P6_4 | RGB_R4G_P6_5 | RGB_R1B_P6_6 | RGB_R1R_P6_7);
     GPIO_LOW(6, RGB_R0G_P6_1 | RGB_R1G_P6_2 | RGB_R2G_P6_3 | RGB_R3G_P6_4 | RGB_R4G_P6_5 | RGB_R1B_P6_6 | RGB_R1R_P6_7);
 
-    GPIO_PULLUP_OFF(4, _P4_1 | RGB_R4B_P4_3 | RGB_R4R_P4_4 | RGB_R3R_P4_5 | RGB_R3B_P4_6);
-    GPIO_OUTPUT(4, _P4_1 | RGB_R4B_P4_3 | RGB_R4R_P4_4 | RGB_R3R_P4_5 | RGB_R3B_P4_6);
-    GPIO_LOW(4, _P4_1 | RGB_R4B_P4_3 | RGB_R4R_P4_4 | RGB_R3R_P4_5 | RGB_R3B_P4_6);
+    GPIO_PULLUP_OFF(4, KB_WAKE_P4_1 | RGB_R4B_P4_3 | RGB_R4R_P4_4 | RGB_R3R_P4_5 | RGB_R3B_P4_6);
+    GPIO_OUTPUT(4, KB_WAKE_P4_1 | RGB_R4B_P4_3 | RGB_R4R_P4_4 | RGB_R3R_P4_5 | RGB_R3B_P4_6);
+    GPIO_LOW(4, KB_WAKE_P4_1 | RGB_R4B_P4_3 | RGB_R4R_P4_4 | RGB_R3R_P4_5 | RGB_R3B_P4_6);
 
     GPIO_PULLUP_OFF(5, CONN_MODE_SWITCH_P5_5 | OS_MODE_SWITCH_P5_6);
     GPIO_INPUT(5, CONN_MODE_SWITCH_P5_5 | OS_MODE_SWITCH_P5_6);

@@ -138,6 +138,7 @@ uint8_t layout_os_base_layer(bool is_mac);
 #define RF_BB_SPI_MISO_P0_6 _P0_6
 #define RF_BB_SPI_MOSI_P0_7 _P0_7
 #define RF_BB_SPI_MOT_P0_5  _P0_5
+#define KB_WAKE_P4_1        _P4_1
 #define RF_BB_SPI_ACK_P4_2  _P4_2
 
 enum custom_keycodes {

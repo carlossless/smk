@@ -1,5 +1,6 @@
 #include "indicators.h"
 #include "kbdef.h"
+#include "gpio.h"
 #include "pwm.h"
 #include "settings.h"
 #include "tick.h"
@@ -267,11 +268,11 @@ void indicators_ul_speed_down()
 
 void indicators_pre_update()
 {
-    P0 &= ~(RGB_R2R_P0_2 | RGB_R0B_P0_3 | RGB_R0R_P0_4);
-    P1 &= ~(RGB_ULR_P1_1 | RGB_ULG_P1_2 | RGB_ULB_P1_3);
-    P4 &= ~(RGB_R4B_P4_3 | RGB_R4R_P4_4 | RGB_R3R_P4_5 | RGB_R3B_P4_6);
-    P5 &= ~(RGB_R2B_P5_7);
-    P6 &= ~(RGB_R0G_P6_1 | RGB_R1G_P6_2 | RGB_R2G_P6_3 | RGB_R3G_P6_4 | RGB_R4G_P6_5 | RGB_R1B_P6_6 | RGB_R1R_P6_7);
+    GPIO_LOW(0, (RGB_R2R_P0_2 | RGB_R0B_P0_3 | RGB_R0R_P0_4));
+    GPIO_LOW(1, (RGB_ULR_P1_1 | RGB_ULG_P1_2 | RGB_ULB_P1_3));
+    GPIO_LOW(4, (RGB_R4B_P4_3 | RGB_R4R_P4_4 | RGB_R3R_P4_5 | RGB_R3B_P4_6));
+    GPIO_LOW(5, (RGB_R2B_P5_7));
+    GPIO_LOW(6, (RGB_R0G_P6_1 | RGB_R1G_P6_2 | RGB_R2G_P6_3 | RGB_R3G_P6_4 | RGB_R4G_P6_5 | RGB_R1B_P6_6 | RGB_R1R_P6_7));
 }
 
 void indicators_render()

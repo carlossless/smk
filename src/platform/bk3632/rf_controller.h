@@ -35,6 +35,6 @@ void rf_send_pending_flush(void);
 
 void rf_blanking_tick(void);
 
-void rf_prepare_sleep(uint8_t param);
-void rf_wake_from_sleep(void);
+void rf_sleep(uint8_t param);
+void rf_wake(void);
 void rf_wake_nudge(void);
