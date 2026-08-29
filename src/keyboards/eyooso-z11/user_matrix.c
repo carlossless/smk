@@ -1,4 +1,5 @@
 #include "kbdef.h"
+#include "gpio.h"
 #include "user_matrix.h"
 
 #define KB_C_P1_MASK (uint8_t)(KB_C0_P1_4 | KB_C1_P1_5)
@@ -7,9 +8,9 @@
 
 void user_matrix_cols_deselect_all(void)
 {
-    P1 |= KB_C_P1_MASK;
-    P2 |= KB_C_P2_MASK;
-    P3 |= KB_C_P3_MASK;
+    GPIO_HIGH(1, KB_C_P1_MASK);
+    GPIO_HIGH(2, KB_C_P2_MASK);
+    GPIO_HIGH(3, KB_C_P3_MASK);
 }
 
 void user_matrix_col_select(uint8_t col)

@@ -1,7 +1,7 @@
 #include "settings.h"
 #include "flash.h"
 #if DEBUG == 1
-#    include "debug.h" // dprintf
+#    include "debug.h"
 #endif
 
 _Static_assert(sizeof(user_settings_t) + 4u <= 512u, "user_settings_t too large for the settings sector");

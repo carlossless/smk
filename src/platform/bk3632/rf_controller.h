@@ -35,10 +35,6 @@ void rf_send_pending_flush(void);
 
 void rf_blanking_tick(void);
 
-// BK3632 sleep/wake (CMD_07 / CMD_0B) for the sleep feature: rf_prepare_sleep
-// quiets the BK3632 so it stops toggling its ACK line (P4.2 / INT42, an INT4
-// source that would otherwise re-wake the MCU); rf_wake_from_sleep brings it
-// back on MCU wake.
-void rf_prepare_sleep(uint8_t param);
-void rf_wake_from_sleep(void);
+void rf_sleep(uint8_t param);
+void rf_wake(void);
 void rf_wake_nudge(void);

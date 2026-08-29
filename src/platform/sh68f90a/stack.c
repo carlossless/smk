@@ -3,7 +3,7 @@
 #if DEBUG == 1
 
 #    include "sh68f90a.h" // SP
-#    include "debug.h"    // dprintf
+#    include "debug.h"
 #    include <stdint.h>
 
 #    define STACK_SENTINEL 0xAA

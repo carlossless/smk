@@ -4,20 +4,16 @@
 #include "delay.h"
 #include "usb.h"
 #include "clock.h"
+
+#define PCON_PD                 0x02
+#define USBIF1_BUS_EVENTS_CLEAR 0x7A
+#define USBIE1_RESUME_ARM       0x5F
+#define REGULATOR_SETTLE_US     500 // datasheet 8.1
 #include "extint.h"
 
-// Datasheet 8.9.3 / 8.1: in Power-Down the HF oscillator stops and only
-// INT2/3/4, LPD, a USB bus event, or reset wakes the core. The regulator must be
-// off before entering Power-Down when it isn't needed, and takes 500 us to put
-// out a stable 3.3 V once switched back on - hence the wake delay below.
-//
-// This file owns the generic MCU teardown and wake rebuild only. Parking the
-// GPIO and arming the INT4 wake (the keypress pin P4.1 and the BK3632 ACK line
-// P4.2) belongs to the board hooks around the call.
+// Datasheet 8.9.3: in Power-Down only INT2/3/4, LPD, a USB bus event or reset
+// wakes the core.
 
-// Set when an INT4 edge woke the core, cleared before each Power-Down. Remote
-// wakeup is only signalled for an INT4 wake, never when the host resumed the bus
-// itself.
 static volatile uint8_t int4_woke;
 
 static void usb_park(powerdown_mode_t mode)
@@ -26,10 +22,6 @@ static void usb_park(powerdown_mode_t mode)
         USBCON |= _GOSUSP;
         return;
     }
-
-    // The regulator and PHY are about to go, so tear the stack down. Being
-    // un-configured is what makes usb_send_* drop reports until the host has
-    // re-enumerated us on wake.
     usb_deinit();
 }
 
@@ -44,12 +36,12 @@ static void clock_tree_stop(void)
 static void wake_sources_arm(powerdown_mode_t mode)
 {
     USBIE1 |= (_BOOTS | _RESMIE | _PBRSTIE);
-    USBIF1 &= 0x7A; // clear the stale bus-event flags, keep the rest
+    USBIF1 &= USBIF1_BUS_EVENTS_CLEAR;
 
     if (mode == POWERDOWN_KEEP_USB_ALIVE) {
-        IEN1 = _EUSB; // a host resume wakes us too
+        IEN1 = _EUSB;
     } else {
-        IEN1 = 0; // INT4 (armed by the board) is the only way back
+        IEN1 = 0;
         REGCON &= ~_REGEN;
     }
 }
@@ -64,7 +56,7 @@ static void halt_until_wake(void)
     __endasm;
     // clang-format on
     SUSLO = 0x55;
-    PCON |= 0x02;
+    PCON |= PCON_PD;
     // clang-format off
     __asm
         nop
@@ -81,23 +73,20 @@ static void usb_resume(powerdown_mode_t mode)
 {
     USBIF1 &= ~_SUSPIF;
     USBCON &= ~_GOSUSP;
-
-    // A keypress woke us, so raise remote-wakeup whether or not the host armed
-    // it - otherwise that keystroke is lost to a bus that never resumes.
     if (int4_woke) {
         USBCON |= _WKUP;
         int4_woke = 0;
     }
 
     if (mode == POWERDOWN_KEEP_USB_ALIVE) {
-        USBIE1 = 0x5F;
+        USBIE1 = USBIE1_RESUME_ARM;
         IEN1 |= _EUSB;
         usb_suspended = 0;
         return;
     }
 
     REGCON |= _REGEN;
-    delay_us(500); // regulator settle, per datasheet 8.1
+    delay_us(REGULATOR_SETTLE_US);
     usb_init();
 }
 
@@ -108,12 +97,9 @@ void power_enter_powerdown(powerdown_mode_t mode)
     wake_sources_arm(mode);
 
     watchdog_kick();
-    int4_woke = 0; // only a fresh wake should arm the remote-wakeup resume
+    int4_woke = 0;
 
     halt_until_wake();
-
-    // clock_init() is not usable here: its PLLSTA poll can return before a
-    // cold-started oscillator is stable enough for USB-grade timing.
     clock_wake_restart();
     usb_resume(mode);
 }

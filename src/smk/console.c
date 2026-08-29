@@ -108,8 +108,6 @@ void console_notify_attached(void)
 void console_putc(unsigned char c)
 {
     uint8_t next;
-    // __critical so a write from an interrupt can't tear the head update
-    // against a main-loop writer. Drops the byte when the buffer is full.
     __critical
     {
         next = (console_head + 1) & CONSOLE_BUF_MASK;
