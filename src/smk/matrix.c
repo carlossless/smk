@@ -36,54 +36,29 @@ void matrix_init()
     }
 }
 
-matrix_col_t matrix_get_col(uint8_t col)
-{
-    return matrix[col];
-}
-
 void set_default_layer(uint8_t layer)
 {
     default_layer = layer;
 }
 
-void process_key_state(uint8_t row, uint8_t col, bool pressed)
+static uint16_t resolve_keycode(uint16_t base, uint8_t row, uint8_t col)
 {
-    uint16_t qcode = keymaps[default_layer][row][col];
-
-    if (IS_QK_MOMENTARY(qcode)) {
-        if (pressed) {
-            action_layer = QK_MOMENTARY_GET_LAYER(qcode);
-        } else {
-            clear_keys();
-            action_layer = 0;
-        }
-
-        return;
+    if (!action_layer) {
+        return base;
     }
 
-    if (action_layer) {
-        uint16_t acode = keymaps[action_layer][row][col];
+    const uint16_t overlay = keymaps[action_layer][row][col];
+    return (overlay == KC_TRANSPARENT) ? base : overlay;
+}
 
-        if (acode != KC_TRANSPARENT) {
-            qcode = acode;
-        }
-    }
-
-    if (!kb_process_record(qcode, pressed)) {
-        return;
-    }
-
-    if (!layout_process_record(qcode, pressed)) {
-        return;
-    }
-
+static void send_keycode(uint16_t qcode, bool pressed)
+{
     if (IS_MODIFIER_KEYCODE(qcode)) {
         if (pressed) {
             add_mods(MOD_BIT((uint8_t)(qcode & 0xFF)));
         } else {
             del_mods(MOD_BIT((uint8_t)(qcode & 0xFF)));
         }
-
         send_keyboard_report();
         return;
     }
@@ -94,26 +69,46 @@ void process_key_state(uint8_t row, uint8_t col, bool pressed)
         } else {
             del_key((uint8_t)(qcode & 0xFF));
         }
-
         send_keyboard_report();
         return;
-    } else if (IS_SYSTEM_KEYCODE(qcode)) {
-        if (pressed) {
-            host_system_send(keycode_to_system(qcode));
-        } else {
-            host_system_send(0);
-        }
+    }
+
+    if (IS_SYSTEM_KEYCODE(qcode)) {
+        host_system_send(pressed ? keycode_to_system(qcode) : 0);
         return;
-    } else if (IS_CONSUMER_KEYCODE(qcode)) {
+    }
+
+    if (IS_CONSUMER_KEYCODE(qcode)) {
+        host_consumer_send(pressed ? keycode_to_consumer(qcode) : 0);
+        return;
+    }
+}
+
+static void process_key_state(uint8_t row, uint8_t col, bool pressed)
+{
+    const uint16_t base = keymaps[default_layer][row][col];
+
+    if (IS_QK_MOMENTARY(base)) {
         if (pressed) {
-            host_consumer_send(keycode_to_consumer(qcode));
+            action_layer = QK_MOMENTARY_GET_LAYER(base);
         } else {
-            host_consumer_send(0);
+            clear_keys();
+            action_layer = 0;
         }
         return;
     }
 
-    (void)qcode;
+    const uint16_t qcode = resolve_keycode(base, row, col);
+
+    if (!kb_process_record(qcode, pressed)) {
+        return;
+    }
+
+    if (!layout_process_record(qcode, pressed)) {
+        return;
+    }
+
+    send_keycode(qcode, pressed);
 }
 
 void matrix_scan_full(void)

@@ -68,6 +68,20 @@ static void flash_program(uint16_t addr, uint8_t data)
     ssp_run(addr, SSP_PROGRAM, data);
 }
 
+static bool stored_record_matches(const __xdata uint8_t *src, uint8_t len)
+{
+    if (flash_read(CFG_ADDR) != CFG_MAGIC0 || flash_read(CFG_ADDR + 1) != CFG_MAGIC1 || flash_read(CFG_ADDR + 2) != len) {
+        return false;
+    }
+
+    for (uint8_t i = 0; i < len; i++) {
+        if (flash_read((uint16_t)(CFG_ADDR + CFG_HDR + i)) != src[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool flash_settings_load(__xdata uint8_t *dst, uint8_t len)
 {
     if (flash_read(CFG_ADDR) != CFG_MAGIC0 || flash_read(CFG_ADDR + 1) != CFG_MAGIC1) {
@@ -93,16 +107,7 @@ bool flash_settings_load(__xdata uint8_t *dst, uint8_t len)
 
 void flash_settings_save(const __xdata uint8_t *src, uint8_t len)
 {
-    bool same = flash_read(CFG_ADDR) == CFG_MAGIC0 && flash_read(CFG_ADDR + 1) == CFG_MAGIC1 && flash_read(CFG_ADDR + 2) == len;
-    if (same) {
-        for (uint8_t i = 0; i < len; i++) {
-            if (flash_read((uint16_t)(CFG_ADDR + CFG_HDR + i)) != src[i]) {
-                same = false;
-                break;
-            }
-        }
-    }
-    if (same) {
+    if (stored_record_matches(src, len)) {
         return;
     }
 

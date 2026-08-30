@@ -18,4 +18,6 @@ typedef struct {
 extern volatile __xdata keyboard_state_t keyboard_state;
 extern __xdata keymap_config_t           keymap_config;
 
-void keyboard_init();
+void keyboard_init(void);
+
+void keyboard_set_led_state(uint8_t led_state);

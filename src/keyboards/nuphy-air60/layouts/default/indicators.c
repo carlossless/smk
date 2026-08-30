@@ -2,7 +2,7 @@
 #include "kbdef.h"
 #include "pwm.h"
 #include "settings.h"
-#include "timer2.h"
+#include "tick.h"
 #include "keyboard.h"
 #include "led_effect.h"
 #include "user_led.h"
@@ -592,14 +592,14 @@ void indicators_pwm_enable()
 
 void settings_save_pre(void)
 {
-    timer2_scan_pause();
+    tick_pause();
     indicators_pwm_disable();
 }
 
 void settings_save_post(void)
 {
     indicators_pwm_enable();
-    timer2_scan_resume();
+    tick_resume();
 }
 
 void indicators_pwm_disable()

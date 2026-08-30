@@ -5,7 +5,7 @@ volatile __xdata keyboard_state_t keyboard_state;
 
 __xdata keymap_config_t keymap_config;
 
-void keyboard_init()
+void keyboard_init(void)
 {
     keyboard_state.led_state     = 0x00;
     keyboard_state.rf_link       = 0x00;
@@ -17,4 +17,9 @@ void keyboard_init()
 #ifdef NKRO_ENABLE
     keymap_config.nkro = 1;
 #endif
+}
+
+void keyboard_set_led_state(uint8_t led_state)
+{
+    keyboard_state.led_state = led_state;
 }

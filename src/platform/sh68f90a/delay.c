@@ -8,7 +8,7 @@
 //
 // Inner loop is tuned so the per-iteration cost is exactly 24 cycles:
 //   body (19c) + DJNZ Rn taken (5c) = 24c
-// where the body is either `MOV direct,#data` CLR_WDT (3c) + 16 NOPs (16c)
+// where the body is either `MOV direct,#data` watchdog kick (3c) + 16 NOPs (16c)
 // or 19 NOPs when WDT is disabled.
 //
 // Entry/exit add a fixed ~18+14 cycles, so delay_us(N) takes 24*N + ~8 cycles
@@ -31,7 +31,7 @@ void delay_us(uint16_t cnt) __naked
         sjmp    00002$                  ; 4c
 00001$:
 #ifdef WATCHDOG_ENABLE
-        mov     _RSTSTAT, #0x00         ; 3c     -- CLR_WDT
+        mov     _RSTSTAT, #0x00         ; 3c     -- watchdog kick
         nop
         nop
         nop
@@ -78,11 +78,6 @@ void delay_us(uint16_t cnt) __naked
     // clang-format on
 }
 
-// delay_ms uses delay_us(1000) for each ms. Per-iter cost is ~24030 cycles
-// (LCALL 7c + delay_us body ~24008c + while-loop overhead ~15c) so the total
-// error is roughly +1c per ms (~0.13%), well within tolerance for the
-// millisecond-scale waits this is used for (RF reset timing, USB enumeration,
-// etc.).
 void delay_ms(uint16_t cnt)
 {
     while (cnt--) {

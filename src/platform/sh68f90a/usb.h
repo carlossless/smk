@@ -1,31 +1,29 @@
 #pragma once
 
-#include "sh68f90a.h"
 #include "report.h"
 #include <stdint.h>
+#include <stdbool.h>
 
 enum {
     USB_PROTOCOL_BOOT   = 0,
     USB_PROTOCOL_REPORT = 1,
 };
 
-void    usb_init();
-void    usb_deinit();
-void    usb_send_report(__xdata report_keyboard_t *report);
-void    usb_send_nkro(__xdata report_nkro_t *report);
-void    usb_send_extra(__xdata report_extra_t *report);
-uint8_t usb_device_state_get_protocol();
+void usb_init(void);
+void usb_deinit(void);
 
-extern __xdata uint16_t usb_enum_active_ticks;
+void usb_send_report(__xdata report_keyboard_t *report);
+void usb_send_nkro(__xdata report_nkro_t *report);
+void usb_send_extra(__xdata report_extra_t *report);
 
-extern __xdata bool usb_enum_seen;
+bool    usb_is_configured(void);
+uint8_t usb_device_state_get_protocol(void);
 
-extern __bit usb_remote_wakeup;
+void usb_wait_for_enumeration(void);
 
 extern __bit usb_suspended;
 
 #if DEBUG == 1
-bool usb_is_configured();
-#endif // DEBUG
-
-void usb_interrupt_handler() __interrupt(_INT_USB);
+bool usb_console_ready(void);
+void usb_console_send(const __xdata uint8_t *data, uint8_t len);
+#endif

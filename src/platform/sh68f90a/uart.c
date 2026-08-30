@@ -1,4 +1,5 @@
 #include "uart.h"
+#include "interrupts.h"
 #include "delay.h"
 #include "watchdog.h"
 #include "console.h"
@@ -86,7 +87,7 @@ void uart_putc(unsigned char c)
     UART_ISR_ENABLE();
 
     while (uart_tx_busy) {
-        CLR_WDT();
+        watchdog_kick();
     }
 }
 
