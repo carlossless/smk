@@ -107,6 +107,7 @@ inc_platform_sh68f881 = [
 ]
 
 src_platform_sh68f881 = [
+    'src/platform/sh68f881/clock.c',
     'src/platform/sh68f881/isp.c',
 ]
 
