@@ -3,6 +3,12 @@
 #include "pwm.h"
 #include "gpio.h"
 
+// UART TXD is CONN_MODE_SWITCH's pin (P5.5): the slider and a UART sink cannot
+// coexist without remapping one of them.
+#ifdef DEBUG_SINK_UART
+#    error "nuphy-air60: DEBUG_SINK_UART is unusable here - TXD collides with CONN_MODE_SWITCH"
+#endif
+
 #define PWM_PERD 0x0100
 
 #define PWM_DUTY1 (uint16_t)0
@@ -46,9 +52,6 @@ void user_gpio_init()
 
     P5PCR = (uint8_t)(KB_R3_P5_3 | KB_R4_P5_4 | CONN_MODE_SWITCH_P5_5 | OS_MODE_SWITCH_P5_6);
     P7PCR = (uint8_t)(KB_R0_P7_1 | KB_R1_P7_2 | KB_R2_P7_3);
-
-    if (DEBUG) {
-    }
     P7 |= RF_BB_SPI_CS_P7_4;
     P4 |= RF_BB_SPI_SCK_P4_7;
     P0 |= (RF_BB_SPI_MOSI_P0_7 | RF_BB_SPI_MOT_P0_5);
