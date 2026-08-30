@@ -2,6 +2,8 @@
 
 #include "sh68f90a.h"
 #include "keycodes.h"
+#include <stdint.h>
+#include <stdbool.h>
 
 #define MATRIX_ROWS 5
 #define MATRIX_COLS 16
@@ -122,6 +124,8 @@
 #define CONN_MODE_SWITCH_P5_5 _P5_5 // 1 - USB, 0 - RF
 #define OS_MODE_SWITCH_P5_6   _P5_6 // 1 - MAC, 0 - WIN
 
+uint8_t layout_os_base_layer(bool is_mac);
+
 #define RF_BB_SPI_CS   P7_4
 #define RF_BB_SPI_SCK  P4_7
 #define RF_BB_SPI_MISO P0_6
@@ -134,6 +138,7 @@
 #define RF_BB_SPI_MISO_P0_6 _P0_6
 #define RF_BB_SPI_MOSI_P0_7 _P0_7
 #define RF_BB_SPI_MOT_P0_5  _P0_5
+#define KB_WAKE_P4_1        _P4_1
 #define RF_BB_SPI_ACK_P4_2  _P4_2
 
 enum custom_keycodes {
@@ -151,6 +156,9 @@ enum custom_keycodes {
     UL_MODE,     // held: re-route the RGB_* chords to the underglow ("user") LEDs
     RESET_HOLD,  // held: enables the factory-reset chord
     FACT_RESET,  // factory-reset all user settings (only acts while RESET_HOLD is held)
+    BAT_FLASH,   // FN + [: briefly show the current battery level on the right-side underglow
+    BAT_ON,      // FN + ]: keep the right-side underglow showing the battery indicator (persisted)
+    BAT_OFF,     // FN + \\: disable the always-on battery indicator (persisted)
 
     KB_SAFE_RANGE,
 };

@@ -3,6 +3,18 @@
 #include "sh68f90a.h"
 #include <stdint.h>
 
+// PWMnmCON layout. Clearing MODE_ENABLE parks the output at idle and hands the
+// pad back to GPIO while leaving the clock divider in place, which is how the
+// LED drive is silenced for a matrix sweep - so PWM_CLK_DIV_4 on its own is the
+// parked-channel value.
+#define PWM_CLK_DIV_4   0b010 // PWM_CLK = SYS_CLK / 4
+#define PWM_SS          (1 << 3)
+#define PWM_MOD         (1 << 4)
+#define PWM_INT_ENABLE  (1 << 6)
+#define PWM_MODE_ENABLE (1 << 7)
+#define PWM_CON_PARKED  PWM_CLK_DIV_4
+#define PWM_CON_OFF     0
+
 #define PWM_DUTY_REG(pwm, duty, bit) pwm##DUTY##duty##bit
 #define SET_PWM_DUTY_1(pwm, value)                       \
     do {                                                 \
