@@ -44,7 +44,7 @@ void stack_task(void)
     uint8_t peak = stack_peak();
     if (peak > reported) {
         reported = peak;
-        dprintf("SPpk %02x\r\n", peak);
+        dprintf("STACK peak: %02x\r\n", peak);
     }
 }
 

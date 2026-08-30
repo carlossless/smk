@@ -12,7 +12,6 @@
 
 #define EXTRA_REPORT_SIZE 3
 
-// debug console: text payload bytes per HID report (excludes the report id byte)
 #define CONSOLE_REPORT_SIZE 32
 
 enum report_id {
@@ -102,35 +101,30 @@ void    clear_mods(void);
  * See https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf#page=75
  */
 enum consumer_usages {
-    // 15.5 Display Controls
-    SNAPSHOT        = 0x065,
-    BRIGHTNESS_UP   = 0x06F, // https://www.usb.org/sites/default/files/hutrr41_0.pdf
-    BRIGHTNESS_DOWN = 0x070,
-    // 15.7 Transport Controls
-    TRANSPORT_RECORD       = 0x0B2,
-    TRANSPORT_FAST_FORWARD = 0x0B3,
-    TRANSPORT_REWIND       = 0x0B4,
-    TRANSPORT_NEXT_TRACK   = 0x0B5,
-    TRANSPORT_PREV_TRACK   = 0x0B6,
-    TRANSPORT_STOP         = 0x0B7,
-    TRANSPORT_EJECT        = 0x0B8,
-    TRANSPORT_RANDOM_PLAY  = 0x0B9,
-    TRANSPORT_STOP_EJECT   = 0x0CC,
-    TRANSPORT_PLAY_PAUSE   = 0x0CD,
-    // 15.9.1 Audio Controls - Volume
-    AUDIO_MUTE     = 0x0E2,
-    AUDIO_VOL_UP   = 0x0E9,
-    AUDIO_VOL_DOWN = 0x0EA,
-    // 15.15 Application Launch Buttons
-    AL_CC_CONFIG       = 0x183,
-    AL_EMAIL           = 0x18A,
-    AL_CALCULATOR      = 0x192,
-    AL_LOCAL_BROWSER   = 0x194,
-    AL_LOCK            = 0x19E,
-    AL_CONTROL_PANEL   = 0x19F,
-    AL_ASSISTANT       = 0x1CB,
-    AL_KEYBOARD_LAYOUT = 0x1AE,
-    // 15.16 Generic GUI Application Controls
+    SNAPSHOT                       = 0x065,
+    BRIGHTNESS_UP                  = 0x06F, // https://www.usb.org/sites/default/files/hutrr41_0.pdf
+    BRIGHTNESS_DOWN                = 0x070,
+    TRANSPORT_RECORD               = 0x0B2,
+    TRANSPORT_FAST_FORWARD         = 0x0B3,
+    TRANSPORT_REWIND               = 0x0B4,
+    TRANSPORT_NEXT_TRACK           = 0x0B5,
+    TRANSPORT_PREV_TRACK           = 0x0B6,
+    TRANSPORT_STOP                 = 0x0B7,
+    TRANSPORT_EJECT                = 0x0B8,
+    TRANSPORT_RANDOM_PLAY          = 0x0B9,
+    TRANSPORT_STOP_EJECT           = 0x0CC,
+    TRANSPORT_PLAY_PAUSE           = 0x0CD,
+    AUDIO_MUTE                     = 0x0E2,
+    AUDIO_VOL_UP                   = 0x0E9,
+    AUDIO_VOL_DOWN                 = 0x0EA,
+    AL_CC_CONFIG                   = 0x183,
+    AL_EMAIL                       = 0x18A,
+    AL_CALCULATOR                  = 0x192,
+    AL_LOCAL_BROWSER               = 0x194,
+    AL_LOCK                        = 0x19E,
+    AL_CONTROL_PANEL               = 0x19F,
+    AL_ASSISTANT                   = 0x1CB,
+    AL_KEYBOARD_LAYOUT             = 0x1AE,
     AC_NEW                         = 0x201,
     AC_OPEN                        = 0x202,
     AC_CLOSE                       = 0x203,
@@ -163,7 +157,6 @@ enum consumer_usages {
  * See https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf#page=26
  */
 enum desktop_usages {
-    // 4.5.1 System Controls - Power Controls
     SYSTEM_POWER_DOWN = 1 << 0,
     SYSTEM_SLEEP      = 1 << 1,
     SYSTEM_WAKE_UP    = 1 << 2,

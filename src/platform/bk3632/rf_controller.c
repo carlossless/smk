@@ -55,10 +55,10 @@ void    rf_cmd_03(uint8_t param);
 void    rf_cmd_04();
 void    rf_send_consumer_system(uint16_t consumer, uint16_t system);
 void    rf_cmd_06(uint8_t param);
-void    rf_prepare_sleep(uint8_t param);
+void    rf_sleep(uint8_t param);
 void    rf_set_bt_name(uint8_t type, char *name);
 void    rf_query_status();
-void    rf_wake_from_sleep();
+void    rf_wake();
 void    rf_wake_nudge();
 void    rf_fetch_4();
 uint8_t checksum(uint8_t *data, int len);
@@ -105,9 +105,9 @@ void rf_factory_reset_bonds(void)
 {
     rf_cmd_03(2); // wipe stored bonds
     delay_ms(200);
-    rf_prepare_sleep(0);
+    rf_sleep(0);
     delay_ms(100);
-    rf_wake_from_sleep();
+    rf_wake();
     delay_ms(200);
     rf_init(); // reload BT names cleared by the wipe + sleep cycle
     delay_ms(200);
@@ -175,7 +175,7 @@ bool rf_update_keyboard_state(keyboard_state_t *keyboard)
     uint8_t status_bytes[2];
 
     if (!rf_get_status(status_bytes)) {
-        return false;
+        return false; // no fresh status - leave keyboard_state untouched
     }
 
     if (!(status_bytes[0] & 0x80)) {
@@ -276,6 +276,8 @@ void rf_blanking_tick(void)
     blanking_active = false;
 }
 
+// Module-static scratch for rf_set_link_pairing - keeps the loop's locals out
+// of internal RAM so SDCC's OSEG packer doesn't run out of slots.
 static uint8_t pairing_status_bytes[2];
 static uint8_t pairing_paired_now;
 
@@ -348,6 +350,11 @@ void rf_fetch_4()
     bb_spi_recv(rf_tx_buf, 4);
 }
 
+// Retry on no-ACK, looping in-place. DO NOT call rf_wake_nudge between
+// attempts: it builds its packet into rf_tx_buf - the same buffer being sent -
+// so a mid-retry nudge corrupts the report, the BK3632 drops it, and the key
+// gets stuck on the host. Capped at RF_SEND_MAX_ATTEMPTS (~2 ms worst case) so
+// a dead BK3632 doesn't brick the main loop.
 #define RF_SEND_MAX_ATTEMPTS 5
 
 static bool rf_send_or_retry(uint8_t *buf, int len)
@@ -554,7 +561,7 @@ void rf_cmd_06(uint8_t param) // 0x00 or 0x01
     bb_spi_xfer(rf_tx_buf, len);
 }
 
-void rf_prepare_sleep(uint8_t param)
+void rf_sleep(uint8_t param)
 {
     const uint8_t len = 6;
 
@@ -614,7 +621,7 @@ void rf_query_status()
     bb_spi_xfer(rf_tx_buf, len);
 }
 
-void rf_wake_from_sleep()
+void rf_wake()
 {
     const uint8_t len = 6;
 

@@ -4,8 +4,8 @@
 #include <stdbool.h>
 
 typedef struct {
-    uint8_t led_effect;     // selected backlight effect (or "off")
-    uint8_t led_brightness; // 0 (dark) .. 255 (full)
+    uint8_t led_effect;
+    uint8_t led_brightness;
     uint8_t led_speed;
     uint8_t ul_effect;
     uint8_t ul_brightness;

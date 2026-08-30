@@ -168,6 +168,9 @@ sdar = find_program('sdar', required : true)
 packihx = find_program('packihx', required : true)
 sinowisp = find_program('sinowisp', required : true)
 
+# SDCC can't emit header dependencies as a compile side-effect (its -M family is
+# deps-only), so we drive it through a small wrapper that also writes a depfile -
+# this is what makes ninja rebuild a .rel when one of its headers changes.
 py = find_program('python3', required : true)
 sdcc_compile = join_paths(meson.current_source_dir(), 'utils/sdcc_compile.py')
 
@@ -183,6 +186,7 @@ host_cc = find_program('cc', 'gcc', required : true)
 gen_led_geometry = join_paths(meson.current_build_dir(), 'led_geometry_gen')
 run_command(host_cc, '-O2', '-o', gen_led_geometry, join_paths(meson.current_source_dir(), 'utils/led_geometry_gen.c'), check : true)
 
+# Host-side reader for the HID debug console; built with the host compiler.
 executable(
     'smk-console',
     'tools/smk-console.c',

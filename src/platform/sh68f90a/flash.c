@@ -2,13 +2,12 @@
 #include "sh68f90a.h"
 #include <stdbool.h>
 
-#define CFG_ADDR   0xEC00u // flash sector 118 (0xEC00..0xEDFF)
+#define CFG_ADDR   0xEC00u // sector 118
 #define CFG_SIZE   512u
 #define CFG_END    (CFG_ADDR + CFG_SIZE)
 #define CFG_MAGIC0 0x5Au
 #define CFG_MAGIC1 0xA5u
-// record layout: [magic0][magic1][len][payload x len][checksum]
-#define CFG_HDR 3u // magic0, magic1, len precede the payload
+#define CFG_HDR    3u
 
 _Static_assert((CFG_ADDR & (CFG_SIZE - 1)) == 0, "CFG_ADDR must be aligned to a 512-byte flash sector boundary");
 _Static_assert(CFG_END <= 0xEE00u, "CFG_END must not reach sector 119 (holds reset-vector redirect at 0xEFFC)");
@@ -27,6 +26,11 @@ static uint8_t flash_read(uint16_t addr)
 {
     __code uint8_t *p = (__code uint8_t *)addr;
     return *p;
+}
+
+static uint16_t payload_addr(uint8_t i)
+{
+    return (uint16_t)(CFG_ADDR + CFG_HDR + i);
 }
 
 static void ssp_run(uint16_t addr, uint8_t op, uint8_t data)
@@ -68,39 +72,42 @@ static void flash_program(uint16_t addr, uint8_t data)
     ssp_run(addr, SSP_PROGRAM, data);
 }
 
+static bool record_header_valid(uint8_t len)
+{
+    return flash_read(CFG_ADDR) == CFG_MAGIC0 && flash_read(CFG_ADDR + 1) == CFG_MAGIC1 && flash_read(CFG_ADDR + 2) == len;
+}
+
 static bool stored_record_matches(const __xdata uint8_t *src, uint8_t len)
 {
-    if (flash_read(CFG_ADDR) != CFG_MAGIC0 || flash_read(CFG_ADDR + 1) != CFG_MAGIC1 || flash_read(CFG_ADDR + 2) != len) {
+    if (!record_header_valid(len)) {
         return false;
     }
 
     for (uint8_t i = 0; i < len; i++) {
-        if (flash_read((uint16_t)(CFG_ADDR + CFG_HDR + i)) != src[i]) {
+        if (flash_read(payload_addr(i)) != src[i]) {
             return false;
         }
     }
     return true;
 }
 
-bool flash_settings_load(__xdata uint8_t *dst, uint8_t len)
+static bool record_checksum_valid(uint8_t len)
 {
-    if (flash_read(CFG_ADDR) != CFG_MAGIC0 || flash_read(CFG_ADDR + 1) != CFG_MAGIC1) {
-        return false;
-    }
-    if (flash_read(CFG_ADDR + 2) != len) {
-        return false;
-    }
-
     uint8_t sum = 0;
     for (uint8_t i = 0; i < len; i++) {
-        sum += flash_read((uint16_t)(CFG_ADDR + CFG_HDR + i));
+        sum += flash_read(payload_addr(i));
     }
-    if (flash_read((uint16_t)(CFG_ADDR + CFG_HDR + len)) != sum) {
-        return false; // checksum mismatch
+    return flash_read(payload_addr(len)) == sum;
+}
+
+bool flash_settings_load(__xdata uint8_t *dst, uint8_t len)
+{
+    if (!record_header_valid(len) || !record_checksum_valid(len)) {
+        return false;
     }
 
     for (uint8_t i = 0; i < len; i++) {
-        dst[i] = flash_read((uint16_t)(CFG_ADDR + CFG_HDR + i));
+        dst[i] = flash_read(payload_addr(i));
     }
     return true;
 }
@@ -111,6 +118,8 @@ void flash_settings_save(const __xdata uint8_t *src, uint8_t len)
         return;
     }
 
+    // A sector can only be programmed after an erase, so every change rewrites
+    // the whole record.
     flash_erase_config();
     flash_program(CFG_ADDR + 0, CFG_MAGIC0);
     flash_program(CFG_ADDR + 1, CFG_MAGIC1);
@@ -118,8 +127,8 @@ void flash_settings_save(const __xdata uint8_t *src, uint8_t len)
 
     uint8_t sum = 0;
     for (uint8_t i = 0; i < len; i++) {
-        flash_program((uint16_t)(CFG_ADDR + CFG_HDR + i), src[i]);
+        flash_program(payload_addr(i), src[i]);
         sum += src[i];
     }
-    flash_program((uint16_t)(CFG_ADDR + CFG_HDR + len), sum);
+    flash_program(payload_addr(len), sum);
 }
