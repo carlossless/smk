@@ -2,14 +2,14 @@
 
 #if DEBUG == 1
 
-#    include "sh68f90a.h"
+#    include "sh68f90.h"
 #    include "debug.h"
 #    include <stdint.h>
 
 #    define STACK_SENTINEL 0xAA
 extern uint8_t _start__stack;
 #    define STACK_BASE ((uint8_t)((uint16_t)&_start__stack - 1u))
-#    define STACK_TOP  0xFF // top of the SH68F90A's 256-byte internal RAM
+#    define STACK_TOP  0xFF // top of the SH68F90's 256-byte internal RAM
 
 // Fill the unused stack region (above the current SP, up to STACK_TOP) with
 // a sentinel. Must run early in main(), while SP is still shallow, so we

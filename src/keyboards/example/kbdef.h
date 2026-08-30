@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sh68f90a.h"
+#include "sh68f90.h"
 
 #define MATRIX_ROWS 1
 #define MATRIX_COLS 2

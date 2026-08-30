@@ -2,7 +2,7 @@
 
 #if DEBUG == 1
 
-#    include "sh68f90a.h"
+#    include "sh68f90.h"
 #    include "console.h"
 #    include "debug.h"
 #    include <stdint.h>

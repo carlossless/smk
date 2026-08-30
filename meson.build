@@ -19,9 +19,9 @@ default_options = {
 
 parts = [
     # keyboard, platform, layouts, options
-    ['example', 'sh68f90a', ['default'], {}],
-    ['nuphy-air60', 'sh68f90a', ['default'], { 'vendor_id': '0x05ac', 'product_id': '0x024f', 'wireless': 'bk3632', 'led_rows': '5', 'led_cols': '16', 'led_cx2': '13', 'led_cy2': '4' }],
-    ['eyooso-z11', 'sh68f90a', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x002a', 'led_rows': '5', 'led_cols': '14', 'led_cx2': '13', 'led_cy2': '4' }],
+    ['example', 'sh68f90', ['default'], {}],
+    ['nuphy-air60', 'sh68f90', ['default'], { 'vendor_id': '0x05ac', 'product_id': '0x024f', 'wireless': 'bk3632', 'led_rows': '5', 'led_cols': '16', 'led_cx2': '13', 'led_cy2': '4' }],
+    ['eyooso-z11', 'sh68f90', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x002a', 'led_rows': '5', 'led_cols': '14', 'led_cx2': '13', 'led_cy2': '4' }],
 ]
 
 # SMK
@@ -81,25 +81,25 @@ src_user = [
 
 # PLATFORM
 
-inc_platform_sh68f90a = [
-    'src/platform/sh68f90a',
+inc_platform_sh68f90 = [
+    'src/platform/sh68f90',
 ]
 
-src_platform_sh68f90a = [
-    'src/platform/sh68f90a/startup.c',
-    'src/platform/sh68f90a/clock.c',
-    'src/platform/sh68f90a/delay.c',
-    'src/platform/sh68f90a/diag.c',
-    'src/platform/sh68f90a/flash.c',
-    'src/platform/sh68f90a/isp.c',
-    'src/platform/sh68f90a/ldo.c',
-    'src/platform/sh68f90a/pwm.c',
-    'src/platform/sh68f90a/systick.c',
-    'src/platform/sh68f90a/uart.c',
-    'src/platform/sh68f90a/usb.c',
-    'src/platform/sh68f90a/stack.c',
-    'src/platform/sh68f90a/power.c',
-    'src/platform/sh68f90a/extint.c',
+src_platform_sh68f90 = [
+    'src/platform/sh68f90/startup.c',
+    'src/platform/sh68f90/clock.c',
+    'src/platform/sh68f90/delay.c',
+    'src/platform/sh68f90/diag.c',
+    'src/platform/sh68f90/flash.c',
+    'src/platform/sh68f90/isp.c',
+    'src/platform/sh68f90/ldo.c',
+    'src/platform/sh68f90/pwm.c',
+    'src/platform/sh68f90/systick.c',
+    'src/platform/sh68f90/uart.c',
+    'src/platform/sh68f90/usb.c',
+    'src/platform/sh68f90/stack.c',
+    'src/platform/sh68f90/power.c',
+    'src/platform/sh68f90/extint.c',
 ]
 
 inc_platform_bk3632 = [
@@ -224,9 +224,9 @@ foreach part : parts
     foreach layout : layouts
         src_main = src_smk
         inc_dirs = inc_base_dirs
-        if platform == 'sh68f90a'
-            src_main += src_platform_sh68f90a
-            inc_dirs += inc_platform_sh68f90a
+        if platform == 'sh68f90'
+            src_main += src_platform_sh68f90
+            inc_dirs += inc_platform_sh68f90
         else
             error('unsupported platform: @0@'.format(platform))
         endif

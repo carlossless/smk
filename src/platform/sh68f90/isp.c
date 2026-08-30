@@ -1,5 +1,5 @@
 #include "isp.h"
-#include "sh68f90a.h"
+#include "sh68f90.h"
 
 void isp_jump() __naked
 {

@@ -1,5 +1,5 @@
 #include "indicators.h"
-#include "sh68f90a.h"
+#include "sh68f90.h"
 #include "kbdef.h"
 #include "gpio.h"
 #include "pwm.h"

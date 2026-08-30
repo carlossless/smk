@@ -1,4 +1,4 @@
-#include "sh68f90a.h"
+#include "sh68f90.h"
 
 void ldo_init()
 {

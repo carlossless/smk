@@ -1,9 +1,9 @@
 #include "delay.h"
 #include "watchdog.h"
-#include "sh68f90a.h"
+#include "sh68f90.h"
 #include <stdint.h>
 
-// SH68F90A is a 1T 8051 (1 machine cycle == 1 oscillator cycle, datasheet section 1).
+// SH68F90 is a 1T 8051 (1 machine cycle == 1 oscillator cycle, datasheet section 1).
 // At FREQ_SYS = 24 MHz, 1 us == 24 cycles.
 //
 // Inner loop is tuned so the per-iteration cost is exactly 24 cycles:
