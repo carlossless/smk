@@ -8,14 +8,18 @@
 #define CLKCON_USB 0x08u
 #define PLLCON_USB 0x02u
 
+// The bootloader waits before handing the clock to the USB block; enumerating off a
+// PLL that has not settled gives intermittent descriptor reads rather than silence.
 static void pll_settle(void)
 {
-    for (uint16_t i = 0; i < 2000; i++) {
-        // clang-format off
-        __asm
-            nop
-        __endasm;
-        // clang-format on
+    for (uint16_t outer = 0; outer < 400; outer++) {
+        for (uint16_t i = 0; i < 500; i++) {
+            // clang-format off
+            __asm
+                nop
+            __endasm;
+            // clang-format on
+        }
     }
 }
 

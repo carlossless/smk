@@ -28,6 +28,9 @@ SFR(IEN0, 0xa8);
 SFR(IEN1, 0xa9);
 SFR(IPH0, 0xb4);
 
+// Vector 0x005B is IEN1 bit 4: (0x5B - 3) / 8.
+enum { _INT_USB = 11 };
+
 // WDT
 SFR(RSTSTAT, 0xb1);
 
@@ -96,30 +99,112 @@ SFR(EP2CON, 0xd8);
 SFR(USBIF1, 0xe8);
 SFR(USBIF2, 0xf8);
 
-#define _OEP0RDY 0x01u
-#define _OEP0STL 0x02u
-#define _IEP0RDY 0x04u
-#define _IEP0STL 0x08u
-#define _OEP0DTG 0x40u
-#define _IEP0DTG 0x80u
-
-#define _USBRSTIF 0x01u
-#define _SUSPIF   0x02u
-#define _RESMIF   0x04u
-#define _SOFIF    0x08u
-#define _SETUPIF  0x10u
-#define _OW       0x20u
-#define _OVERIF   0x40u
-#define _PUPIF    0x80u
-
-#define _IEP0IF 0x01u
-#define _IEP1IF 0x02u
-#define _IEP2IF 0x04u
-#define _OEP0IF 0x10u
-#define _OEP1IF 0x20u
-#define _OEP2IF 0x40u
-
 #define _EUSB 0x10u
+
+/**
+ * \name Bits from register USBCON
+ * @{
+ */
+#define _GOSUSP (1u << 0)
+#define _WKUP   (1u << 1)
+#define _SW2CON (1u << 2)
+#define _DMSTA  (1u << 3)
+#define _DPSTA  (1u << 4)
+#define _SWRST  (1u << 5)
+#define _SW1CON (1u << 6)
+#define _ENUSB  (1u << 7)
+/**@}*/
+
+/**
+ * \name Bits from register USBIF1
+ * @{
+ */
+#define _USBRSTIF (1u << 0)
+#define _SUSPIF   (1u << 1)
+#define _RESMIF   (1u << 2)
+#define _SOFIF    (1u << 3)
+#define _SETUPIF  (1u << 4)
+#define _OW       (1u << 5)
+#define _OVERIF   (1u << 6)
+#define _PUPIF    (1u << 7)
+/**@}*/
+
+/**
+ * \name Bits from register USBIF2
+ * @{
+ */
+#define _IEP0IF (1u << 0)
+#define _IEP1IF (1u << 1)
+#define _IEP2IF (1u << 2)
+#define _OEP0IF (1u << 4)
+#define _OEP1IF (1u << 5)
+#define _OEP2IF (1u << 6)
+/**@}*/
+
+/**
+ * \name Bits from register USBIE1
+ * @{
+ */
+#define _PBRSTIE (1u << 0)
+#define _SUSPIE  (1u << 1)
+#define _RESMIE  (1u << 2)
+#define _SOFIA   (1u << 3)
+#define _SETUPIE (1u << 4)
+#define _OVERIE  (1u << 6)
+#define _BOOTS   (1u << 7)
+/**@}*/
+
+/**
+ * \name Bits from register USBIE2
+ * @{
+ */
+#define _IEP0IE (1u << 0)
+#define _IEP1IE (1u << 1)
+#define _IEP2IE (1u << 2)
+#define _OEP0IE (1u << 4)
+#define _OEP1IE (1u << 5)
+#define _OEP2IE (1u << 6)
+/**@}*/
+
+/**
+ * \name Bits from register EP0CON
+ * @{
+ */
+#define _OEP0RDY (1u << 0)
+#define _OEP0STL (1u << 1)
+#define _IEP0RDY (1u << 2)
+#define _IEP0STL (1u << 3)
+#define _OEP0DTG (1u << 6)
+#define _IEP0DTG (1u << 7)
+/**@}*/
+
+/**
+ * \name Bits from register EP1CON
+ * @{
+ */
+#define _OEP1RDY    (1u << 0)
+#define _OEP1STL    (1u << 1)
+#define _IEP1RDY    (1u << 2)
+#define _IEP1STL    (1u << 3)
+#define _OEP1BUFSEL (1u << 4)
+#define _IEP1BUFSEL (1u << 5)
+#define _OEP1DTG    (1u << 6)
+#define _IEP1DTG    (1u << 7)
+/**@}*/
+
+/**
+ * \name Bits from register EP2CON
+ * @{
+ */
+#define _OEP2RDY    (1u << 0)
+#define _OEP2STL    (1u << 1)
+#define _IEP2RDY    (1u << 2)
+#define _IEP2STL    (1u << 3)
+#define _OEP2BUFSEL (1u << 4)
+#define _IEP2BUFSEL (1u << 5)
+#define _OEP2DTG    (1u << 6)
+#define _IEP2DTG    (1u << 7)
+/**@}*/
 
 // Values the bootloader's own USB bring-up uses.
 #define USBCON_ENABLE 0xC0u

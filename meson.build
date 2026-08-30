@@ -108,6 +108,9 @@ inc_platform_sh68f881 = [
 
 src_platform_sh68f881 = [
     'src/platform/sh68f881/clock.c',
+    'src/platform/sh68f881/delay.c',
+    'src/platform/sh68f881/diag.c',
+    'src/platform/sh68f881/usb.c',
     'src/platform/sh68f881/isp.c',
 ]
 
@@ -364,12 +367,12 @@ endforeach
 
 # BRING-UP TARGETS
 #
-# Minimal images that hand the board straight back to the ISP bootloader. No smk
-# sources, no user lib and no ISRs, so no overlay check either.
+# Minimal images that enumerate and dump the information block to the debug console.
+# No matrix, no LEDs, no user lib.
 
 bringup_parts = [
-    # keyboard, platform
-    ['hykker', 'sh68f881'],
+    # keyboard, platform, options
+    ['hykker', 'sh68f881', { 'vendor_id': '0x258a', 'product_id': '0x001f' }],
 ]
 
 cc_bringup_args = [
@@ -379,16 +382,22 @@ cc_bringup_args = [
     '-mmcs51',
     '--model-large',
     '--stack-auto',
-    '--xram-size', '0x400',
+    # The endpoint buffers are absolute at 0x0A00-0x0AFF, so xram has to reach past them.
+    '--xram-size', '0x0b00',
     '--xram-loc', '0x0000',
     '--code-size', '0x6f00', # cap code below the app-validity marker (0x6FFB) + bootloader
     '--opt-code-speed',
     '--out-fmt-ihx',
+
+    '-DDEBUG=1',
+    '-DDEBUG_SINK_CONSOLE=1',
+    '-DSMK_VERSION=@0@'.format(meson.project_version()),
 ]
 
 foreach part : bringup_parts
     keyboard = part[0]
     platform = part[1]
+    options = part[2]
 
     if platform == 'sh68f881'
         src_bringup = src_platform_sh68f881
@@ -398,9 +407,17 @@ foreach part : bringup_parts
     endif
 
     src_bringup += 'src/keyboards/@0@/bringup.c'.format(keyboard)
+    src_bringup += 'src/smk/console.c'
     inc_bringup += 'src/keyboards/@0@'.format(keyboard)
+    inc_bringup += 'src/smk'
+    inc_bringup += 'src'
 
-    cc_args = cc_bringup_args + ['-DWATCHDOG_ENABLE=1']
+    cc_args = cc_bringup_args + [
+        '-DWATCHDOG_ENABLE=1',
+        '-DUSB_VID=@0@'.format(options['vendor_id']),
+        '-DUSB_PID=@0@'.format(options['product_id']),
+        '-DKEYBOARD_NAME="@0@"'.format(keyboard),
+    ]
 
     cc_incs = []
     foreach dir : inc_bringup
