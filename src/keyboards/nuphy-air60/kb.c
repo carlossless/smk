@@ -28,7 +28,7 @@ typedef struct {
     user_keyboard_os_mode_t   os_mode;
 } user_keyboard_state_t;
 
-volatile __xdata user_keyboard_state_t user_keyboard_state;
+volatile user_keyboard_state_t user_keyboard_state;
 
 void kb_init()
 {
@@ -44,55 +44,59 @@ void kb_init()
 
 #define SLIDER_DEBOUNCE_ITERS 256
 
+static void kb_apply_conn_mode(user_keyboard_conn_mode_t mode)
+{
+    user_keyboard_state.conn_mode = mode;
+
+    switch (mode) {
+        case KEYBOARD_CONN_MODE_USB:
+            dprintf("USB_MODE\r\n");
+#ifdef RF_ENABLED
+            rf_apply_usb_mode();
+#endif
+            break;
+        case KEYBOARD_CONN_MODE_RF:
+            dprintf("RF_MODE\r\n");
+#ifdef RF_ENABLED
+            rf_set_link((rf_mode_t)user_settings.rf_link);
+            rf_kbd_lazy_state_init();
+#endif
+            break;
+    }
+}
+
+static void kb_apply_os_mode(user_keyboard_os_mode_t mode)
+{
+    const bool is_mac = (mode == KEYBOARD_OS_MODE_MAC);
+
+    user_keyboard_state.os_mode = mode;
+    set_default_layer(layout_os_base_layer(is_mac));
+
+    dprintf(is_mac ? "MAC_MODE\r\n" : "WIN_MODE\r\n");
+#ifdef RF_ENABLED
+    rf_set_mac_mode_compat(is_mac);
+#endif
+}
+
 void kb_update_switches()
 {
-    static __xdata uint16_t conn_debounce;
-    static __xdata uint16_t os_debounce;
+    static uint16_t conn_debounce;
+    static uint16_t os_debounce;
 
     const uint8_t raw_conn = CONN_MODE_SWITCH;
     if (raw_conn == user_keyboard_state.conn_mode) {
         conn_debounce = 0;
     } else if (++conn_debounce >= SLIDER_DEBOUNCE_ITERS) {
-        conn_debounce                 = 0;
-        user_keyboard_state.conn_mode = raw_conn;
-        switch (user_keyboard_state.conn_mode) {
-            case KEYBOARD_CONN_MODE_USB:
-                dprintf("USB_MODE\r\n");
-#ifdef RF_ENABLED
-                rf_apply_usb_mode();
-#endif
-                break;
-            case KEYBOARD_CONN_MODE_RF:
-                dprintf("RF_MODE\r\n");
-#ifdef RF_ENABLED
-                rf_set_link((rf_mode_t)user_settings.rf_link);
-                rf_kbd_lazy_state_init();
-#endif
-                break;
-        }
+        conn_debounce = 0;
+        kb_apply_conn_mode((user_keyboard_conn_mode_t)raw_conn);
     }
 
     const uint8_t raw_os = OS_MODE_SWITCH;
     if (raw_os == user_keyboard_state.os_mode) {
         os_debounce = 0;
     } else if (++os_debounce >= SLIDER_DEBOUNCE_ITERS) {
-        os_debounce                 = 0;
-        user_keyboard_state.os_mode = raw_os;
-        set_default_layer(layout_os_base_layer(user_keyboard_state.os_mode == KEYBOARD_OS_MODE_MAC));
-        switch (user_keyboard_state.os_mode) {
-            case KEYBOARD_OS_MODE_MAC:
-                dprintf("MAC_MODE\r\n");
-#ifdef RF_ENABLED
-                rf_set_mac_mode_compat(true);
-#endif
-                break;
-            case KEYBOARD_OS_MODE_WIN:
-                dprintf("WIN_MODE\r\n");
-#ifdef RF_ENABLED
-                rf_set_mac_mode_compat(false);
-#endif
-                break;
-        }
+        os_debounce = 0;
+        kb_apply_os_mode((user_keyboard_os_mode_t)raw_os);
     }
 }
 
@@ -130,17 +134,15 @@ extern void indicators_battery_flash();
 extern void indicators_battery_on();
 extern void indicators_battery_off();
 
-// While UL_MODE (the "?" key on the Fn layer) is held, the RGB_* chords adjust the
-// underglow instead of the main backlight. Held in xdata to spare internal RAM.
-static __xdata bool ul_mode_active;
+static bool ul_mode_active;
 
-static __xdata bool reset_mode_active;
+static bool reset_mode_active;
 
 #ifdef RF_ENABLED
 #    define LINK_PAIRING_HOLD_TICKS 60000
-static __xdata uint16_t link_hold_ticks    = 0;
-static __xdata uint16_t link_hold_keycode  = 0;
-static __xdata bool     link_pairing_armed = false;
+static uint16_t link_hold_ticks    = 0;
+static uint16_t link_hold_keycode  = 0;
+static bool     link_pairing_armed = false;
 #endif
 
 bool kb_process_record(uint16_t keycode, bool key_pressed)
@@ -303,7 +305,7 @@ void kb_send_extra(__xdata report_extra_t *report)
     }
 }
 
-__xdata uint16_t ticks = 0;
+uint16_t ticks = 0;
 
 void kb_update()
 {

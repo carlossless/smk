@@ -9,7 +9,7 @@
 #define USBIF1_BUS_EVENTS_CLEAR (uint8_t)(_SUSPIF | _SOFIF | _SETUPIF | _OW | _OVERIF)
 #define USBIE1_RESUME_ARM       (uint8_t)(_PBRSTIE | _SUSPIE | _RESMIE | _SOFIA | _SETUPIE | _OVERIE)
 
-static volatile __xdata uint8_t int4_woke;
+static volatile uint8_t int4_woke;
 
 static void usb_park(powerdown_mode_t mode)
 {

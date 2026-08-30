@@ -15,14 +15,14 @@
 
 typedef uint8_t matrix_col_t;
 
-__xdata matrix_col_t matrix[MATRIX_COLS];
-__xdata matrix_col_t matrix_previous[MATRIX_COLS];
+matrix_col_t matrix[MATRIX_COLS];
+matrix_col_t matrix_previous[MATRIX_COLS];
 
 volatile bool matrix_updated;
 
 uint8_t action_layer;
 
-__xdata uint8_t default_layer;
+uint8_t default_layer;
 
 void matrix_init()
 {
@@ -148,6 +148,10 @@ uint8_t matrix_task()
         return false;
     }
 
+    // Snapshot the scan-written matrix[], then diff it against
+    // matrix_previous[]. No lock needed: each column byte reads atomically, so a
+    // concurrent scan lands cleanly on one side of the read - at worst a
+    // transition is split across two main-loop iterations, never lost.
     matrix_col_t snapshot[MATRIX_COLS];
     matrix_updated = false;
     for (uint8_t i = 0; i < MATRIX_COLS; i++) {
