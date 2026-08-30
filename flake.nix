@@ -17,7 +17,7 @@
         };
 
         # uCsim (the SDCC 8051 simulator) patched so the SH68F90's USB interrupt
-        # (vector 7 @ 0x3B) is a real, registered interrupt source — stock uCsim
+        # (vector 7 @ 0x3B) is a real, registered interrupt source - stock uCsim
         # only knows the classic 8051 vectors. Lets us drive usb_interrupt_handler
         # in simulation with faithful vectoring/stack/nesting.
         ucsim-sh68f90 = pkgs.stdenv.mkDerivation {

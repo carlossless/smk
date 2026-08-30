@@ -1,4 +1,5 @@
 #include "kbdef.h"
+#include "gpio.h"
 #include "user_matrix.h"
 
 #define KB_C_P1_MASK (uint8_t)(KB_C15_P1_5)
@@ -8,30 +9,30 @@
 
 void user_matrix_cols_deselect_all(void)
 {
-    P1 |= KB_C_P1_MASK;
-    P2 |= KB_C_P2_MASK;
-    P3 |= KB_C_P3_MASK;
-    P5 |= KB_C_P5_MASK;
+    GPIO_HIGH(1, KB_C_P1_MASK);
+    GPIO_HIGH(2, KB_C_P2_MASK);
+    GPIO_HIGH(3, KB_C_P3_MASK);
+    GPIO_HIGH(5, KB_C_P5_MASK);
 }
 
 void user_matrix_scan_pre(void)
 {
-    P1CR |= KB_C_P1_MASK;
-    P2CR |= KB_C_P2_MASK;
-    P3CR |= KB_C_P3_MASK;
-    P5CR |= KB_C_P5_MASK;
+    GPIO_OUTPUT(1, KB_C_P1_MASK);
+    GPIO_OUTPUT(2, KB_C_P2_MASK);
+    GPIO_OUTPUT(3, KB_C_P3_MASK);
+    GPIO_OUTPUT(5, KB_C_P5_MASK);
 }
 
 void user_matrix_scan_post(void)
 {
-    P1PCR &= (uint8_t)~KB_C_P1_MASK;
-    P1CR &= (uint8_t)~KB_C_P1_MASK;
-    P2PCR &= (uint8_t)~KB_C_P2_MASK;
-    P2CR &= (uint8_t)~KB_C_P2_MASK;
-    P3PCR &= (uint8_t)~KB_C_P3_MASK;
-    P3CR &= (uint8_t)~KB_C_P3_MASK;
-    P5PCR &= (uint8_t)~KB_C_P5_MASK;
-    P5CR &= (uint8_t)~KB_C_P5_MASK;
+    GPIO_PULLUP_OFF(1, KB_C_P1_MASK);
+    GPIO_INPUT(1, KB_C_P1_MASK);
+    GPIO_PULLUP_OFF(2, KB_C_P2_MASK);
+    GPIO_INPUT(2, KB_C_P2_MASK);
+    GPIO_PULLUP_OFF(3, KB_C_P3_MASK);
+    GPIO_INPUT(3, KB_C_P3_MASK);
+    GPIO_PULLUP_OFF(5, KB_C_P5_MASK);
+    GPIO_INPUT(5, KB_C_P5_MASK);
 }
 
 void user_matrix_col_select(uint8_t col) // active-low: drive LOW
@@ -149,9 +150,9 @@ uint8_t user_matrix_read_rows(void)
 
 void user_matrix_sinks_off(void)
 {
-    P0 &= ~(uint8_t)(RGB_R2R_P0_2 | RGB_R0B_P0_3 | RGB_R0R_P0_4);
-    P1 &= ~(uint8_t)(RGB_ULR_P1_1 | RGB_ULG_P1_2 | RGB_ULB_P1_3);
-    P4 &= ~(uint8_t)(RGB_R4B_P4_3 | RGB_R4R_P4_4 | RGB_R3R_P4_5 | RGB_R3B_P4_6);
-    P5 &= ~(uint8_t)(RGB_R2B_P5_7);
-    P6 &= ~(uint8_t)(RGB_R0G_P6_1 | RGB_R1G_P6_2 | RGB_R2G_P6_3 | RGB_R3G_P6_4 | RGB_R4G_P6_5 | RGB_R1B_P6_6 | RGB_R1R_P6_7);
+    GPIO_LOW(0, RGB_R2R_P0_2 | RGB_R0B_P0_3 | RGB_R0R_P0_4);
+    GPIO_LOW(1, RGB_ULR_P1_1 | RGB_ULG_P1_2 | RGB_ULB_P1_3);
+    GPIO_LOW(4, RGB_R4B_P4_3 | RGB_R4R_P4_4 | RGB_R3R_P4_5 | RGB_R3B_P4_6);
+    GPIO_LOW(5, RGB_R2B_P5_7);
+    GPIO_LOW(6, RGB_R0G_P6_1 | RGB_R1G_P6_2 | RGB_R2G_P6_3 | RGB_R3G_P6_4 | RGB_R4G_P6_5 | RGB_R1B_P6_6 | RGB_R1R_P6_7);
 }

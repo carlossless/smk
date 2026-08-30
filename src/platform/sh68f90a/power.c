@@ -4,10 +4,12 @@
 #include "delay.h"
 #include "usb.h"
 #include "clock.h"
+#include "extint.h"
 
 #define SUSLO_POWERDOWN_KEY     0x55
 #define USBIF1_BUS_EVENTS_CLEAR (uint8_t)(_SUSPIF | _SOFIF | _SETUPIF | _OW | _OVERIF)
 #define USBIE1_RESUME_ARM       (uint8_t)(_PBRSTIE | _SUSPIE | _RESMIE | _SOFIA | _SETUPIE | _OVERIE)
+#define REGULATOR_SETTLE_US     500
 
 static volatile uint8_t int4_woke;
 
@@ -17,7 +19,6 @@ static void usb_park(powerdown_mode_t mode)
         USBCON |= _GOSUSP;
         return;
     }
-
     usb_deinit();
 }
 
@@ -69,7 +70,6 @@ static void usb_resume(powerdown_mode_t mode)
 {
     USBIF1 &= ~_SUSPIF;
     USBCON &= ~_GOSUSP;
-
     if (int4_woke) {
         USBCON |= _WKUP;
         int4_woke = 0;
@@ -83,7 +83,7 @@ static void usb_resume(powerdown_mode_t mode)
     }
 
     REGCON |= _REGEN;
-    delay_us(500);
+    delay_us(REGULATOR_SETTLE_US);
     usb_init();
 }
 
@@ -97,13 +97,12 @@ void power_enter_powerdown(powerdown_mode_t mode)
     int4_woke = 0;
 
     halt_until_wake();
-
     clock_wake_restart();
     usb_resume(mode);
 }
 
 void int4_interrupt_handler(void) __interrupt(_INT_INT4)
 {
-    EXF1      = 0;
+    extint_wake_clear();
     int4_woke = 1;
 }
