@@ -1,1 +1,4 @@
 option('nkro', type : 'feature', value : 'enabled', description: 'NKRO support')
+option('sleep', type : 'feature', value : 'enabled', description: 'Inactivity sleep (SH68F90A Power-Down mode, INT4/USB wake)')
+option('debug_sink', type : 'combo', choices : ['console', 'uart', 'both'], value : 'console',
+       description: 'Where dprintf output goes in debug builds: HID console only (default), UART only, or both. UART has a blocking busy-wait per byte (uart_putc), so picking it can stall the main loop while the TX shift register drains.')
