@@ -15,6 +15,7 @@
 #include "settings.h"
 #include "tick.h"
 #include "sleep.h"
+#include "diag.h"
 #ifdef DEBUG_SINK_UART
 #    include "uart.h"
 #endif
@@ -107,6 +108,7 @@ void main(void)
 
 #if DEBUG == 1
         stack_task();
+        diag_task();
         console_task();
 #endif
     }
