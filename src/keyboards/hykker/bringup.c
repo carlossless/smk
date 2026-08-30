@@ -3,22 +3,21 @@
 #include "isp.h"
 #include <stdint.h>
 
-// Roughly a second at any clock the bootloader might leave us on; the exact figure
-// only has to be long enough to see the application PID before the board flips back.
-#define SETTLE_OUTER 30000u
-#define SETTLE_INNER 250u
+// The 0x7F00 entry does not touch the clock -- it assumes a running application left
+// one the USB block can work off. Reset hands us CLKCON = 0, so set up the same
+// regulator, clock and PLL the bootloader's own cold ISP path uses before jumping.
+#define REGCON_ISP 0x03u
+#define CLKCON_ISP 0x08u
+#define PLLCON_ISP 0x02u
 
-static void settle(void)
+static void pll_settle(void)
 {
-    for (uint16_t outer = 0; outer < SETTLE_OUTER; outer++) {
-        watchdog_kick();
-        for (uint16_t inner = 0; inner < SETTLE_INNER; inner++) {
-            // clang-format off
-            __asm
-                nop
-            __endasm;
-            // clang-format on
-        }
+    for (uint16_t i = 0; i < 2000; i++) {
+        // clang-format off
+        __asm
+            nop
+        __endasm;
+        // clang-format on
     }
 }
 
@@ -27,6 +26,13 @@ static void settle(void)
 void main(void)
 {
     EA = 0;
-    settle();
+    watchdog_kick();
+
+    REGCON = REGCON_ISP;
+    CLKCON = CLKCON_ISP;
+    PLLCON = PLLCON_ISP;
+    pll_settle();
+
+    watchdog_kick();
     isp_jump();
 }
