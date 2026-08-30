@@ -177,7 +177,7 @@ def set_report_isp_setup():
 
 
 class Sim:
-    # SH68F90 SFR addresses / bits (see src/platform/sh68f90a/sh68f90a.h)
+    # SH68F90 SFR addresses / bits (see src/platform/sh68f90/sh68f90.h)
     IE, IEN1, USBADDR, USBIF1, USBIF2, EP0CON = 0xA8, 0xA9, 0x96, 0x92, 0x93, 0x97
     SP_SFR = 0x81
     EP0_OUT_BUF = 0x1100

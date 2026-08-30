@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sh68f90a.h"
+#include "sh68f90.h"
 
 typedef enum {
     SYSTICK_SLOT_MATRIX_SCAN,

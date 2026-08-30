@@ -1,5 +1,5 @@
 #include "clock.h"
-#include "sh68f90a.h"
+#include "sh68f90.h"
 #include "delay.h"
 #include "watchdog.h"
 

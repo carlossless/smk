@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Stack-usage firmware tests, driven through the patched uCsim simulator.
 
-The SH68F90A is an 8052-class part with 256 bytes of internal RAM; the firmware
+The SH68F90 is an 8052-class part with 256 bytes of internal RAM; the firmware
 reserves 122 bytes of it (0x86-0xFF, base 0x85) as the call stack. The 8051 has
 no hardware overflow detection -- SP wraps 0xFF->0x00 and silently corrupts
 register bank 0 / the static data area. These tests measure the deepest

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sh68f90a.h"
+#include "sh68f90.h"
 #include "keycodes.h"
 
 #define MATRIX_ROWS 5

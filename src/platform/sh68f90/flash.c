@@ -1,5 +1,5 @@
 #include "flash.h"
-#include "sh68f90a.h"
+#include "sh68f90.h"
 #include <stdbool.h>
 
 #define CFG_ADDR   0xEC00u // sector 118

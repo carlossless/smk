@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sh68f90a.h"
+#include "sh68f90.h"
 #include <stdint.h>
 
 #define PWM_CLK_DIV_4   0b010 // PWM_CLK = SYS_CLK / 4

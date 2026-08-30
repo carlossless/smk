@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sh68f90a.h"
+#include "sh68f90.h"
 
 #define WATCHDOG_PERIOD 0
 

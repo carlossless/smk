@@ -25,7 +25,7 @@ from sim import find_firmware, find_sim, load_symbols
 from pathlib import Path
 
 # --- Air60 matrix wiring (src/keyboards/nuphy-air60/kbdef.h) ----------------
-# P-register SFR addresses (src/platform/sh68f90a/sh68f90a.h).
+# P-register SFR addresses (src/platform/sh68f90/sh68f90.h).
 P1, P2, P3, P5, P7 = 0x90, 0x98, 0xa0, 0x88, 0xf8
 
 # Columns are driven low one at a time; each pressed key shorts its column to
@@ -357,7 +357,7 @@ class Air60Sim(UcsimSession):
         self.run()                                     # ISR fires during this run
         self.cmd("delete")
 
-    # Top of the SH68F90A's 256-byte internal RAM (stack base is per-build, see
+    # Top of the SH68F90's 256-byte internal RAM (stack base is per-build, see
     # self.stack_base, derived from __start__stack to match the firmware).
     STACK_TOP = 0xFF
 

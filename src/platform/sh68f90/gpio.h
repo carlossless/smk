@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sh68f90a.h"
+#include "sh68f90.h"
 
 #define DRVCON_UNLOCK_P1 0x05
 #define DRVCON_UNLOCK_P2 0x45

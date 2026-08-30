@@ -4,7 +4,7 @@
 //
 // SDCC's __mcs51_genXINIT copies the XINIT image into XISEG with paged
 // addressing (`mov P2,#page` / `movx @r0,a`), assembling P2 at 0xA0 per the
-// classic 8051 SFR map. The SH68F90A puts P2 at 0x98 (see sh68f90a.h), so the
+// classic 8051 SFR map. The SH68F90 puts P2 at 0x98 (see sh68f90.h), so the
 // page is never set and the copy scatters, leaving every initialized __xdata
 // variable holding power-on garbage. Only visible on a cold boot; an ISP reset
 // keeps the previous run's xdata values, hiding it.
