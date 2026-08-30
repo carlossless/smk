@@ -158,16 +158,20 @@ void del_key_byte(report_keyboard_t *keyboard_report, uint8_t code)
 #ifdef NKRO_ENABLE
 void add_key_bit(report_nkro_t *nkro_report, uint8_t code)
 {
-    if ((code >> 3) < NKRO_REPORT_BITS) {
-        nkro_report->bits[code >> 3] |= 1 << (code & 7);
+    if ((code >> 3) >= NKRO_REPORT_BITS) {
+        dprintf("nkro add out of range %02x\r\n", code);
+        return;
     }
+    nkro_report->bits[code >> 3] |= 1 << (code & 7);
 }
 
 void del_key_bit(report_nkro_t *nkro_report, uint8_t code)
 {
-    if ((code >> 3) < NKRO_REPORT_BITS) {
-        nkro_report->bits[code >> 3] &= ~(1 << (code & 7));
+    if ((code >> 3) >= NKRO_REPORT_BITS) {
+        dprintf("nkro del out of range %02x\r\n", code);
+        return;
     }
+    nkro_report->bits[code >> 3] &= ~(1 << (code & 7));
 }
 #endif
 
@@ -230,8 +234,6 @@ uint8_t get_weak_mods(void)
     return weak_mods;
 }
 
-// most significant on-bit - return highest location of on-bit
-// NOTE: return 0 when bit0 is on or all bits are off
 uint8_t biton(uint8_t bits)
 {
     uint8_t n = 0;

@@ -107,7 +107,7 @@ void sleep_task(void)
 
 #    ifdef RF_ENABLED
     if (powerdown == POWERDOWN_RELEASE_USB) {
-        rf_wake_from_sleep();
+        rf_wake();
     }
 #    endif
 

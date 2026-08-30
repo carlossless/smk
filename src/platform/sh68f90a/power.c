@@ -6,14 +6,10 @@
 #include "clock.h"
 #include "extint.h"
 
-#define SUSLO_POWERDOWN_KEY 0x55
-// Keep the pending bus-event flags, drop the ones we have handled.
+#define SUSLO_POWERDOWN_KEY     0x55
 #define USBIF1_BUS_EVENTS_CLEAR (uint8_t)(_SUSPIF | _SOFIF | _SETUPIF | _OW | _OVERIF)
 #define USBIE1_RESUME_ARM       (uint8_t)(_PBRSTIE | _SUSPIE | _RESMIE | _SOFIA | _SETUPIE | _OVERIE)
-#define REGULATOR_SETTLE_US     500 // datasheet 8.1
-
-// Datasheet 8.9.3: in Power-Down only INT2/3/4, LPD, a USB bus event or reset
-// wakes the core.
+#define REGULATOR_SETTLE_US     500
 
 static volatile uint8_t int4_woke;
 
