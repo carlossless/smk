@@ -102,6 +102,14 @@ src_platform_sh68f90 = [
     'src/platform/sh68f90/extint.c',
 ]
 
+inc_platform_sh68f881 = [
+    'src/platform/sh68f881',
+]
+
+src_platform_sh68f881 = [
+    'src/platform/sh68f881/isp.c',
+]
+
 inc_platform_bk3632 = [
     'src/platform/bk3632',
     'src/platform', # for bb_spi
@@ -351,6 +359,79 @@ foreach part : parts
 
         message('target available: @0@, flash: @1@'.format(hex_smk_target_name, flash_target_name))
     endforeach
+endforeach
+
+# BRING-UP TARGETS
+#
+# Minimal images that hand the board straight back to the ISP bootloader. No smk
+# sources, no user lib and no ISRs, so no overlay check either.
+
+bringup_parts = [
+    # keyboard, platform
+    ['hykker', 'sh68f881'],
+]
+
+cc_bringup_args = [
+    '--Werror',
+    '--std-c23',
+
+    '-mmcs51',
+    '--model-large',
+    '--stack-auto',
+    '--xram-size', '0x400',
+    '--xram-loc', '0x0000',
+    '--code-size', '0x6f00', # cap code below the app-validity marker (0x6FFB) + bootloader
+    '--opt-code-speed',
+    '--out-fmt-ihx',
+]
+
+foreach part : bringup_parts
+    keyboard = part[0]
+    platform = part[1]
+
+    if platform == 'sh68f881'
+        src_bringup = src_platform_sh68f881
+        inc_bringup = inc_platform_sh68f881
+    else
+        error('unsupported bring-up platform: @0@'.format(platform))
+    endif
+
+    src_bringup += 'src/keyboards/@0@/bringup.c'.format(keyboard)
+    inc_bringup += 'src/keyboards/@0@'.format(keyboard)
+
+    cc_args = cc_bringup_args + ['-DWATCHDOG_ENABLE=1']
+
+    cc_incs = []
+    foreach dir : inc_bringup
+        cc_incs += '-I' + join_paths(dir_base, dir)
+    endforeach
+
+    prefix = '@0@_bringup_'.format(keyboard)
+
+    compiler = generator(py,
+        output : '@BASENAME@.rel',
+        depfile : '@BASENAME@.d',
+        arguments : [sdcc_compile, '@DEPFILE@', cc.full_path()] + cc_args + cc_incs + ['-c', '@INPUT@', '-o', '@OUTPUT@'],
+    )
+
+    ihx_bringup_name = '@0@smk.ihx'.format(prefix)
+    ihx_bringup = custom_target(ihx_bringup_name,
+        input : compiler.process(src_bringup),
+        output : ihx_bringup_name,
+        command : [cc, cc_args, '-o', '@OUTPUT@', '@INPUT@'],
+    )
+
+    hex_bringup_name = '@0@smk.hex'.format(prefix)
+    custom_target(hex_bringup_name,
+        input : ihx_bringup,
+        output : hex_bringup_name,
+        capture : true,
+        install : true,
+        install_dir : 'firmware',
+        command : [packihx, '@INPUT@'],
+    )
+
+    message('bring-up target available: @0@'.format(hex_bringup_name))
 endforeach
 
 # Simulator-based firmware tests, run in the patched uCsim simulator (flake
