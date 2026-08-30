@@ -105,6 +105,11 @@ void console_notify_attached(void)
     console_attached = 1;
 }
 
+bool console_is_drained(void)
+{
+    return console_attached && console_head == console_tail;
+}
+
 void console_putc(unsigned char c)
 {
     uint8_t next;

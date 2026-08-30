@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 
 // Debug console over the host link. Bytes written with console_putc() are queued
 // in a ring buffer and drained to the host by console_task(), which must be
@@ -18,5 +19,8 @@ void debug_putc(char c);
 void console_task(void);
 
 void console_notify_attached(void);
+
+// True once the host is listening and everything queued has gone out, so a long dump can pace itself a line at a time.
+bool console_is_drained(void);
 
 void console_printf(const __code char *fmt, ...) __reentrant;

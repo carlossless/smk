@@ -89,6 +89,7 @@ src_platform_sh68f90a = [
     'src/platform/sh68f90a/startup.c',
     'src/platform/sh68f90a/clock.c',
     'src/platform/sh68f90a/delay.c',
+    'src/platform/sh68f90a/diag.c',
     'src/platform/sh68f90a/flash.c',
     'src/platform/sh68f90a/isp.c',
     'src/platform/sh68f90a/ldo.c',
