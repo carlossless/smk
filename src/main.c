@@ -21,7 +21,7 @@
 #    include "rf_controller.h"
 #endif
 
-#include "pwm.h" // TODO: interrupt is defined here and need to be imported in main, centralise interupt definitions
+#include "pwm.h"
 #include "timer2.h"
 #include "sleep.h"
 #include "power.h"

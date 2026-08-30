@@ -4,7 +4,7 @@
 #    include "debug.h"
 #endif
 
-_Static_assert(sizeof(user_settings_t) + 4u <= 512u, "user_settings_t too large for the 512-byte settings sector");
+_Static_assert(sizeof(user_settings_t) + 4u <= 512u, "user_settings_t too large for the settings sector");
 
 __xdata user_settings_t user_settings;
 

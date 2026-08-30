@@ -51,16 +51,12 @@
 #include LED_GEOMETRY_HEADER
 _Static_assert(LED_GEOMETRY_ROWS == LED_ROWS && LED_GEOMETRY_COLS == LED_COLS, "generated LED geometry size does not match the key matrix");
 
-// Per-LED RGB framebuffer for the main key matrix, indexed [row][color][col].
-// Kept entirely in __xdata so the scarce internal RAM stays untouched.
 static __xdata uint8_t led_fb[LED_ROWS][3][LED_COLS];
 
 // Separate framebuffer for the underglow ("user") LEDs, since they animate
 // independently of the main backlight.
 static __xdata uint8_t led_ul_fb[3][LED_COLS];
 
-// LED scan cursor, advanced one (row,color) substep per PWM ISR. Decoupled from
-// the key-matrix column scan (current_step). Also __xdata to avoid internal RAM.
 static __xdata uint8_t led_row;
 static __xdata uint8_t led_color;
 

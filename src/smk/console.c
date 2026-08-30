@@ -109,8 +109,6 @@ void console_notify_attached(void)
 void console_putc(unsigned char c)
 {
     uint8_t next;
-    // __critical so a dprintf() reached from an interrupt can't tear the head
-    // update against a main-loop writer. Drops the byte when the buffer is full.
     __critical
     {
         next = (console_head + 1) & CONSOLE_BUF_MASK;
@@ -126,7 +124,7 @@ void console_task(void)
     uint8_t len;
 
     if (!usb_is_configured()) {
-        console_attached = 0;
+        console_attached = 0; // require a fresh handshake once the link is back
         return;
     }
     if (!console_attached) {
@@ -136,7 +134,7 @@ void console_task(void)
         return; // nothing buffered
     }
     if (EP2CON & _IEP2RDY) {
-        return; // previous EP2 report still pending; retry next iteration
+        return;
     }
 
     EP2_IN_BUF[0] = REPORT_ID_CONSOLE;

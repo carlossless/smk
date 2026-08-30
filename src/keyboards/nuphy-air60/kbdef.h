@@ -147,18 +147,18 @@ enum custom_keycodes {
     LNK_BT2,
     LNK_BT3,
 
-    RGB_FX_NEXT, // cycle to the next RGB animation
-    RGB_FX_PREV, // cycle to the previous RGB animation
-    RGB_BRI_UP,  // backlight brightness up
-    RGB_BRI_DN,  // backlight brightness down
-    RGB_SPD_UP,  // animation speed up
-    RGB_SPD_DN,  // animation speed down
-    UL_MODE,     // held: re-route the RGB_* chords to the underglow ("user") LEDs
-    RESET_HOLD,  // held: enables the factory-reset chord
-    FACT_RESET,  // factory-reset all user settings (only acts while RESET_HOLD is held)
-    BAT_FLASH,   // FN + [: briefly show the current battery level on the right-side underglow
-    BAT_ON,      // FN + ]: keep the right-side underglow showing the battery indicator (persisted)
-    BAT_OFF,     // FN + \\: disable the always-on battery indicator (persisted)
+    FX_NEXT, // cycle to the next RGB animation
+    FX_PREV, // cycle to the previous RGB animation
+    BRI_UP,  // backlight brightness up
+    BRI_DN,  // backlight brightness down
+    SPD_UP,  // animation speed up
+    SPD_DN,  // animation speed down
+    UL_MODE, // held: re-route the RGB_* chords to the underglow ("user") LEDs
+    RST_HLD, // held: enables the factory-reset chord
+    FCT_RST, // factory-reset all user settings (only acts while RST_HLD is held)
+    BAT_FL,  // FN + [: briefly show the current battery level on the right-side underglow
+    BAT_ON,  // FN + ]: keep the right-side underglow showing the battery indicator (persisted)
+    BAT_OFF, // FN + \\: disable the always-on battery indicator (persisted)
 
     KB_SAFE_RANGE,
 };

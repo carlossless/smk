@@ -52,6 +52,7 @@ void timer2_interrupt_handler(void) __interrupt(_INT_TIMER2)
         sleep_tick();
     } else {
         timer2_reload(T2_RELOAD_LED);
+
         indicators_pre_update();
         const bool frame_wrapped = indicators_update_step(&keyboard_state, 0);
         indicators_post_update();

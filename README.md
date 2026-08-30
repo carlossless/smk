@@ -6,7 +6,7 @@
 
 [![Build](https://github.com/carlossless/smk/actions/workflows/build.yml/badge.svg)](https://github.com/carlossless/smk/actions/workflows/build.yml) [![](https://img.shields.io/badge/discord-SMK-blue)](https://discord.gg/SZFBDBuxrK)
 
-This is a keyboard firmware similar to [QMK](https://github.com/qmk/qmk_firmware), but targeting 8051-based devices like the SinoWealth SH68F90A (labeled as BYK916 or BYK901). It's aimed to be at least partially compatible with QMK configurations.
+This is a keyboard firmware similar to [QMK](https://github.com/qmk/qmk_firmware), but targeting 8051-based devices like the SinoWealth SH68F90A (labeled as BYK916 or BYK901).
 
 The S (Small) in SMK comes from this firmware using [SDCC](https://sdcc.sourceforge.net/) to build itself.
 

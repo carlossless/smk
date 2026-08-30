@@ -128,7 +128,7 @@ void matrix_scan_full(void)
     for (uint8_t col = 0; col < MATRIX_COLS; col++) {
         user_matrix_col_select(col);
 
-        delay_us(10);
+        delay_us(10); // let the row lines settle before sampling
         const uint8_t sample1 = user_matrix_read_rows();
         delay_us(10);
         const uint8_t sample2 = user_matrix_read_rows();
@@ -153,27 +153,27 @@ uint8_t matrix_task()
         return false;
     }
 
-    __xdata matrix_col_t snapshot[MATRIX_COLS];
+    matrix_col_t snapshot[MATRIX_COLS];
     matrix_updated = false;
     for (uint8_t i = 0; i < MATRIX_COLS; i++) {
         snapshot[i] = matrix[i];
     }
 
-    __xdata bool matrix_changed = false;
+    bool matrix_changed = false;
 
     for (uint8_t col = 0; col < MATRIX_COLS; col++) {
-        __xdata const matrix_col_t current_col = snapshot[col];
-        __xdata const matrix_col_t col_changes = current_col ^ matrix_previous[col];
+        const matrix_col_t current_col = snapshot[col];
+        const matrix_col_t col_changes = current_col ^ matrix_previous[col];
         if (!col_changes) {
             continue;
         }
         matrix_changed = true;
-        sleep_note_activity();
+        sleep_note_activity(); // a key changed state; reset the inactivity timer
 
-        __xdata matrix_col_t row_mask = 1;
+        matrix_col_t row_mask = 1;
         for (uint8_t row = 0; row < MATRIX_ROWS; row++, row_mask <<= 1) {
             if (col_changes & row_mask) {
-                __xdata const bool key_pressed = current_col & row_mask;
+                const bool key_pressed = current_col & row_mask;
                 process_key_state(row, col, key_pressed);
             }
         }
