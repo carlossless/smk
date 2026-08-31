@@ -22,6 +22,7 @@ parts = [
     ['example', 'sh68f90', ['default'], {}],
     ['nuphy-air60', 'sh68f90', ['default'], { 'vendor_id': '0x05ac', 'product_id': '0x024f', 'wireless': 'bk3632', 'led_rows': '5', 'led_cols': '16', 'led_cx2': '13', 'led_cy2': '4' }],
     ['eyooso-z11', 'sh68f90', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x002a', 'led_rows': '5', 'led_cols': '14', 'led_cx2': '13', 'led_cy2': '4' }],
+    ['hykker', 'sh68f881', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x001f' }],
 ]
 
 # SMK
@@ -112,6 +113,13 @@ src_platform_sh68f881 = [
     'src/platform/sh68f881/diag.c',
     'src/platform/sh68f881/usb.c',
     'src/platform/sh68f881/isp.c',
+    'src/platform/sh68f881/ldo.c',
+    'src/platform/sh68f881/debug_sink.c',
+    'src/platform/sh68f881/power.c',
+    'src/platform/sh68f881/extint.c',
+    'src/platform/sh68f881/systick.c',
+    'src/platform/sh68f881/stack.c',
+    'src/platform/sh68f881/flash.c',
 ]
 
 inc_platform_bk3632 = [
@@ -239,11 +247,18 @@ foreach part : parts
         if platform == 'sh68f90'
             src_main += src_platform_sh68f90
             inc_dirs += inc_platform_sh68f90
+            platform_cc_args = []
+        elif platform == 'sh68f881'
+            src_main += src_platform_sh68f881
+            inc_dirs += inc_platform_sh68f881
+            # 32 KiB part: keep code below the settings sector (0x6800) and the
+            # bootloader, and xram below the endpoint buffers at 0x0A00.
+            platform_cc_args = ['--code-size', '0x6800', '--xram-size', '0x0900']
         else
             error('unsupported platform: @0@'.format(platform))
         endif
 
-        cc_args = cc_base_args + [
+        cc_args = cc_base_args + platform_cc_args + [
             '-DFREQ_SYS=@0@'.format(options['freq_sys']),
             '-DWATCHDOG_ENABLE=@0@'.format(options['watchdog_enable']),
             '-DUSB_VID=@0@'.format(options['vendor_id']),
@@ -399,8 +414,17 @@ foreach part : bringup_parts
     platform = part[1]
     options = part[2]
 
+    # Only what a bare enumerate-and-dump image needs: no systick, flash or sleep, so
+    # none of the shared smk layer gets dragged in.
     if platform == 'sh68f881'
-        src_bringup = src_platform_sh68f881
+        src_bringup = [
+            'src/platform/sh68f881/clock.c',
+            'src/platform/sh68f881/delay.c',
+            'src/platform/sh68f881/diag.c',
+            'src/platform/sh68f881/usb.c',
+            'src/platform/sh68f881/isp.c',
+            'src/platform/sh68f881/debug_sink.c',
+        ]
         inc_bringup = inc_platform_sh68f881
     else
         error('unsupported bring-up platform: @0@'.format(platform))

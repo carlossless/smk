@@ -12,13 +12,6 @@
 
 #define ISP_ESCAPE_MS 10000u
 
-// The console is the only debug sink on this board; the SH68F90 selects between sinks
-// in its uart.c, which this target does not build.
-void debug_putc(char c)
-{
-    console_putc((unsigned char)c);
-}
-
 // The host's keyboard LED output report still arrives; nothing here drives indicators.
 void keyboard_set_led_state(uint8_t led_state)
 {

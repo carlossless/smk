@@ -29,7 +29,7 @@ SFR(IEN1, 0xa9);
 SFR(IPH0, 0xb4);
 
 // Vector 0x005B is IEN1 bit 4: (0x5B - 3) / 8.
-enum { _INT_USB = 11 };
+enum { _INT_TIMER2 = 5, _INT_USB = 11 };
 
 // WDT
 SFR(RSTSTAT, 0xb1);
@@ -223,3 +223,14 @@ _SBUF(0x0a30) EP1_COM_BUF[EP1_BUF_SIZE];
 _SBUF(0x0a30) EP2_OUT_BUF[EP2_BUF_SIZE];
 _SBUF(0x0a70) EP2_IN_BUF[EP2_BUF_SIZE];
 _SBUF(0x0ac0) EP2_COM_BUF[EP2_BUF_SIZE];
+
+// TIMER 2, page 0
+SFR(T2CON, 0xc8);
+SFR(RCAP2L, 0xca);
+SFR(RCAP2H, 0xcb);
+SFR(TL2, 0xcc);
+SFR(TH2, 0xcd);
+
+SBIT(TR2, 0xc8, 2);
+SBIT(TF2, 0xc8, 7);
+SBIT(ET2, 0xa8, 5);

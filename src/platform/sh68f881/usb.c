@@ -350,6 +350,12 @@ uint8_t            active_configuration;
 uint8_t            interface0_protocol;
 uint8_t            interface1_protocol;
 // Host-controlled remote-wakeup enable, per SET/CLEAR_FEATURE.
+// The IEPxRDY bits do not read back the endpoint's busy state on this part, so spinning
+// on them burns the whole drain timeout on every send and starves the watchdog. Track the
+// in-flight packet in software instead and let the completion interrupt clear it. EP2
+// matters most: the console and the NKRO/consumer reports share it.
+static __bit    ep1_in_busy;
+static __bit    ep2_in_busy;
 static __bit    usb_remote_wakeup;
 __bit           usb_suspended;
 uint8_t         idle_time;
@@ -380,6 +386,9 @@ void usb_init()
     enum_quiet_ticks = 0;
     enum_seen        = false;
 
+    ep1_in_busy = 0;
+    ep2_in_busy = 0;
+
     // Callable from main (page 0) and from the handler (page 1), so restore either way.
     uint8_t saved_inscon = INSCON;
     sfr_page_1();
@@ -390,7 +399,7 @@ void usb_init()
     EP1CON = 0;
     EP2CON = 0;
     USBIE1 = (_OVERIE | _SETUPIE | _SOFIA | _RESMIE | _SUSPIE | _PBRSTIE);
-    USBIE2 = (_OEP0IE | _IEP0IE);
+    USBIE2 = (_OEP0IE | _IEP0IE | _IEP1IE | _IEP2IE);
     USBCON = (_ENUSB | _SW1CON);
 
     INSCON = saved_inscon;
@@ -414,24 +423,28 @@ void usb_deinit()
     IEN1 &= ~_EUSB;                          // disable the USB interrupt
 }
 
-#define EP_IN_DRAIN_TRIES 255
+#define EP_IN_DRAIN_TRIES 40
 
 static void ep1_in_drain(void)
 {
     uint8_t tries = 0;
-    while (tries < EP_IN_DRAIN_TRIES && (EP1CON & _IEP1RDY)) {
+    while (tries < EP_IN_DRAIN_TRIES && ep1_in_busy) {
+        watchdog_kick();
         delay_us(40);
         tries++;
     }
+    ep1_in_busy = 1;
 }
 
 static void ep2_in_drain(void)
 {
     uint8_t tries = 0;
-    while (tries < EP_IN_DRAIN_TRIES && (EP2CON & _IEP2RDY)) {
+    while (tries < EP_IN_DRAIN_TRIES && ep2_in_busy) {
+        watchdog_kick();
         delay_us(40);
         tries++;
     }
+    ep2_in_busy = 1;
 }
 
 static void ep2_in_send(uint8_t *raw, uint8_t len)
@@ -489,11 +502,11 @@ void usb_wait_for_enumeration(void)
 
 #if DEBUG == 1
 // EP2CON.IEP2RDY does not read back the endpoint's busy state on this part: it comes up
-// set and stays set, so gating on it never lets a report out. The caller runs at about
-// the endpoint's 1 ms interval, which paces the sends instead.
+// set and stays set. EP2 also carries the NKRO and consumer reports, so track the
+// in-flight packet in software and let the IEP2 completion interrupt clear it.
 bool usb_console_ready(void)
 {
-    return usb_is_configured();
+    return usb_is_configured() && !ep2_in_busy;
 }
 
 void usb_console_send(const __xdata uint8_t *data, uint8_t len)
@@ -762,8 +775,10 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
             SET_EP0_OUT_RDY;
         } else if (temp_usbif2 & _IEP2IF) {
             USBIF2 &= ~_IEP2IF;
+            ep2_in_busy = 0;
         } else if (temp_usbif2 & _IEP1IF) {
             USBIF2 &= ~_IEP1IF;
+            ep1_in_busy = 0;
         } else if (temp_usbif2 & _IEP0IF) {
             USBIF2 &= ~_IEP0IF;
             usb_ep0_in_irq();
