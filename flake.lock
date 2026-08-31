@@ -143,11 +143,11 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1783766549,
-        "narHash": "sha256-9wUZDgsk4ydhOxRKBSTIuTHhSyxSm1aWKe+z6rCyxq0=",
+        "lastModified": 1787899660,
+        "narHash": "sha256-jj4SSI9gMYZGrxz+mdpu+c/TmRTol1skOl/ZPOUBvkI=",
         "owner": "carlossless",
         "repo": "sinowisp",
-        "rev": "95285984a1761d15300d7ca71a6d4254d66942df",
+        "rev": "e7ab736bacc7718fcadba6ce7347da7ec7f9fb22",
         "type": "github"
       },
       "original": {
