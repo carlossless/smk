@@ -793,6 +793,7 @@ enum interrupt_index {
     _INT_INT4   = 1,
     _INT_INT3   = 2,
     _INT_INT2   = 3,
+    _INT_SCM    = 4, // skipped by the datasheet
     _INT_LPD    = 5,
     _INT_SPI    = 6,
     _INT_USB    = 7,
