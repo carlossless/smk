@@ -44,8 +44,11 @@ void systick_resume(void)
     ET2 = 1;
 }
 
+volatile uint16_t systick_ticks;
+
 void systick_interrupt_handler(void) __interrupt(_INT_TIMER2)
 {
     TF2 = 0;
+    systick_ticks++;
     tick_dispatch();
 }

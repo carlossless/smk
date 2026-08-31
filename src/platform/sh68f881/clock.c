@@ -3,11 +3,14 @@
 #include "watchdog.h"
 #include <stdint.h>
 
-// The clock the bootloader brings up for its own ISP loop. Reset hands the application
-// CLKCON = 0, which the USB block cannot run off.
-#define REGCON_USB 0x03u
-#define CLKCON_USB 0x08u
-#define PLLCON_USB 0x02u
+// Two stages, as the stock firmware does it: bring the PLL up on the slow setting, wait,
+// then switch to the running clock. Stopping after the first stage leaves the core far
+// slower than every delay and timer reload here assumes.
+#define REGCON_INIT   0x03u
+#define CLKCON_WARMUP 0x08u
+#define PLLCON_WARMUP 0x02u
+#define PLLCON_RUN    0x03u
+#define CLKCON_RUN    0x0Cu
 
 // The bootloader waits before handing the clock to the USB block; enumerating off a
 // PLL that has not settled gives intermittent descriptor reads rather than silence.
@@ -27,8 +30,10 @@ static void pll_settle(void)
 
 void clock_init(void)
 {
-    REGCON = REGCON_USB;
-    CLKCON = CLKCON_USB;
-    PLLCON = PLLCON_USB;
+    REGCON = REGCON_INIT;
+    CLKCON = CLKCON_WARMUP;
+    PLLCON = PLLCON_WARMUP;
     pll_settle();
+    PLLCON = PLLCON_RUN;
+    CLKCON = CLKCON_RUN;
 }

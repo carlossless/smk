@@ -234,3 +234,12 @@ SFR(TH2, 0xcd);
 SBIT(TR2, 0xc8, 2);
 SBIT(TF2, 0xc8, 7);
 SBIT(ET2, 0xa8, 5);
+
+// TIMER 0, page 0 -- used to measure the core clock against the delay loop.
+SFR(TCON, 0x88);
+SFR(TMOD, 0x89);
+SFR(TL0, 0x8a);
+SFR(TH0, 0x8c);
+
+SBIT(TR0, 0x88, 4);
+SBIT(TF0, 0x88, 5);

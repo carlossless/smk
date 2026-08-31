@@ -5,6 +5,8 @@
 #    include "sh68f881.h"
 #    include "console.h"
 #    include "debug.h"
+#    include "kbdef.h"
+#    include "delay.h"
 #    include <stdint.h>
 
 // Information block layout in the address space MOVC sees while FAC is set; the same map a programmer reaches over ICP.
@@ -87,18 +89,126 @@ static void diag_emit(uint8_t step)
             emit_hex(scratch, CODE_OPTION_LEN);
             dprintf("\r\n");
             break;
+        case 6: {
+            // Read the matrix port configuration back: a column that never drives low
+            // looks exactly like a key that is never pressed.
+            uint8_t p0cr = P0CR, p2cr = P2CR, p4cr = P4CR, p2pcr = P2PCR, p4pcr = P4PCR;
+            dprintf("CFG p0cr=%02x p2cr=%02x p4cr=%02x pu2=%02x pu4=%02x\r\n", p0cr, p2cr, p4cr, p2pcr, p4pcr);
+            break;
+        }
+        case 8: {
+            // Count Timer0 ticks across a delay the delay loop believes is 1 ms. On a
+            // 24 MHz core with the classic /12 prescale that is 2000; anything else is
+            // the factor every delay and timer reload here is out by.
+            uint16_t ticks;
+            __critical
+            {
+                TR0  = 0;
+                TMOD = (TMOD & 0xF0u) | 0x01u; // timer 0, 16-bit
+                TH0  = 0;
+                TL0  = 0;
+                TF0  = 0;
+                TR0  = 1;
+                delay_us(1000);
+                TR0   = 0;
+                ticks = (uint16_t)(((uint16_t)TH0 << 8) | TL0);
+            }
+            dprintf("CLK ticks=%u ovf=%u\r\n", ticks, (uint8_t)TF0);
+            break;
+        }
+        case 7: {
+            uint8_t saved_page = INSCON;
+            sfr_page_1();
+            uint8_t c6 = P6CR, c7 = P7CR, c8 = P8CR;
+            INSCON = saved_page;
+            dprintf("CFG p6cr=%02x p7cr=%02x p8cr=%02x\r\n", c6, c7, c8);
+            break;
+        }
         default:
             break;
     }
 }
 
-#    define DIAG_STEPS 6u
+#    define DIAG_STEPS 9u
+
+// Walk one column at a time and report any that sees a row pulled low. Only one column
+// is ever driven: the LED matrix shares these pins, and asserting all of them together
+// sinks enough current to brown the part out.
+static void diag_probe_rows(void)
+{
+    static uint8_t col = 0;
+    uint8_t        rows;
+
+    __critical
+    {
+        uint8_t saved_page = INSCON;
+        sfr_page_1();
+        P6 = 0xFFu;
+        P7 = 0xFFu;
+        P8 = 0xFFu;
+        if (col < 8) {
+            P6 = (uint8_t) ~(1u << col);
+        } else if (col < 16) {
+            P7 = (uint8_t) ~(1u << (col - 8));
+        } else {
+            P8 = (uint8_t) ~(1u << (col - 16));
+        }
+        INSCON = saved_page;
+
+        for (uint8_t i = 0; i < 100; i++) {
+            // clang-format off
+            __asm
+                nop
+            __endasm;
+            // clang-format on
+        }
+
+        rows = (uint8_t)(((P2 >> 1) & 0x07u) | ((P4 >> 1) & 0x38u));
+
+        saved_page = INSCON;
+        sfr_page_1();
+        P6 = 0xFFu;
+        P7 = 0xFFu;
+        P8 = 0xFFu;
+        INSCON = saved_page;
+    }
+
+    if (rows != 0x3Fu) {
+        dprintf("KEY c%02u r=%02x\r\n", col, rows);
+    }
+
+    // Whatever smk's own scan resolved, reported from main context.
+    extern volatile uint16_t kb_last_keycode;
+    extern volatile uint8_t  kb_last_pressed;
+    extern volatile uint8_t  kb_event_seq;
+    static uint8_t           seen_seq = 0;
+    if (kb_event_seq != seen_seq) {
+        seen_seq = kb_event_seq;
+        dprintf("KC %04x %u\r\n", kb_last_keycode, kb_last_pressed);
+    }
+
+    if (++col >= MATRIX_COLS) {
+        col = 0;
+        // Heartbeat per completed sweep: silence otherwise cannot be told apart from a
+        // probe that is not running.
+        static uint8_t sweeps = 0;
+        if ((++sweeps & 0x0Fu) == 0) {
+            // The tick count against host wall-clock is the only reference available for
+            // this part's timer rate, and from it the core clock every delay assumes.
+            extern volatile uint16_t systick_ticks;
+            dprintf("SWEEP t=%u\r\n", systick_ticks);
+        }
+    }
+}
 
 void diag_task(void)
 {
     static uint8_t step = 0;
 
     if (step >= DIAG_STEPS) {
+        if (console_is_drained()) {
+            diag_probe_rows();
+        }
         return;
     }
     // Emitting only into a drained buffer paces the dump against the host link, so no line is ever dropped however long the dump grows.

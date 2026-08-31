@@ -14,7 +14,7 @@
 // Entry/exit add a fixed ~18+14 cycles, so delay_us(N) takes 24*N + ~8 cycles
 // for N in [1, 65535] (well under 0.1% error for N >= 100, ~0.3 us absolute).
 // delay_us(0) is handled and returns immediately.
-void delay_us(uint16_t cnt) __naked
+static void delay_us_raw(uint16_t cnt) __naked
 {
     (void)cnt;
     // clang-format off
@@ -76,6 +76,18 @@ void delay_us(uint16_t cnt) __naked
         ret                             ; 8c
     __endasm;
     // clang-format on
+}
+
+// Measured against Timer2: the Timer2 ISR runs at ~16 Hz on a 0xC000 reload, so the
+// core is far slower than the 24 MHz this loop is tuned for and a microsecond here
+// already comes out long. Left at 1 until the clock is pinned down exactly.
+#define DELAY_US_SCALE 1u
+
+void delay_us(uint16_t cnt)
+{
+    for (uint8_t i = 0; i < DELAY_US_SCALE; i++) {
+        delay_us_raw(cnt);
+    }
 }
 
 void delay_ms(uint16_t cnt)
