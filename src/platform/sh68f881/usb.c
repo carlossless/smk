@@ -385,9 +385,13 @@ void usb_init()
     sfr_page_1();
 
     USBADDR = 0;
-    USBIE1  = (_OVERIE | _SETUPIE | _SOFIA | _RESMIE | _SUSPIE | _PBRSTIE);
-    USBIE2  = (_OEP0IE | _IEP0IE);
-    USBCON  = (_ENUSB | _SW1CON);
+    // The IN-ready bits come up set on this part, so usb_console_ready() would never
+    // see the endpoint free until something forced a transfer.
+    EP1CON = 0;
+    EP2CON = 0;
+    USBIE1 = (_OVERIE | _SETUPIE | _SOFIA | _RESMIE | _SUSPIE | _PBRSTIE);
+    USBIE2 = (_OEP0IE | _IEP0IE);
+    USBCON = (_ENUSB | _SW1CON);
 
     INSCON = saved_inscon;
     IEN1 |= _EUSB;
@@ -484,17 +488,12 @@ void usb_wait_for_enumeration(void)
 }
 
 #if DEBUG == 1
+// EP2CON.IEP2RDY does not read back the endpoint's busy state on this part: it comes up
+// set and stays set, so gating on it never lets a report out. The caller runs at about
+// the endpoint's 1 ms interval, which paces the sends instead.
 bool usb_console_ready(void)
 {
-    if (!usb_is_configured()) {
-        return false;
-    }
-
-    uint8_t saved_inscon = INSCON;
-    sfr_page_1();
-    bool ready = !(EP2CON & _IEP2RDY);
-    INSCON     = saved_inscon;
-    return ready;
+    return usb_is_configured();
 }
 
 void usb_console_send(const __xdata uint8_t *data, uint8_t len)

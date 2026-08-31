@@ -13,13 +13,11 @@
 #    define INFO_CODE_OPTION_LOW 0x1006u
 #    define INFO_SECURITY        0x100Au
 #    define INFO_SERIAL_NUMBER   0x103Cu
-#    define INFO_CODE_OPTION_HI  0x1100u
 #    define INFO_PART_NUMBER     0x1209u
 #    define INFO_ID_CODE         0x127Bu
 
 #    define INFO_SECURITY_LEN 17u
-#    define CODE_OPTION_LEN   8u
-#    define CODE_OPTION_SPLIT 4u // bytes 0-3 sit with the customer fields, 4-7 stand alone
+#    define CODE_OPTION_LEN 4u // this part has no separate high option line
 
 // FLASHCON.FAC: point MOVC at the information block.
 #    define FLASHCON_FAC 0x01u
@@ -84,8 +82,7 @@ static void diag_emit(uint8_t step)
             dprintf("\r\n");
             break;
         case 5:
-            info_read(INFO_CODE_OPTION_LOW, scratch, CODE_OPTION_SPLIT);
-            info_read(INFO_CODE_OPTION_HI, scratch + CODE_OPTION_SPLIT, CODE_OPTION_LEN - CODE_OPTION_SPLIT);
+            info_read(INFO_CODE_OPTION_LOW, scratch, CODE_OPTION_LEN);
             dprintf("OPT ");
             emit_hex(scratch, CODE_OPTION_LEN);
             dprintf("\r\n");
