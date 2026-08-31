@@ -1,5 +1,6 @@
 #include "clock.h"
 #include "sh68f881.h"
+#include "watchdog.h"
 #include <stdint.h>
 
 // The clock the bootloader brings up for its own ISP loop. Reset hands the application
@@ -12,7 +13,8 @@
 // PLL that has not settled gives intermittent descriptor reads rather than silence.
 static void pll_settle(void)
 {
-    for (uint16_t outer = 0; outer < 400; outer++) {
+    for (uint16_t outer = 0; outer < 20; outer++) {
+        watchdog_kick(); // OP_WDT is enabled on this board, so never spin here unkicked
         for (uint16_t i = 0; i < 500; i++) {
             // clang-format off
             __asm
