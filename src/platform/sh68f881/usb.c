@@ -682,13 +682,9 @@ static void usb_setup_irq()
 
 void usb_interrupt_handler() __interrupt(_INT_USB)
 {
-    // Save/restore INSCON and FLASHCON: the handler reads descriptors out of
-    // __code, and a USB IRQ landing over a main-loop code/flash access would
-    // otherwise corrupt the interrupted path's banking state. SDCC's __interrupt
-    // prologue saves the standard registers but not these two SFRs; the handler
-    // has no early returns, so restoring at the tail covers every path.
-    uint8_t saved_inscon   = INSCON;
-    uint8_t saved_flashcon = FLASHCON;
+    // FLASHCON shares 0xA7 with OEP2CNT, so it must not be touched here: the only code
+    // that leaves page 1 is diag's info-block read, which runs with interrupts off.
+    uint8_t saved_inscon = INSCON;
 
     uint8_t temp_usbif1 = USBIF1;
     uint8_t temp_usbif2 = USBIF2;
@@ -755,8 +751,7 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
         }
     }
 
-    FLASHCON = saved_flashcon; // restore banking SFRs (see top)
-    INSCON   = saved_inscon;
+    INSCON = saved_inscon;
 }
 
 // request handlers
