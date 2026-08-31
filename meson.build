@@ -100,6 +100,7 @@ src_platform_sh68f90 = [
     'src/platform/sh68f90/stack.c',
     'src/platform/sh68f90/power.c',
     'src/platform/sh68f90/extint.c',
+    'src/platform/sh68f90/interrupts.c',
 ]
 
 inc_platform_bk3632 = [
@@ -173,10 +174,9 @@ sinowisp = find_program('sinowisp', required : true)
 py = find_program('python3', required : true)
 sdcc_compile = join_paths(meson.current_source_dir(), 'utils/sdcc_compile.py')
 
-# Guards against the SDCC overlay/interrupt hazard (project_sdcc_isr_overlay_collision):
-# fails the build if any interrupt-reachable function shares SDCC's static overlay
-# with a main-loop function, which would let an ISR corrupt main-loop state.
-check_isr_overlay = files('utils/check_isr_overlay.py')
+# Fails the build on an unclaimed interrupt vector, or on an ISR-reachable function
+# sharing SDCC's static overlay with a main-loop one (project_sdcc_isr_overlay_collision).
+check_interrupts = files('utils/check_interrupts.py')
 
 # Host-side generator that bakes per-device LED animation geometry into ROM tables
 # (see utils/led_geometry_gen.c). Compiled once with the host compiler at configure
@@ -319,13 +319,11 @@ foreach part : parts
             command : [cc, cc_args, '-o', '@OUTPUT@', '@INPUT@', '-l' + lib_user.full_path()],
         )
 
-        # Overlay/interrupt-safety gate: reads the just-linked .map + per-module .asm
-        # and fails if an ISR-reachable function overlays a main-reachable one. The
-        # .hex depends on it, so a violation breaks the build.
-        overlay_check = custom_target('@0@overlay-check'.format(prefix),
+        # The .hex depends on this, so a violation breaks the build.
+        interrupt_check = custom_target('@0@interrupt-check'.format(prefix),
             input : ihx_smk,
-            output : '@0@smk.overlay-ok'.format(prefix),
-            command : [py, check_isr_overlay,
+            output : '@0@smk.interrupts-ok'.format(prefix),
+            command : [py, check_interrupts,
                        '--src', meson.current_source_dir() / 'src',
                        '--asmdir', meson.current_build_dir() / '@0@smk.ihx.p'.format(prefix),
                        '--map', meson.current_build_dir() / '@0@smk.map'.format(prefix),
@@ -339,7 +337,7 @@ foreach part : parts
             capture: true,
             install : true,
             install_dir : 'firmware',
-            depends : overlay_check,
+            depends : interrupt_check,
             command : [packihx, '@INPUT@'],
         )
 

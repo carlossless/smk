@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Fail the build if any interrupt-reachable function shares SDCC's static overlay
-with a main-reachable function.
+"""Guard two interrupt invariants over the linked firmware.
 
-Background (see project_sdcc_isr_overlay_collision): under --model-small SDCC packs
-each non-reentrant function's locals/params into a shared "overlay" area (OSEG /
-BIT_BANK) to save RAM, reusing the same internal-RAM bytes for functions it thinks
-never run at once. That analysis does NOT account for interrupt preemption, so it
-will happily park a USB-ISR helper's pointer on the very bytes a main-loop function
-is using - and the ISR then corrupts it mid-render. The concrete failure was a hung
-`__gptrput` (a stomped generic-pointer type byte → its code-space `sjmp .` trap).
+1. Every vector in `enum interrupt_index` is claimed by a handler. SDCC pads unclaimed
+   slots below the highest declared one with `reti` and emits nothing past it, so an
+   unclaimed source either sticks (its flag never cleared) or runs whatever the linker
+   parked after the table.
 
-This check reconstructs the call graph from the generated .asm, marks every function
-reachable from an `__interrupt` handler and every function reachable from `main`,
-and flags any overlay slot occupied by both. Fix a hit by making the ISR-side
-function `__reentrant` (params move to the stack, out of the overlay).
+2. No interrupt-reachable function shares SDCC's static overlay with a main-reachable one
+   (project_sdcc_isr_overlay_collision). SDCC packs non-reentrant locals/params into a
+   shared area for functions it thinks never run at once, an analysis that ignores
+   interrupt preemption - so an ISR can stomp main-loop state. It showed up as a hung
+   `__gptrput`. Fix a hit by making the ISR-side function `__reentrant`.
+
+Handlers are read off the emitted vector table, so one defined through a macro counts
+like any other.
 
 Assumptions / limits:
   * Interrupts are equal-priority (no nesting), so ISR<->ISR overlay sharing is
@@ -35,15 +35,42 @@ SAFE = {"__gptrput", "__gptrget"}
 # by the ISR prologue; SSEG is the stack - neither is an overlay-collision hazard.
 OVERLAY_AREAS = {"OSEG", "BIT_BANK"}
 
+# Shares the table, but jumps to main's startup rather than to a handler.
+RESET_VECTOR = 0
+VECTOR_STRIDE = 8
 
-def isr_symbols(src_root):
-    """Function symbols (`_name`) of every `__interrupt` handler in the sources."""
-    names = set()
-    for path in glob.glob(src_root + "/**/*.c", recursive=True):
+
+def declared_vectors(src_root):
+    """Vector index -> name, from `enum interrupt_index` in the platform header."""
+    for path in glob.glob(src_root + "/**/*.h", recursive=True):
         text = open(path, errors="ignore").read()
-        for m in re.finditer(r"\b(\w+)\s*\([^;{}]*\)\s*__interrupt", text):
-            names.add("_" + m.group(1))
-    return names
+        body = re.search(r"enum\s+interrupt_index\s*\{(.*?)\}", text, re.S)
+        if body:
+            return {int(num): name for name, num in re.findall(r"(\w+)\s*=\s*(\d+)", body.group(1))}
+    return {}
+
+
+def vector_table(asm_dir):
+    """Vector index -> handler symbol, by walking the emitted bytes of the table."""
+    for path in glob.glob(asm_dir + "/*.asm"):
+        lines = open(path, errors="ignore").read().splitlines()
+        if "__interrupt_vect:" not in lines:
+            continue
+        handlers, offset = {}, 0
+        for line in lines[lines.index("__interrupt_vect:") + 1:]:
+            jump = re.match(r"^\s+ljmp\s+(\S+)", line)
+            pad = re.match(r"^\s+\.ds\s+(\d+)", line)
+            if jump:
+                handlers[offset // VECTOR_STRIDE] = jump.group(1)
+                offset += 3
+            elif pad:
+                offset += int(pad.group(1))
+            elif re.match(r"^\s+reti\b", line):
+                offset += 1
+            else:
+                break
+        return handlers
+    return {}
 
 
 def call_graph(asm_dir):
@@ -124,23 +151,36 @@ def overlay_slots(map_file):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--src", required=True, help="source root to scan for __interrupt handlers")
+    ap.add_argument("--src", required=True, help="source root holding enum interrupt_index")
     ap.add_argument("--asmdir", required=True, help="dir with the board's generated .asm files")
     ap.add_argument("--map", required=True, help="the board's linker .map file")
     ap.add_argument("--stamp", help="touch this file on success (for ninja)")
     args = ap.parse_args()
 
-    isr_roots = isr_symbols(args.src)
-    if not isr_roots:
-        print("check_isr_overlay: found no __interrupt handlers — refusing to pass "
-              "a check that can't see any ISR (wrong --src?)", file=sys.stderr)
+    vectors = declared_vectors(args.src)
+    if not vectors:
+        print("check_interrupts: no `enum interrupt_index` under --src — refusing to pass "
+              "a check that can't see the part's vector list", file=sys.stderr)
         return 2
 
+    handlers = vector_table(args.asmdir)
+    if not handlers:
+        print(f"check_interrupts: no interrupt vector table in the .asm under {args.asmdir}",
+              file=sys.stderr)
+        return 2
+
+    unclaimed = sorted(v for v in vectors if v not in handlers)
+    if unclaimed:
+        print("check_interrupts: FAIL — vectors with no handler (the source can only "
+              "stick or run unrelated code if it ever fires):", file=sys.stderr)
+        for v in unclaimed:
+            print(f"  {v:2d}  {vectors[v]}", file=sys.stderr)
+        print("  Fix: declare a handler in interrupts.h — an unused one belongs in "
+              "UNUSED_INTERRUPTS().", file=sys.stderr)
+        return 1
+
+    isr_roots = {sym for v, sym in handlers.items() if v != RESET_VECTOR}
     calls = call_graph(args.asmdir)
-    if not calls:
-        print(f"check_isr_overlay: no .asm files under {args.asmdir}", file=sys.stderr)
-        return 2
-
     isr_reach = reachable(calls, isr_roots)
     main_reach = reachable(calls, {"_main"})
     slots, unresolved = overlay_slots(args.map)
@@ -153,7 +193,7 @@ def main():
             collisions.append((addr, isr_f, sorted(set(main_f) - set(isr_f))))
 
     if collisions:
-        print("check_isr_overlay: FAIL — interrupt-reachable functions share SDCC's "
+        print("check_interrupts: FAIL — interrupt-reachable functions share SDCC's "
               "overlay with the main loop (an ISR can corrupt main-loop state):",
               file=sys.stderr)
         for addr, isr_f, main_f in collisions:
@@ -166,12 +206,12 @@ def main():
 
     if unresolved:
         # Don't fail, but surface blind spots so truncation can't silently hide a hit.
-        print(f"check_isr_overlay: note — {len(unresolved)} overlay symbol(s) could not "
+        print(f"check_interrupts: note — {len(unresolved)} overlay symbol(s) could not "
               f"be attributed to a function (e.g. {unresolved[0][1]}); not treated as a "
               f"collision.", file=sys.stderr)
 
-    print(f"check_isr_overlay: OK — {len(isr_reach)} ISR-reachable / {len(main_reach)} "
-          f"main-reachable functions, no overlay collisions.")
+    print(f"check_interrupts: OK — {len(vectors)} vectors claimed, {len(isr_reach)} "
+          f"ISR-reachable / {len(main_reach)} main-reachable functions, no overlay collisions.")
     if args.stamp:
         open(args.stamp, "w").close()
     return 0

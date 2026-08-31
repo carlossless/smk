@@ -109,6 +109,7 @@ void main(void)
 #if DEBUG == 1
         stack_task();
         diag_task();
+        interrupts_task();
         console_task();
 #endif
     }
