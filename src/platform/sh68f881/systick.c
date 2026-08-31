@@ -3,10 +3,10 @@
 #include "tick.h"
 #include <stdint.h>
 
-// Timer2 input measured at ~262 kHz, so this reload gives a ~100 Hz tick and, with the
-// scan and the backlight subframe alternating, a ~50 Hz matrix scan.
-#define RELOAD_LED_SUBFRAME 0xF5C3
-#define RELOAD_MATRIX_SCAN  0xF5C3
+// Timer2 input measured at ~262 kHz. A backlight subframe is short because a frame is
+// one per column; the scan slot has to be long enough to hold a whole 24-column sweep.
+#define RELOAD_LED_SUBFRAME 0xFF7D // ~0.5 ms
+#define RELOAD_MATRIX_SCAN  0xF7CF // ~8 ms
 
 static void timer2_reload(uint16_t reload)
 {

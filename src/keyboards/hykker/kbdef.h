@@ -25,8 +25,17 @@ enum custom_keycodes {
 #define KB_C_P7_MASK 0xFFu
 #define KB_C_P8_MASK 0xFFu
 
-// Indicators share the top four columns, active low.
-#define LED_NUM_P8_7    0x80u
-#define LED_CAPS_P8_6   0x40u
-#define LED_SCROLL_P8_5 0x20u
-#define LED_WIN_P8_4    0x10u
+// The backlight multiplexes one column per subframe, so a whole frame is MATRIX_COLS
+// subframes and they have to run far more often than the matrix scan.
+#define LED_SUBFRAMES_PER_SCAN MATRIX_COLS
+
+// Backlight anodes, driven high one column at a time: R0-R2 on P1.0-P1.2 (SFR page 0),
+// R3-R5 on P5.0-P5.2 (page 1). The cathodes are the matrix columns.
+#define KB_ANODE_P1_MASK 0x07u
+#define KB_ANODE_P5_MASK 0x07u
+
+// Indicators are driven outputs on P3.4-P3.7.
+#define LED_NUM_P3_4    0x10u
+#define LED_CAPS_P3_5   0x20u
+#define LED_SCROLL_P3_6 0x40u
+#define LED_WIN_P3_7    0x80u

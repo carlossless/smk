@@ -22,7 +22,7 @@ parts = [
     ['example', 'sh68f90', ['default'], {}],
     ['nuphy-air60', 'sh68f90', ['default'], { 'vendor_id': '0x05ac', 'product_id': '0x024f', 'wireless': 'bk3632', 'led_rows': '5', 'led_cols': '16', 'led_cx2': '13', 'led_cy2': '4' }],
     ['eyooso-z11', 'sh68f90', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x002a', 'led_rows': '5', 'led_cols': '14', 'led_cx2': '13', 'led_cy2': '4' }],
-    ['hykker', 'sh68f881', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x001f' }],
+    ['hykker', 'sh68f881', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x001f', 'led_rows': '6', 'led_cols': '24', 'led_cx2': '23', 'led_cy2': '5' }],
 ]
 
 # SMK

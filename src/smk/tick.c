@@ -4,10 +4,15 @@
 #include "indicators.h"
 #include "keyboard.h"
 #include "sleep.h"
+#include "kbdef.h"
 #include <stdbool.h>
 #include <stdint.h>
 
-#define LED_SUBFRAMES_PER_SCAN 1
+// A board with many backlight subframes needs them to outnumber the scans, or its
+// refresh rate is the scan rate divided by the subframe count.
+#ifndef LED_SUBFRAMES_PER_SCAN
+#    define LED_SUBFRAMES_PER_SCAN 1
+#endif
 
 static volatile bool    scan_due;
 static volatile uint8_t subframes_since_scan;
