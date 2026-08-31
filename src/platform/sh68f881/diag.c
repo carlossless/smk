@@ -177,15 +177,6 @@ static void diag_probe_rows(void)
         dprintf("KEY c%02u r=%02x\r\n", col, rows);
     }
 
-    // Whatever smk's own scan resolved, reported from main context.
-    extern volatile uint16_t kb_last_keycode;
-    extern volatile uint8_t  kb_last_pressed;
-    extern volatile uint8_t  kb_event_seq;
-    static uint8_t           seen_seq = 0;
-    if (kb_event_seq != seen_seq) {
-        seen_seq = kb_event_seq;
-        dprintf("KC %04x %u\r\n", kb_last_keycode, kb_last_pressed);
-    }
 
     if (++col >= MATRIX_COLS) {
         col = 0;
@@ -193,10 +184,23 @@ static void diag_probe_rows(void)
         // probe that is not running.
         static uint8_t sweeps = 0;
         if ((++sweeps & 0x0Fu) == 0) {
-            // The tick count against host wall-clock is the only reference available for
-            // this part's timer rate, and from it the core clock every delay assumes.
-            extern volatile uint16_t systick_ticks;
-            dprintf("SWEEP t=%u\r\n", systick_ticks);
+            // Reprint the accumulated map rather than only on change: the console is not
+            // necessarily attached at the moment a key goes down, and anything printed
+            // before it attaches is lost to the ring buffer.
+            // Only the columns that saw something: the full 24-entry dump overruns the
+            // console ring buffer and comes out mangled.
+            // Report what the rows physically read alongside the accumulated map: an
+            // idle read of 3f means the lines are pulled up and simply never pulled
+            // down, anything else points at the port setup rather than the scan.
+            extern volatile uint8_t kb_seen[MATRIX_COLS];
+            extern uint8_t          matrix[MATRIX_COLS];
+            dprintf("MAP r=%02x m=%02x%02x%02x", rows, matrix[0], matrix[2], matrix[6]);
+            for (uint8_t c = 0; c < MATRIX_COLS; c++) {
+                if (kb_seen[c]) {
+                    dprintf(" %u:%02x", c, kb_seen[c]);
+                }
+            }
+            dprintf("\r\n");
         }
     }
 }

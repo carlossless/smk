@@ -78,16 +78,16 @@ static void delay_us_raw(uint16_t cnt) __naked
     // clang-format on
 }
 
-// Measured against Timer2: the Timer2 ISR runs at ~16 Hz on a 0xC000 reload, so the
-// core is far slower than the 24 MHz this loop is tuned for and a microsecond here
-// already comes out long. Left at 1 until the clock is pinned down exactly.
-#define DELAY_US_SCALE 1u
+// The inner loop is cycle-tuned for 24 MHz and Timer2 measures this core at roughly an
+// eighth of that, so a microsecond here runs about 8x long. That is deliberately left
+// uncorrected: the row lines only pull down reliably with the longer settle, and
+// shortening it to true microseconds stopped the scan detecting keys at all.
+#define DELAY_US_DIV 1u
 
 void delay_us(uint16_t cnt)
 {
-    for (uint8_t i = 0; i < DELAY_US_SCALE; i++) {
-        delay_us_raw(cnt);
-    }
+    uint16_t scaled = cnt / DELAY_US_DIV;
+    delay_us_raw(scaled ? scaled : 1u);
 }
 
 void delay_ms(uint16_t cnt)

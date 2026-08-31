@@ -3,9 +3,9 @@
 #include "tick.h"
 #include <stdint.h>
 
-// This part has no LED engine wired up yet and its Timer2 clock is not characterised,
-// so tick well below the SH68F90 rate: the scan runs inside this interrupt, and firing
-// it faster than the sweep takes starves the main loop and its watchdog kick.
+// Timer2 input measured at ~262 kHz. This is the only rate observed to detect keys:
+// raising it to 40 Hz stopped detection entirely, so the sweep evidently costs far more
+// than its nominal ~3.7 ms and needs the whole period to complete.
 #define RELOAD_LED_SUBFRAME 0xC000
 #define RELOAD_MATRIX_SCAN  0xC000
 

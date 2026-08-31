@@ -49,7 +49,18 @@ void user_matrix_col_deselect(uint8_t col)
 
 // R0-R2 are P2.1-P2.3 and R3-R5 are P4.4-P4.6; unused bits read high so they never
 // look pressed.
+//
+// The page must be forced, not assumed: the scan runs in the tick interrupt, which can
+// land on main-loop code that is inside a page-1 window. On page 1 these addresses are
+// P7 and EP1CON, so the rows would be read out of the USB block.
 uint8_t user_matrix_read_rows(void)
 {
-    return (uint8_t)(((P2 >> 1) & 0x07u) | ((P4 >> 1) & 0x38u) | 0xC0u);
+    uint8_t rows;
+
+    uint8_t saved_page = INSCON;
+    sfr_page_0();
+    rows = (uint8_t)(((P2 >> 1) & 0x07u) | ((P4 >> 1) & 0x38u) | 0xC0u);
+    INSCON = saved_page;
+
+    return rows;
 }

@@ -28,6 +28,13 @@ void user_init(void)
     uint8_t saved_page = INSCON;
     sfr_page_1();
 
+    // P5.0-P5.2 are the LED row anodes, driven outputs so they cannot float into the
+    // shared matrix wiring. They must idle low: an anode held high forward-biases the
+    // LED matrix against whichever column is pulled low and clamps that line, so the
+    // key switch can no longer pull its row down and nothing is ever detected.
+    P5CR = 0x07u;
+    P5   = 0x00u;
+
     P6CR = 0xFFu;
     P7CR = 0xFFu;
     P8CR = 0xFFu;
