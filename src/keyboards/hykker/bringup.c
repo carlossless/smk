@@ -28,15 +28,13 @@ void keyboard_set_led_state(uint8_t led_state)
 // Bring-up image: enumerate, dump the information block to the debug console, and
 // nothing else. No matrix, no LEDs.
 //
-// The USB block lives on SFR page 1, so page 1 stays selected for the whole run and
-// the only code that leaves it is diag's info-block read, which does so with
-// interrupts off. That keeps the paging out of the USB driver entirely.
+// Page 0 stays selected outside the USB driver: RSTSTAT is only the watchdog kick on
+// page 0, so running with page 1 latched leaves the WDT unkicked and resetting.
 void main(void)
 {
     EA = 0;
 
     clock_init();
-    sfr_page_1();
 
     usb_init();
     EA = 1;

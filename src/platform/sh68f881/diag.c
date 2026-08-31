@@ -29,17 +29,14 @@ static __xdata uint8_t scratch[INFO_SECURITY_LEN];
 static void info_read(uint16_t addr, __xdata uint8_t *dst, uint8_t len)
 {
     // While FAC is set every MOVC hits the information block, so an ISR firing here would fetch its __code reads from the wrong place.
-    // FLASHCON shares 0xA7 with the USB block's OEP2CNT, so this is also the one window that runs on page 0.
     __critical
     {
-        sfr_page_0();
         FLASHCON = FLASHCON_FAC;
         for (uint8_t i = 0; i < len; i++) {
             __code uint8_t *p = (__code uint8_t *)(addr + i);
             dst[i]            = *p;
         }
         FLASHCON = 0;
-        sfr_page_1();
     }
 }
 

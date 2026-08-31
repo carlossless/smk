@@ -380,10 +380,16 @@ void usb_init()
     enum_quiet_ticks = 0;
     enum_seen        = false;
 
+    // Callable from main (page 0) and from the handler (page 1), so restore either way.
+    uint8_t saved_inscon = INSCON;
+    sfr_page_1();
+
     USBADDR = 0;
     USBIE1  = (_OVERIE | _SETUPIE | _SOFIA | _RESMIE | _SUSPIE | _PBRSTIE);
     USBIE2  = (_OEP0IE | _IEP0IE);
     USBCON  = (_ENUSB | _SW1CON);
+
+    INSCON = saved_inscon;
     IEN1 |= _EUSB;
 }
 
@@ -480,11 +486,22 @@ void usb_wait_for_enumeration(void)
 #if DEBUG == 1
 bool usb_console_ready(void)
 {
-    return usb_is_configured() && !(EP2CON & _IEP2RDY);
+    if (!usb_is_configured()) {
+        return false;
+    }
+
+    uint8_t saved_inscon = INSCON;
+    sfr_page_1();
+    bool ready = !(EP2CON & _IEP2RDY);
+    INSCON     = saved_inscon;
+    return ready;
 }
 
 void usb_console_send(const __xdata uint8_t *data, uint8_t len)
 {
+    uint8_t saved_inscon = INSCON;
+    sfr_page_1();
+
     EP2_IN_BUF[0] = REPORT_ID_CONSOLE;
     for (uint8_t i = 0; i < CONSOLE_REPORT_SIZE; i++) {
         EP2_IN_BUF[1 + i] = (i < len) ? data[i] : 0;
@@ -492,6 +509,8 @@ void usb_console_send(const __xdata uint8_t *data, uint8_t len)
 
     SET_EP2_CNT(1 + CONSOLE_REPORT_SIZE);
     SET_EP2_IN_RDY;
+
+    INSCON = saved_inscon;
 }
 #endif
 
@@ -682,9 +701,10 @@ static void usb_setup_irq()
 
 void usb_interrupt_handler() __interrupt(_INT_USB)
 {
-    // FLASHCON shares 0xA7 with OEP2CNT, so it must not be touched here: the only code
-    // that leaves page 1 is diag's info-block read, which runs with interrupts off.
+    // The USB block is on SFR page 1 and the rest of the firmware runs on page 0, where
+    // RSTSTAT is the watchdog kick. Borrow page 1 only for the length of the handler.
     uint8_t saved_inscon = INSCON;
+    sfr_page_1();
 
     uint8_t temp_usbif1 = USBIF1;
     uint8_t temp_usbif2 = USBIF2;
