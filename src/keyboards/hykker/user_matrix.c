@@ -47,8 +47,8 @@ void user_matrix_col_deselect(uint8_t col)
     });
 }
 
-// R0-R2 are P2.1-P2.3 and R3-R5 are P4.4-P4.6; unused bits read high so they never
-// look pressed.
+// R0-R2 are P2.1-P2.3 and R3-R5 are P4.4-P4.6, transcribed from the stock scan at
+// CODE:0x4f62. The unused top two bits are forced high so they never look pressed.
 //
 // The page must be forced, not assumed: the scan runs in the tick interrupt, which can
 // land on main-loop code that is inside a page-1 window. On page 1 these addresses are

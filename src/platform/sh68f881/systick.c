@@ -3,11 +3,10 @@
 #include "tick.h"
 #include <stdint.h>
 
-// Timer2 input measured at ~262 kHz. This is the only rate observed to detect keys:
-// raising it to 40 Hz stopped detection entirely, so the sweep evidently costs far more
-// than its nominal ~3.7 ms and needs the whole period to complete.
-#define RELOAD_LED_SUBFRAME 0xC000
-#define RELOAD_MATRIX_SCAN  0xC000
+// Timer2 input measured at ~262 kHz, so this reload gives a ~100 Hz tick and, with the
+// scan and the backlight subframe alternating, a ~50 Hz matrix scan.
+#define RELOAD_LED_SUBFRAME 0xF5C3
+#define RELOAD_MATRIX_SCAN  0xF5C3
 
 static void timer2_reload(uint16_t reload)
 {

@@ -28,6 +28,26 @@ static void pll_settle(void)
     }
 }
 
+// Stock clears these on page 0 immediately after the clock switch and before any port
+// setup. Whatever they enable survives reset and holds the P2 matrix rows otherwise.
+static void peripherals_reset(void)
+{
+    PERIPH_A2 = 0;
+    PERIPH_93 = 0;
+    PERIPH_92 = 0;
+    PERIPH_95 = 0;
+    PERIPH_AB = 0;
+    PERIPH_AA = 0;
+    PERIPH_9E = 0;
+    PERIPH_9F = 0;
+    PERIPH_AC = 0;
+    PERIPH_AD = 0;
+    PERIPH_AE = 0;
+    PERIPH_A4 = 0;
+    PERIPH_A5 = 0;
+    PERIPH_A6 = 0;
+}
+
 void clock_init(void)
 {
     REGCON = REGCON_INIT;
@@ -36,4 +56,7 @@ void clock_init(void)
     pll_settle();
     PLLCON = PLLCON_RUN;
     CLKCON = CLKCON_RUN;
+
+    sfr_page_0();
+    peripherals_reset();
 }

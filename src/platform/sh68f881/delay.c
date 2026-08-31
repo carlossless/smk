@@ -78,10 +78,10 @@ static void delay_us_raw(uint16_t cnt) __naked
     // clang-format on
 }
 
-// The inner loop is cycle-tuned for 24 MHz and Timer2 measures this core at roughly an
-// eighth of that, so a microsecond here runs about 8x long. That is deliberately left
-// uncorrected: the row lines only pull down reliably with the longer settle, and
-// shortening it to true microseconds stopped the scan detecting keys at all.
+// The inner loop is cycle-tuned for 24 MHz, and Timer2 measures this core at roughly an
+// eighth of that, so a microsecond here runs about 8x long. Left uncorrected: nothing on
+// this board needs the absolute value, and the scan only relies on the delay being at
+// least as long as it asks for.
 #define DELAY_US_DIV 1u
 
 void delay_us(uint16_t cnt)

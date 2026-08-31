@@ -13,6 +13,24 @@
 #define sfr_page_1() (INSCON |= INSCON_PAGE_1)
 #define sfr_page_0() (INSCON &= INSCON_PAGE_MASK)
 
+// Peripheral registers the stock firmware zeroes right after switching the clock
+// (CODE:0x439A), before it touches the ports. Their function is not known here, but left
+// at their reset values something in this block keeps hold of the P2 matrix rows.
+SFR(PERIPH_92, 0x92);
+SFR(PERIPH_93, 0x93);
+SFR(PERIPH_95, 0x95);
+SFR(PERIPH_9E, 0x9e);
+SFR(PERIPH_9F, 0x9f);
+SFR(PERIPH_A2, 0xa2);
+SFR(PERIPH_A4, 0xa4);
+SFR(PERIPH_A5, 0xa5);
+SFR(PERIPH_A6, 0xa6);
+SFR(PERIPH_AA, 0xaa);
+SFR(PERIPH_AB, 0xab);
+SFR(PERIPH_AC, 0xac);
+SFR(PERIPH_AD, 0xad);
+SFR(PERIPH_AE, 0xae);
+
 // CPU
 SFR(ACC, 0xe0);
 SFR(B, 0xf0);
@@ -79,6 +97,7 @@ SFR(P8CR, 0xe4);
 SFR(P5PCR, 0xe9);
 SFR(P6PCR, 0xea);
 SFR(P7PCR, 0xeb);
+SFR(P8PCR, 0xec);
 
 SBIT(EA, 0xa8, 7);
 

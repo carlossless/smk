@@ -12,7 +12,7 @@ enum custom_keycodes {
     KB_SAFE_RANGE,
 };
 
-// Rows read on SFR page 0, active low.
+// Rows are read on SFR page 0, active low: R0-R2 on P2.1-P2.3, R3-R5 on P4.4-P4.6.
 #define KB_R0_P2_1 0x02u
 #define KB_R1_P2_2 0x04u
 #define KB_R2_P2_3 0x08u

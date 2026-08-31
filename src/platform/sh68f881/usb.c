@@ -447,12 +447,20 @@ static void ep2_in_drain(void)
     ep2_in_busy = 1;
 }
 
+// The count and control registers live on SFR page 1, so every arming sequence has to
+// borrow it. The drain stays on page 0: it kicks the watchdog, and RSTSTAT is page 0.
 static void ep2_in_send(uint8_t *raw, uint8_t len)
 {
     ep2_in_drain();
+
+    uint8_t saved_inscon = INSCON;
+    sfr_page_1();
+
     set_ep2_in_buffer(raw, len);
     SET_EP2_CNT(len);
     SET_EP2_IN_RDY;
+
+    INSCON = saved_inscon;
 }
 
 void usb_send_report(__xdata report_keyboard_t *report)
@@ -462,9 +470,15 @@ void usb_send_report(__xdata report_keyboard_t *report)
     }
 
     ep1_in_drain();
+
+    uint8_t saved_inscon = INSCON;
+    sfr_page_1();
+
     set_ep1_in_buffer(report->raw, KEYBOARD_REPORT_SIZE);
     SET_EP1_CNT(KEYBOARD_REPORT_SIZE);
     SET_EP1_IN_RDY;
+
+    INSCON = saved_inscon;
 }
 
 void usb_send_nkro(__xdata report_nkro_t *report)
