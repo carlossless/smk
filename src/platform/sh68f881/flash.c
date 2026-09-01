@@ -2,15 +2,15 @@
 #include "sh68f881.h"
 #include <stdbool.h>
 
-#define CFG_ADDR   0x6800u // sector 26
-#define CFG_SIZE   1024u   // this part erases a whole 1 KiB sector at a time
+#define CFG_ADDR   FLASH_CFG_ADDR
+#define CFG_SIZE   FLASH_CFG_SIZE
 #define CFG_END    (CFG_ADDR + CFG_SIZE)
 #define CFG_MAGIC0 0x5Au
 #define CFG_MAGIC1 0xA5u
 #define CFG_HDR    3u
 
-_Static_assert((CFG_ADDR & (CFG_SIZE - 1)) == 0, "CFG_ADDR must be aligned to a 1 KiB flash sector boundary");
-_Static_assert(CFG_END <= 0x6C00u, "CFG_END must stay clear of the sector holding the app-validity marker at 0x6FFB");
+_Static_assert((CFG_ADDR & (CFG_SIZE - 1)) == 0, "CFG_ADDR must be aligned to a flash sector boundary");
+_Static_assert(CFG_END <= FLASH_MARKER_ADDR, "CFG_END must stay clear of the sector holding the boot marker");
 
 // SSP operation codes (datasheet 7.4).
 // IB_CON2..5 must receive this key, in order, to arm an SSP operation.

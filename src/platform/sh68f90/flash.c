@@ -2,15 +2,15 @@
 #include "sh68f90.h"
 #include <stdbool.h>
 
-#define CFG_ADDR   0xEC00u // sector 118
-#define CFG_SIZE   512u
+#define CFG_ADDR   FLASH_CFG_ADDR
+#define CFG_SIZE   FLASH_CFG_SIZE
 #define CFG_END    (CFG_ADDR + CFG_SIZE)
 #define CFG_MAGIC0 0x5Au
 #define CFG_MAGIC1 0xA5u
 #define CFG_HDR    3u
 
-_Static_assert((CFG_ADDR & (CFG_SIZE - 1)) == 0, "CFG_ADDR must be aligned to a 512-byte flash sector boundary");
-_Static_assert(CFG_END <= 0xEE00u, "CFG_END must not reach sector 119 (holds reset-vector redirect at 0xEFFC)");
+_Static_assert((CFG_ADDR & (CFG_SIZE - 1)) == 0, "CFG_ADDR must be aligned to a flash sector boundary");
+_Static_assert(CFG_END <= FLASH_MARKER_ADDR, "CFG_END must stay clear of the sector holding the boot marker");
 
 // SSP operation codes (datasheet 7.4).
 // IB_CON2..5 must receive this key, in order, to arm an SSP operation.

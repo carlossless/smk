@@ -146,6 +146,30 @@ possible_src_layout = [
     'layout.c',
 ]
 
+# Everything about a part's flash and RAM layout is derived from these four numbers.
+#
+# Flash is carved from the top down: the bootloader occupies the last
+# bootloader_size bytes; immediately below it sits one sector holding the boot
+# marker the bootloader reads (the app-validity trampoline at 0x6FFB on the '881,
+# the reset-vector redirect at 0xEFFC on the '90), which the app must never write;
+# below that, one sector of persisted settings. Application code gets the rest.
+platform_specs = {
+    'sh68f90' : {
+        'flash_size'      : 0x10000,
+        'bootloader_size' : 0x1000,
+        'sector_size'     : 0x200,
+        'xram_size'       : 0x1000,
+    },
+    'sh68f881' : {
+        # xram measured on the part: 0x0000-0x08FF contiguous, nothing at 0x0900,
+        # then the endpoint buffer window at 0x0A00-0x0AFF.
+        'flash_size'      : 0x8000,
+        'bootloader_size' : 0x1000,
+        'sector_size'     : 0x400,
+        'xram_size'       : 0x900,
+    },
+}
+
 cc_base_args = [
     '--Werror',
     '--std-c23',
@@ -153,9 +177,7 @@ cc_base_args = [
     '-mmcs51',
     '--model-large',
     '--stack-auto',
-    '--xram-size', '0x1000',
     '--xram-loc', '0x0000',
-    '--code-size', '0xec00', # cap code below the flash config sector (0xEC00) + bootloader
     '--opt-code-speed',
     '--out-fmt-ihx',
 
@@ -248,16 +270,25 @@ foreach part : parts
         if platform == 'sh68f90'
             src_main += src_platform_sh68f90
             inc_dirs += inc_platform_sh68f90
-            platform_cc_args = []
         elif platform == 'sh68f881'
             src_main += src_platform_sh68f881
             inc_dirs += inc_platform_sh68f881
-            # 32 KiB part: keep code below the settings sector (0x6800) and the
-            # bootloader, and xram below the endpoint buffers at 0x0A00.
-            platform_cc_args = ['--code-size', '0x6800', '--xram-size', '0x0900']
         else
             error('unsupported platform: @0@'.format(platform))
         endif
+
+        spec            = platform_specs[platform]
+        bootloader_addr = spec['flash_size'] - spec['bootloader_size']
+        marker_addr     = bootloader_addr - spec['sector_size']
+        settings_addr   = marker_addr - spec['sector_size']
+
+        platform_cc_args = [
+            '--code-size', '@0@'.format(settings_addr),
+            '--xram-size', '@0@'.format(spec['xram_size']),
+            '-DFLASH_CFG_ADDR=@0@u'.format(settings_addr),
+            '-DFLASH_CFG_SIZE=@0@u'.format(spec['sector_size']),
+            '-DFLASH_MARKER_ADDR=@0@u'.format(marker_addr),
+        ]
 
         cc_args = cc_base_args + platform_cc_args + [
             '-DFREQ_SYS=@0@'.format(options['freq_sys']),
@@ -398,10 +429,7 @@ cc_bringup_args = [
     '-mmcs51',
     '--model-large',
     '--stack-auto',
-    # The endpoint buffers are absolute at 0x0A00-0x0AFF, so xram has to reach past them.
-    '--xram-size', '0x0b00',
     '--xram-loc', '0x0000',
-    '--code-size', '0x6f00', # cap code below the app-validity marker (0x6FFB) + bootloader
     '--opt-code-speed',
     '--out-fmt-ihx',
 
@@ -431,6 +459,11 @@ foreach part : bringup_parts
         error('unsupported bring-up platform: @0@'.format(platform))
     endif
 
+    spec            = platform_specs[platform]
+    bootloader_addr = spec['flash_size'] - spec['bootloader_size']
+    marker_addr     = bootloader_addr - spec['sector_size']
+    settings_addr   = marker_addr - spec['sector_size']
+
     src_bringup += 'src/keyboards/@0@/bringup.c'.format(keyboard)
     src_bringup += 'src/smk/console.c'
     inc_bringup += 'src/keyboards/@0@'.format(keyboard)
@@ -438,6 +471,8 @@ foreach part : bringup_parts
     inc_bringup += 'src'
 
     cc_args = cc_bringup_args + [
+        '--code-size', '@0@'.format(settings_addr),
+        '--xram-size', '@0@'.format(spec['xram_size']),
         '-DWATCHDOG_ENABLE=1',
         '-DUSB_VID=@0@'.format(options['vendor_id']),
         '-DUSB_PID=@0@'.format(options['product_id']),
