@@ -146,13 +146,6 @@ possible_src_layout = [
     'layout.c',
 ]
 
-# Everything about a part's flash and RAM layout is derived from these four numbers.
-#
-# Flash is carved from the top down: the bootloader occupies the last
-# bootloader_size bytes; immediately below it sits one sector holding the boot
-# marker the bootloader reads (the app-validity trampoline at 0x6FFB on the '881,
-# the reset-vector redirect at 0xEFFC on the '90), which the app must never write;
-# below that, one sector of persisted settings. Application code gets the rest.
 platform_specs = {
     'sh68f90' : {
         'flash_size'      : 65536,
@@ -161,8 +154,6 @@ platform_specs = {
         'xram_size'       : 4096,
     },
     'sh68f881' : {
-        # xram measured on the part: 0x0000-0x08FF contiguous, nothing at 0x0900,
-        # then the endpoint buffer window at 0x0A00-0x0AFF.
         'flash_size'      : 32768,
         'bootloader_size' : 4096,
         'sector_size'     : 1024,
