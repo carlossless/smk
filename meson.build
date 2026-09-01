@@ -155,18 +155,18 @@ possible_src_layout = [
 # below that, one sector of persisted settings. Application code gets the rest.
 platform_specs = {
     'sh68f90' : {
-        'flash_size'      : 0x10000,
-        'bootloader_size' : 0x1000,
-        'sector_size'     : 0x200,
-        'xram_size'       : 0x1000,
+        'flash_size'      : 65536,
+        'bootloader_size' : 4096,
+        'sector_size'     : 512,
+        'xram_size'       : 4096,
     },
     'sh68f881' : {
         # xram measured on the part: 0x0000-0x08FF contiguous, nothing at 0x0900,
         # then the endpoint buffer window at 0x0A00-0x0AFF.
-        'flash_size'      : 0x8000,
-        'bootloader_size' : 0x1000,
-        'sector_size'     : 0x400,
-        'xram_size'       : 0x900,
+        'flash_size'      : 32768,
+        'bootloader_size' : 4096,
+        'sector_size'     : 1024,
+        'xram_size'       : 2304,
     },
 }
 
