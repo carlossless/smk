@@ -13,23 +13,29 @@
 #define sfr_page_1() (INSCON |= INSCON_PAGE_1)
 #define sfr_page_0() (INSCON &= INSCON_PAGE_MASK)
 
-// Peripheral registers the stock firmware zeroes right after switching the clock
-// (CODE:0x439A), before it touches the ports. Their function is not known here, but left
-// at their reset values something in this block keeps hold of the P2 matrix rows.
+// Page-0 registers the stock firmware zeroes right after switching the clock
+// (CODE:0x439A), before it touches the ports. Left at their reset values, something in
+// this block keeps hold of the P2 matrix rows.
+//
+// The vendor Keil header documents none of these at these addresses on page 0, so the
+// names stay positional. Stock writes each exactly once, here; the only other appearance
+// in the image is the bootloader repeating the same sequence at 0x79E0.
 SFR(PERIPH_92, 0x92);
 SFR(PERIPH_93, 0x93);
 SFR(PERIPH_95, 0x95);
 SFR(PERIPH_9E, 0x9e);
 SFR(PERIPH_9F, 0x9f);
 SFR(PERIPH_A2, 0xa2);
-SFR(PERIPH_A4, 0xa4);
-SFR(PERIPH_A5, 0xa5);
-SFR(PERIPH_A6, 0xa6);
 SFR(PERIPH_AA, 0xaa);
 SFR(PERIPH_AB, 0xab);
 SFR(PERIPH_AC, 0xac);
 SFR(PERIPH_AD, 0xad);
 SFR(PERIPH_AE, 0xae);
+
+// SPI, page 0. Stock only clears these in the same block; nothing here drives SPI.
+SFR(SPCON, 0xa4);
+SFR(SPSTA, 0xa5);
+SFR(SPDAT, 0xa6);
 
 // CPU
 SFR(ACC, 0xe0);
@@ -38,6 +44,9 @@ SFR(PSW, 0xd0);
 SFR(SP, 0x81);
 SFR(DPL, 0x82);
 SFR(DPH, 0x83);
+SFR(DPL1, 0x84);
+SFR(DPH1, 0x85);
+SFR(AUXC, 0xf1);
 SFR(INSCON, 0x86);
 SFR(PCON, 0x87);
 
@@ -46,16 +55,49 @@ SFR(IEN0, 0xa8);
 SFR(IEN1, 0xa9);
 SFR(IPH0, 0xb4);
 
+SFR(IPL0, 0xb8);
+SFR(IPL1, 0xb9);
+SFR(IPH1, 0xb5);
+SFR(IENC, 0xba);
+
 // Vector 0x005B is IEN1 bit 4: (0x5B - 3) / 8.
 enum { _INT_TIMER2 = 5, _INT_USB = 11 };
+
+// POWER
+SFR(SUSLO, 0x8e);
 
 // WDT
 SFR(RSTSTAT, 0xb1);
 
 // CLOCK / POWER
+SFR(CLKLO, 0xbd);
+SFR(CLKRC0, 0xbe);
+SFR(CLKRC1, 0xbf);
 SFR(CLKCON, 0xb2);
 SFR(PLLCON, 0xb3);
 SFR(REGCON, 0xa1);
+
+// PWM. Three channels; nothing here uses them, the backlight is multiplexed in software.
+SFR(PWM0CON, 0xc5);
+SFR(PWM1CON, 0xc6);
+SFR(PWM2CON, 0xc7);
+SFR(PWM0PL, 0xd1);
+SFR(PWM0PH, 0xd2);
+SFR(PWM1PL, 0xd3);
+SFR(PWM1PH, 0xd4);
+SFR(PWM2PL, 0xd5);
+SFR(PWM2PH, 0xd6);
+SFR(PWM0DL, 0xd9);
+SFR(PWM0DH, 0xda);
+SFR(PWM1DL, 0xdb);
+SFR(PWM1DH, 0xdc);
+SFR(PWM2DL, 0xdd);
+SFR(PWM2DH, 0xde);
+
+// BASE TIMER
+SFR(BTCON, 0xc1);
+SFR(SEC, 0xc2);
+SFR(MIN, 0xc3);
 
 // FLASH
 SFR(FLASHCON, 0xa7);
@@ -242,6 +284,7 @@ _SBUF(0x0a30) EP2_OUT_BUF[EP2_BUF_SIZE];
 _SBUF(0x0a70) EP2_IN_BUF[EP2_BUF_SIZE];
 
 // TIMER 2, page 0
+SFR(T2MOD, 0xc9);
 SFR(T2CON, 0xc8);
 SFR(RCAP2L, 0xca);
 SFR(RCAP2H, 0xcb);

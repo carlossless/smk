@@ -16,8 +16,10 @@
 // bytes into unused xdata, and its RAM clear covers XSEG only
 // (0x0000..s_XISEG-1), never the XISEG bytes written here.
 //
-// Only one DPTR is available, so the loop reloads it per byte: MOVC (src) and
-// MOVX (dst) both need it.
+// The part has a second data pointer (DPL1/DPH1, selected through AUXC), but this
+// loop keeps to the single-DPTR form: MOVC (src) and MOVX (dst) both need it, so it
+// reloads per byte. Runs once at boot over a handful of bytes, so the reload costs
+// nothing worth the extra state.
 uint8_t __sdcc_external_startup(void) __naked
 {
     // clang-format off

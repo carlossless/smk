@@ -43,9 +43,9 @@ static void peripherals_reset(void)
     PERIPH_AC = 0;
     PERIPH_AD = 0;
     PERIPH_AE = 0;
-    PERIPH_A4 = 0;
-    PERIPH_A5 = 0;
-    PERIPH_A6 = 0;
+    SPCON = 0;
+    SPSTA = 0;
+    SPDAT = 0;
 }
 
 void clock_init(void)
