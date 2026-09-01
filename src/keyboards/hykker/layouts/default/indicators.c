@@ -49,11 +49,12 @@ static void led_blank(void)
 static void led_drive(uint8_t col, uint8_t anodes)
 {
     uint8_t saved_page = INSCON;
+    uint8_t pin        = kb_col_pins[col];
 
     sfr_page_1();
-    P6 = (col < 8) ? (uint8_t) ~(1u << col) : 0xFFu;
-    P7 = (col >= 8 && col < 16) ? (uint8_t) ~(1u << (col - 8)) : 0xFFu;
-    P8 = (col >= 16) ? (uint8_t) ~(1u << (col - 16)) : 0xFFu;
+    P6 = (pin < 8) ? (uint8_t) ~(1u << pin) : 0xFFu;
+    P7 = (pin >= 8 && pin < 16) ? (uint8_t) ~(1u << (pin - 8)) : 0xFFu;
+    P8 = (pin >= 16) ? (uint8_t) ~(1u << (pin - 16)) : 0xFFu;
     P5 = (uint8_t)((P5 & ~KB_ANODE_P5_MASK) | ((anodes >> 3) & KB_ANODE_P5_MASK));
 
     sfr_page_0();

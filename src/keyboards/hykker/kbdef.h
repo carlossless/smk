@@ -4,7 +4,7 @@
 #include "keycodes.h"
 
 #define MATRIX_ROWS 6
-#define MATRIX_COLS 24
+#define MATRIX_COLS 19
 
 enum custom_keycodes {
     FX_NEXT = SAFE_RANGE, // cycle to the next backlight animation
@@ -24,6 +24,12 @@ enum custom_keycodes {
 #define KB_C_P6_MASK 0xFFu
 #define KB_C_P7_MASK 0xFFu
 #define KB_C_P8_MASK 0xFFu
+
+// This board is the tenkeyless variant of what the stock firmware drives, so the four
+// numpad columns are unpopulated and column 0 carries only vendor codes that never
+// reach a report. What is left is not contiguous - the left GUI key is alone out on
+// physical column 23 - so scan order maps through here rather than being the index.
+extern const __code uint8_t kb_col_pins[MATRIX_COLS];
 
 // The backlight multiplexes one column per subframe, so a whole frame is MATRIX_COLS
 // subframes and they have to run far more often than the matrix scan.

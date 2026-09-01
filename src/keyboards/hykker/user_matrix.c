@@ -12,6 +12,10 @@
         INSCON = saved_page;        \
     } while (0)
 
+const __code uint8_t kb_col_pins[MATRIX_COLS] = {
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 23,
+};
+
 void user_matrix_cols_deselect_all(void)
 {
     WITH_COLUMN_PAGE({
@@ -23,26 +27,30 @@ void user_matrix_cols_deselect_all(void)
 
 void user_matrix_col_select(uint8_t col)
 {
+    uint8_t pin = kb_col_pins[col];
+
     WITH_COLUMN_PAGE({
-        if (col < 8) {
-            P6 &= (uint8_t) ~(1u << col);
-        } else if (col < 16) {
-            P7 &= (uint8_t) ~(1u << (col - 8));
+        if (pin < 8) {
+            P6 &= (uint8_t) ~(1u << pin);
+        } else if (pin < 16) {
+            P7 &= (uint8_t) ~(1u << (pin - 8));
         } else {
-            P8 &= (uint8_t) ~(1u << (col - 16));
+            P8 &= (uint8_t) ~(1u << (pin - 16));
         }
     });
 }
 
 void user_matrix_col_deselect(uint8_t col)
 {
+    uint8_t pin = kb_col_pins[col];
+
     WITH_COLUMN_PAGE({
-        if (col < 8) {
-            P6 |= (uint8_t)(1u << col);
-        } else if (col < 16) {
-            P7 |= (uint8_t)(1u << (col - 8));
+        if (pin < 8) {
+            P6 |= (uint8_t)(1u << pin);
+        } else if (pin < 16) {
+            P7 |= (uint8_t)(1u << (pin - 8));
         } else {
-            P8 |= (uint8_t)(1u << (col - 16));
+            P8 |= (uint8_t)(1u << (pin - 16));
         }
     });
 }
