@@ -20,6 +20,14 @@
 // The vendor Keil header documents none of these at these addresses on page 0, so the
 // names stay positional. Stock writes each exactly once, here; the only other appearance
 // in the image is the bootloader repeating the same sequence at 0x79E0.
+//
+// What they most likely are, from how the other 377 parts in the same Keil package use
+// these addresses: 0x92/0x93/0x95 the ADC (ADCON2/ADCON/ADCH) with 0x9F its channel
+// sequencer, 0x9E a port special-function select, 0xAA a second interrupt enable, and
+// 0xAB-0xAE an LED/LCD segment drive block. The '881 header declares EADC and PADCL but
+// no ADC registers at all, so this part has an ADC whose registers it simply omits -
+// which fits, since an ADC or a pin-function select left enabled over P2.1-P2.3 is
+// exactly what would hold those rows off the digital input path.
 SFR(PERIPH_92, 0x92);
 SFR(PERIPH_93, 0x93);
 SFR(PERIPH_95, 0x95);
