@@ -108,6 +108,7 @@ inc_platform_sh68f881 = [
 ]
 
 src_platform_sh68f881 = [
+    'src/platform/sh68f881/startup.c',
     'src/platform/sh68f881/clock.c',
     'src/platform/sh68f881/delay.c',
     'src/platform/sh68f881/diag.c',
