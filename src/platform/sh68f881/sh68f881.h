@@ -13,33 +13,6 @@
 #define sfr_page_1() (INSCON |= INSCON_PAGE_1)
 #define sfr_page_0() (INSCON &= INSCON_PAGE_MASK)
 
-// Page-0 registers the stock firmware zeroes right after switching the clock
-// (CODE:0x439A), before it touches the ports. Left at their reset values, something in
-// this block keeps hold of the P2 matrix rows.
-//
-// The vendor Keil header documents none of these at these addresses on page 0, so the
-// names stay positional. Stock writes each exactly once, here; the only other appearance
-// in the image is the bootloader repeating the same sequence at 0x79E0.
-//
-// What they most likely are, from how the other 377 parts in the same Keil package use
-// these addresses: 0x92/0x93/0x95 the ADC (ADCON2/ADCON/ADCH) with 0x9F its channel
-// sequencer, 0x9E a port special-function select, 0xAA a second interrupt enable, and
-// 0xAB-0xAE an LED/LCD segment drive block. The '881 header declares EADC and PADCL but
-// no ADC registers at all, so this part has an ADC whose registers it simply omits -
-// which fits, since an ADC or a pin-function select left enabled over P2.1-P2.3 is
-// exactly what would hold those rows off the digital input path.
-SFR(PERIPH_92, 0x92);
-SFR(PERIPH_93, 0x93);
-SFR(PERIPH_95, 0x95);
-SFR(PERIPH_9E, 0x9e);
-SFR(PERIPH_9F, 0x9f);
-SFR(PERIPH_A2, 0xa2);
-SFR(PERIPH_AA, 0xaa);
-SFR(PERIPH_AB, 0xab);
-SFR(PERIPH_AC, 0xac);
-SFR(PERIPH_AD, 0xad);
-SFR(PERIPH_AE, 0xae);
-
 // SPI, page 0. Stock only clears these in the same block; nothing here drives SPI.
 SFR(SPCON, 0xa4);
 SFR(SPSTA, 0xa5);
