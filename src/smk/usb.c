@@ -1,5 +1,5 @@
 #include "usb.h"
-#include "interrupts.h"
+#include "usbhw.h"
 #include "watchdog.h"
 #include "isp.h"
 #include "usbdef.h"
@@ -308,10 +308,6 @@ static void setup_ep0_in_xfer(uint8_t *src, uint16_t len);
 static void step_ep0_in_xfer();
 static void set_ep0_in_buffer(uint8_t *src, uint8_t len);
 static void get_ep0_out_buffer(uint8_t *dest);
-static void set_ep1_in_buffer(uint8_t *src, uint8_t len);
-static void get_ep1_out_buffer(uint8_t *dest);
-static void set_ep2_in_buffer(uint8_t *src, uint8_t len);
-static void get_ep2_out_buffer(uint8_t *dest);
 
 // request handlers
 static void usb_clear_remote_wakeup_handler(struct usb_req_setup *req);
@@ -380,11 +376,7 @@ void usb_init()
     enum_quiet_ticks = 0;
     enum_seen        = false;
 
-    USBADDR = 0;
-    USBIE1  = (_OVERIE | _SETUPIE | _SOFIA | _RESMIE | _SUSPIE | _PBRSTIE);
-    USBIE2  = (_OEP0IE | _IEP0IE);
-    USBCON  = (_ENUSB | _SW1CON);
-    IEN1 |= _EUSB;
+    usb_hw_init();
 }
 
 void usb_deinit()
@@ -399,37 +391,7 @@ void usb_deinit()
     usb_ep0_state        = USB_EP0_STATE_DEFAULT;
     idle_time            = 0;
 
-    USBADDR = 0;
-    USBCON &= ~(_ENUSB | _SW1CON | _SW2CON); // drop the module-enable bits
-    IEN1 &= ~_EUSB;                          // disable the USB interrupt
-}
-
-#define EP_IN_DRAIN_TRIES 255
-
-static void ep1_in_drain(void)
-{
-    uint8_t tries = 0;
-    while (tries < EP_IN_DRAIN_TRIES && (EP1CON & _IEP1RDY)) {
-        delay_us(40);
-        tries++;
-    }
-}
-
-static void ep2_in_drain(void)
-{
-    uint8_t tries = 0;
-    while (tries < EP_IN_DRAIN_TRIES && (EP2CON & _IEP2RDY)) {
-        delay_us(40);
-        tries++;
-    }
-}
-
-static void ep2_in_send(uint8_t *raw, uint8_t len)
-{
-    ep2_in_drain();
-    set_ep2_in_buffer(raw, len);
-    SET_EP2_CNT(len);
-    SET_EP2_IN_RDY;
+    usb_hw_deinit();
 }
 
 void usb_send_report(__xdata report_keyboard_t *report)
@@ -437,11 +399,7 @@ void usb_send_report(__xdata report_keyboard_t *report)
     if (!usb_is_configured()) {
         return;
     }
-
-    ep1_in_drain();
-    set_ep1_in_buffer(report->raw, KEYBOARD_REPORT_SIZE);
-    SET_EP1_CNT(KEYBOARD_REPORT_SIZE);
-    SET_EP1_IN_RDY;
+    usb_hw_ep1_in_send(report->raw, KEYBOARD_REPORT_SIZE);
 }
 
 void usb_send_nkro(__xdata report_nkro_t *report)
@@ -449,7 +407,7 @@ void usb_send_nkro(__xdata report_nkro_t *report)
     if (!usb_is_configured()) {
         return;
     }
-    ep2_in_send(report->raw, NKRO_REPORT_SIZE);
+    usb_hw_ep2_in_send(report->raw, NKRO_REPORT_SIZE);
 }
 
 void usb_send_extra(__xdata report_extra_t *report)
@@ -457,7 +415,7 @@ void usb_send_extra(__xdata report_extra_t *report)
     if (!usb_is_configured()) {
         return;
     }
-    ep2_in_send(report->raw, EXTRA_REPORT_SIZE);
+    usb_hw_ep2_in_send(report->raw, EXTRA_REPORT_SIZE);
 }
 
 void usb_wait_for_enumeration(void)
@@ -480,18 +438,12 @@ void usb_wait_for_enumeration(void)
 #if DEBUG == 1
 bool usb_console_ready(void)
 {
-    return usb_is_configured() && !(EP2CON & _IEP2RDY);
+    return usb_is_configured() && usb_hw_ep2_in_free();
 }
 
 void usb_console_send(const __xdata uint8_t *data, uint8_t len)
 {
-    EP2_IN_BUF[0] = REPORT_ID_CONSOLE;
-    for (uint8_t i = 0; i < CONSOLE_REPORT_SIZE; i++) {
-        EP2_IN_BUF[1 + i] = (i < len) ? data[i] : 0;
-    }
-
-    SET_EP2_CNT(1 + CONSOLE_REPORT_SIZE);
-    SET_EP2_IN_RDY;
+    usb_hw_console_send(data, len);
 }
 #endif
 
@@ -680,16 +632,8 @@ static void usb_setup_irq()
     }
 }
 
-void usb_interrupt_handler() __interrupt(_INT_USB)
+void usb_irq_dispatch(void)
 {
-    // Save/restore INSCON and FLASHCON: the handler reads descriptors out of
-    // __code, and a USB IRQ landing over a main-loop code/flash access would
-    // otherwise corrupt the interrupted path's banking state. SDCC's __interrupt
-    // prologue saves the standard registers but not these two SFRs; the handler
-    // has no early returns, so restoring at the tail covers every path.
-    uint8_t saved_inscon   = INSCON;
-    uint8_t saved_flashcon = FLASHCON;
-
     uint8_t temp_usbif1 = USBIF1;
     uint8_t temp_usbif2 = USBIF2;
 
@@ -747,16 +691,15 @@ void usb_interrupt_handler() __interrupt(_INT_USB)
             SET_EP0_OUT_RDY;
         } else if (temp_usbif2 & _IEP2IF) {
             USBIF2 &= ~_IEP2IF;
+            usb_hw_ep2_in_complete();
         } else if (temp_usbif2 & _IEP1IF) {
             USBIF2 &= ~_IEP1IF;
+            usb_hw_ep1_in_complete();
         } else if (temp_usbif2 & _IEP0IF) {
             USBIF2 &= ~_IEP0IF;
             usb_ep0_in_irq();
         }
     }
-
-    FLASHCON = saved_flashcon; // restore banking SFRs (see top)
-    INSCON   = saved_inscon;
 }
 
 // request handlers
@@ -855,7 +798,8 @@ static void usb_set_configuration_handler(struct usb_req_setup *req)
 {
     usb_ep0_state = USB_EP0_STATE_DEFAULT;
 
-    if (USBADDR) {
+    // USBADDR does not read back on every part, so test the address we assigned.
+    if (received_usb_addr) {
         if ((req->wValue == 0) || (req->wValue == 1)) {
             active_configuration = req->wValue;
 
@@ -1264,39 +1208,5 @@ static void get_ep0_out_buffer(uint8_t *dest)
 {
     for (uint8_t i = 0; i < EP0_BUF_SIZE; i++) {
         dest[i] = EP0_OUT_BUF[i];
-    }
-}
-
-static void set_ep1_in_buffer(uint8_t *src, uint8_t len)
-{
-    if (len > EP1_BUF_SIZE) {
-        return;
-    }
-    for (uint8_t i = 0; i < len; i++) {
-        EP1_IN_BUF[i] = src[i];
-    }
-}
-
-static void get_ep1_out_buffer(uint8_t *dest)
-{
-    for (uint8_t i = 0; i < EP1_BUF_SIZE; i++) {
-        dest[i] = EP1_OUT_BUF[i];
-    }
-}
-
-static void set_ep2_in_buffer(uint8_t *src, uint8_t len)
-{
-    if (len > EP2_BUF_SIZE) {
-        return;
-    }
-    for (uint8_t i = 0; i < len; i++) {
-        EP2_IN_BUF[i] = src[i];
-    }
-}
-
-static void get_ep2_out_buffer(uint8_t *dest)
-{
-    for (uint8_t i = 0; i < EP2_BUF_SIZE; i++) {
-        dest[i] = EP2_OUT_BUF[i];
     }
 }

@@ -21,6 +21,11 @@ uint8_t usb_device_state_get_protocol(void);
 
 void usb_wait_for_enumeration(void);
 
+// The part of the USB interrupt that is the same on every part. Each platform's
+// interrupt vector calls it inside its own banking prologue, so it must run with the
+// USB block already reachable.
+void usb_irq_dispatch(void);
+
 extern __bit usb_suspended;
 
 #if DEBUG == 1
