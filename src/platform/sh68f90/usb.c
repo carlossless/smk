@@ -131,7 +131,7 @@ const uint8_t hid_report_desc_extra[] = {
     HID_RI_END_COLLECTION(0),
 
 #if DEBUG == 1
-    HID_RI_USAGE_PAGE(16, 0xff31),        // Vendor (QMK console page)
+    HID_RI_USAGE_PAGE(16, 0xff31),        // Vendor (console page)
     HID_RI_USAGE(8, 0x74),                // Console
     HID_RI_COLLECTION(8, 0x01),           // Application
         HID_RI_REPORT_ID(8, REPORT_ID_CONSOLE),
