@@ -33,10 +33,10 @@ def find_firmware():
     env = os.environ.get("SMK_FIRMWARE")
     if env and Path(env).exists():
         return env
-    # cwd covers `meson test` (run from the build dir); REPO_ROOT/build covers
-    # manual runs from the repo root.
+    # cwd covers `meson test` (run from the build dir); REPO_ROOT/build* covers
+    # manual runs from the repo root, where each keyboard gets its own build dir.
     candidates = (sorted(Path.cwd().glob("*_smk.hex"))
-                  + sorted(REPO_ROOT.glob("build/*_smk.hex"))
+                  + sorted(REPO_ROOT.glob("build*/*_smk.hex"))
                   + sorted(REPO_ROOT.glob("*_smk.hex")))
     for c in candidates:  # prefer nuphy-air60 (the reference target)
         if "nuphy" in c.name:
@@ -215,7 +215,8 @@ class Sim:
     def available(self):
         """Return None if runnable, else a human reason it is not."""
         if not self.firmware or not Path(self.firmware).exists():
-            return "no SMK firmware .hex (build it: meson compile -C build nuphy-air60_default_smk.hex)"
+            return ("no SMK firmware .hex (build it: meson setup build "
+                    "--cross-file cross-file/nuphy-air60.ini && meson compile -C build)")
         try:
             subprocess.run([self.sim, "-v"], capture_output=True, timeout=10)
         except (OSError, subprocess.SubprocessError):

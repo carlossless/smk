@@ -1,28 +1,34 @@
 project(
     'smk',
-    'c',
     version: 'alpha',
     meson_version: '>=1.1.0'
 )
+
+# SDCC is not a C compiler meson can drive, so only the host tools get a meson-managed one.
+add_languages('c', native : true)
 
 fs = import('fs')
 
 env = environment()
 env.set('DEBUG', '1')
 
-default_options = {
-    'freq_sys': '24000000', # 24Mhz
-    'watchdog_enable': '1',
-    'vendor_id': '0x258a',
-    'product_id': '0xdead',
-}
+keyboard = get_option('keyboard')
+layout = get_option('keyboard_layout')
+platform = get_option('platform')
+wireless = get_option('wireless')
 
-parts = [
-    # keyboard, platform, layouts, options
-    ['example', 'sh68f90', ['default'], {}],
-    ['nuphy-air60', 'sh68f90', ['default'], { 'vendor_id': '0x05ac', 'product_id': '0x024f', 'wireless': 'bk3632', 'led_rows': '5', 'led_cols': '16', 'led_cx2': '13', 'led_cy2': '4' }],
-    ['eyooso-z11', 'sh68f90', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x002a', 'led_rows': '5', 'led_cols': '14', 'led_cx2': '13', 'led_cy2': '4' }],
-]
+# An empty keyboard builds just the host tools.
+is_firmware_build = keyboard != ''
+
+if is_firmware_build
+    assert(
+        meson.is_cross_build(),
+        '''SMK firmware must be cross-compiled to the keyboard's MCU
+Try adding the option `--cross-file @0@` to the configuration'''.format(
+            meson.project_source_root() / 'cross-file' / keyboard + '.ini'
+        ),
+    )
+endif
 
 # SMK
 
@@ -126,6 +132,21 @@ possible_src_layout = [
     'layout.c',
 ]
 
+dir_base = meson.current_source_dir()
+
+# Host-side reader for the HID debug console; it needs <linux/hidraw.h>, so Linux hosts only.
+build_smk_console = build_machine.system() == 'linux'
+if build_smk_console
+    executable(
+        'smk-console',
+        'tools/smk-console.c',
+        native : true,
+        install : false,
+    )
+endif
+
+if is_firmware_build
+
 cc_base_args = [
     '--Werror',
     '--std-c23',
@@ -168,7 +189,7 @@ sdar_args = ['-rc']
 cc = find_program('sdcc', required : true)
 sdar = find_program('sdar', required : true)
 packihx = find_program('packihx', required : true)
-sinowisp = find_program('sinowisp', required : true)
+sinowisp = find_program('sinowisp', required : false)
 
 # SDCC's -M family is deps-only, so a wrapper writes the depfile ninja needs.
 py = find_program('python3', required : true)
@@ -177,23 +198,6 @@ sdcc_compile = join_paths(meson.current_source_dir(), 'utils/sdcc_compile.py')
 # Fails the build on an unclaimed interrupt vector, or on an ISR-reachable function
 # sharing SDCC's static overlay with a main-loop one (project_sdcc_isr_overlay_collision).
 check_interrupts = files('utils/check_interrupts.py')
-
-# Host-side generator that bakes per-device LED animation geometry into ROM tables
-# (see utils/led_geometry_gen.c). Compiled once with the host compiler at configure
-# time so the generated headers exist on disk before any firmware source is built.
-host_cc = find_program('cc', 'gcc', required : true)
-gen_led_geometry = join_paths(meson.current_build_dir(), 'led_geometry_gen')
-run_command(host_cc, '-O2', '-o', gen_led_geometry, join_paths(meson.current_source_dir(), 'utils/led_geometry_gen.c'), check : true)
-
-# Host-side reader for the HID debug console; built with the host compiler.
-executable(
-    'smk-console',
-    'tools/smk-console.c',
-    native : true,
-    install : false,
-)
-
-dir_base = meson.current_source_dir()
 
 cc_incs = []
 foreach dir : inc_base_dirs
@@ -215,141 +219,181 @@ lib_user = custom_target('user.lib',
     command : [sdar, sdar_args, '@OUTPUT@', '@INPUT@'],
 )
 
-foreach part : parts
-    keyboard = part[0]
-    platform = part[1]
-    layouts = part[2]
-    options = default_options + part[3]
+src_main = src_smk
+inc_dirs = inc_base_dirs
+if platform == 'sh68f90'
+    src_main += src_platform_sh68f90
+    inc_dirs += inc_platform_sh68f90
+else
+    error('unsupported platform: @0@'.format(platform))
+endif
 
-    foreach layout : layouts
-        src_main = src_smk
-        inc_dirs = inc_base_dirs
-        if platform == 'sh68f90'
-            src_main += src_platform_sh68f90
-            inc_dirs += inc_platform_sh68f90
-        else
-            error('unsupported platform: @0@'.format(platform))
-        endif
+cc_args = cc_base_args + [
+    '-DFREQ_SYS=@0@'.format(get_option('freq_sys')),
+    '-DUSB_VID=@0@'.format(get_option('vendor_id')),
+    '-DUSB_PID=@0@'.format(get_option('product_id')),
+    '-DKEYBOARD_NAME="@0@"'.format(keyboard),
+    '-DLAYOUT_NAME="@0@"'.format(layout),
+]
 
-        cc_args = cc_base_args + [
-            '-DFREQ_SYS=@0@'.format(options['freq_sys']),
-            '-DWATCHDOG_ENABLE=@0@'.format(options['watchdog_enable']),
-            '-DUSB_VID=@0@'.format(options['vendor_id']),
-            '-DUSB_PID=@0@'.format(options['product_id']),
-            '-DKEYBOARD_NAME="@0@"'.format(keyboard),
-            '-DLAYOUT_NAME="@0@"'.format(layout),
-        ]
+# watchdog.h tests this with #ifdef, so disabling has to leave the macro undefined, not 0.
+if get_option('watchdog')
+    cc_args += '-DWATCHDOG_ENABLE=1'
+endif
 
-        wireless = options.get('wireless', '')
-        if wireless == 'bk3632'
-            src_main += src_platform_bk3632
-            inc_dirs += inc_platform_bk3632
-            cc_args += '-DRF_ENABLED=1'
-        elif wireless != ''
-            error('unsupported platform: @0@'.format(platform))
-        endif
+if wireless == 'bk3632'
+    src_main += src_platform_bk3632
+    inc_dirs += inc_platform_bk3632
+    cc_args += '-DRF_ENABLED=1'
+endif
 
-        kb_inc_dir = 'src/keyboards/@0@'.format(keyboard)
-        if fs.is_dir(kb_inc_dir)
-            inc_dirs += kb_inc_dir
-        else
-            error('keyboard dir does not exist: @0@'.format(kb_inc_dir))
-        endif
+kb_inc_dir = 'src/keyboards/@0@'.format(keyboard)
+if fs.is_dir(kb_inc_dir)
+    inc_dirs += kb_inc_dir
+else
+    error('keyboard dir does not exist: @0@'.format(kb_inc_dir))
+endif
 
-        foreach src : possible_src_keyboard
-            if fs.is_file('src/keyboards/@0@/@1@'.format(keyboard, src))
-                src_main += 'src/keyboards/@0@/@1@'.format(keyboard, src)
-            endif
-        endforeach
-
-        layout_inc_dir = 'src/keyboards/@0@/layouts/@1@'.format(keyboard, layout)
-        if fs.is_dir(layout_inc_dir)
-            inc_dirs += layout_inc_dir
-        else
-            error('layout dir does not exist: @0@'.format(layout_inc_dir))
-        endif
-
-        foreach src : possible_src_layout
-            if fs.is_file('src/keyboards/@0@/layouts/@1@/@2@'.format(keyboard, layout, src))
-                src_main += 'src/keyboards/@0@/layouts/@1@/@2@'.format(keyboard, layout, src)
-            endif
-        endforeach
-
-        prefix = '@0@_@1@_'.format(keyboard, layout)
-
-        # LED boards bake their animation geometry into ROM tables at configure time:
-        # a header with the matrix sizes (for the board's _Static_assert) and a source
-        # file with the tables + user_led_* accessors the shared effect engine calls.
-        geom_src = []
-        if options.has_key('led_cols')
-            configure_file(
-                output : prefix + 'led_geometry.h',
-                command : [gen_led_geometry, 'header', options['led_rows'], options['led_cols'], options['led_cx2'], options['led_cy2']],
-                capture : true,
-            )
-            geom_src += configure_file(
-                output : prefix + 'led_geometry.c',
-                command : [gen_led_geometry, 'source', options['led_rows'], options['led_cols'], options['led_cx2'], options['led_cy2']],
-                capture : true,
-            )
-            cc_args += '-DLED_GEOMETRY_HEADER="@0@led_geometry.h"'.format(prefix)
-            cc_args += '-I' + meson.current_build_dir()
-        endif
-
-        cc_incs = []
-        foreach dir : inc_dirs
-            cc_incs += '-I' + join_paths(dir_base, dir)
-        endforeach
-
-        compiler = generator(py,
-            output : '@BASENAME@.rel',
-            # See the user-lib compiler above: wrapper + depfile so ninja rebuilds a
-            # .rel whenever one of its #included headers changes.
-            depfile : '@BASENAME@.d',
-            arguments : [sdcc_compile, '@DEPFILE@', cc.full_path()] + cc_args + cc_incs + ['-c', '@INPUT@', '-o', '@OUTPUT@'],
-        )
-
-        rel_main = compiler.process(src_main, geom_src)
-
-        ihx_smk_target_name = '@0@smk.ihx'.format(prefix)
-        ihx_smk = custom_target(ihx_smk_target_name,
-            input : rel_main,
-            output : ihx_smk_target_name,
-            depends: [lib_user],
-            command : [cc, cc_args, '-o', '@OUTPUT@', '@INPUT@', '-l' + lib_user.full_path()],
-        )
-
-        # The .hex depends on this, so a violation breaks the build.
-        interrupt_check = custom_target('@0@interrupt-check'.format(prefix),
-            input : ihx_smk,
-            output : '@0@smk.interrupts-ok'.format(prefix),
-            command : [py, check_interrupts,
-                       '--src', meson.current_source_dir() / 'src',
-                       '--asmdir', meson.current_build_dir() / '@0@smk.ihx.p'.format(prefix),
-                       '--map', meson.current_build_dir() / '@0@smk.map'.format(prefix),
-                       '--stamp', '@OUTPUT@'],
-        )
-
-        hex_smk_target_name = '@0@smk.hex'.format(prefix)
-        hex_smk = custom_target(hex_smk_target_name,
-            input : ihx_smk,
-            output : hex_smk_target_name,
-            capture: true,
-            install : true,
-            install_dir : 'firmware',
-            depends : interrupt_check,
-            command : [packihx, '@INPUT@'],
-        )
-
-        flash_target_name = '@0@flash'.format(prefix)
-        run_target(flash_target_name,
-            command : [sinowisp, 'write', '-d', keyboard, '--force', hex_smk.full_path()], # TODO: try to remove the need for --force
-            depends : hex_smk,
-        )
-
-        message('target available: @0@, flash: @1@'.format(hex_smk_target_name, flash_target_name))
-    endforeach
+foreach src : possible_src_keyboard
+    if fs.is_file('src/keyboards/@0@/@1@'.format(keyboard, src))
+        src_main += 'src/keyboards/@0@/@1@'.format(keyboard, src)
+    endif
 endforeach
+
+layout_inc_dir = 'src/keyboards/@0@/layouts/@1@'.format(keyboard, layout)
+if fs.is_dir(layout_inc_dir)
+    inc_dirs += layout_inc_dir
+else
+    error('layout dir does not exist: @0@'.format(layout_inc_dir))
+endif
+
+foreach src : possible_src_layout
+    if fs.is_file('src/keyboards/@0@/layouts/@1@/@2@'.format(keyboard, layout, src))
+        src_main += 'src/keyboards/@0@/layouts/@1@/@2@'.format(keyboard, layout, src)
+    endif
+endforeach
+
+prefix = '@0@_@1@_'.format(keyboard, layout)
+
+led_rows = get_option('led_rows')
+led_cols = get_option('led_cols')
+led_cx2 = get_option('led_cx2')
+led_cy2 = get_option('led_cy2')
+has_led_matrix = led_cols > 0
+
+if has_led_matrix and led_rows == 0
+    error('led_cols is set but led_rows is not; an LED matrix needs both')
+endif
+
+# LED boards bake their animation geometry into ROM tables at configure time:
+# a header with the matrix sizes (for the board's _Static_assert) and a source
+# file with the tables + user_led_* accessors the shared effect engine calls.
+geom_src = []
+if has_led_matrix
+    # Host-side generator that bakes per-device LED animation geometry into ROM tables
+    # (see utils/led_geometry_gen.c). Compiled once with the host compiler at configure
+    # time so the generated headers exist on disk before any firmware source is built.
+    host_cc = find_program('cc', 'gcc', required : true, native : true)
+    gen_led_geometry = join_paths(meson.current_build_dir(), 'led_geometry_gen')
+    run_command(host_cc, '-O2', '-o', gen_led_geometry, join_paths(meson.current_source_dir(), 'utils/led_geometry_gen.c'), check : true)
+
+    geom_args = ['@0@'.format(led_rows), '@0@'.format(led_cols), '@0@'.format(led_cx2), '@0@'.format(led_cy2)]
+    configure_file(
+        output : prefix + 'led_geometry.h',
+        command : [gen_led_geometry, 'header'] + geom_args,
+        capture : true,
+    )
+    geom_src += configure_file(
+        output : prefix + 'led_geometry.c',
+        command : [gen_led_geometry, 'source'] + geom_args,
+        capture : true,
+    )
+    cc_args += '-DLED_GEOMETRY_HEADER="@0@led_geometry.h"'.format(prefix)
+    cc_args += '-I' + meson.current_build_dir()
+endif
+
+cc_incs = []
+foreach dir : inc_dirs
+    cc_incs += '-I' + join_paths(dir_base, dir)
+endforeach
+
+compiler = generator(py,
+    output : '@BASENAME@.rel',
+    # See the user-lib compiler above: wrapper + depfile so ninja rebuilds a
+    # .rel whenever one of its #included headers changes.
+    depfile : '@BASENAME@.d',
+    arguments : [sdcc_compile, '@DEPFILE@', cc.full_path()] + cc_args + cc_incs + ['-c', '@INPUT@', '-o', '@OUTPUT@'],
+)
+
+rel_main = compiler.process(src_main, geom_src)
+
+ihx_smk_target_name = '@0@smk.ihx'.format(prefix)
+ihx_smk = custom_target(ihx_smk_target_name,
+    input : rel_main,
+    output : ihx_smk_target_name,
+    depends: [lib_user],
+    command : [cc, cc_args, '-o', '@OUTPUT@', '@INPUT@', '-l' + lib_user.full_path()],
+)
+alias_target('ihx', ihx_smk)
+
+# The .hex depends on this, so a violation breaks the build.
+interrupt_check = custom_target('@0@interrupt-check'.format(prefix),
+    input : ihx_smk,
+    output : '@0@smk.interrupts-ok'.format(prefix),
+    command : [py, check_interrupts,
+               '--src', meson.current_source_dir() / 'src',
+               '--asmdir', meson.current_build_dir() / '@0@smk.ihx.p'.format(prefix),
+               '--map', meson.current_build_dir() / '@0@smk.map'.format(prefix),
+               '--stamp', '@OUTPUT@'],
+)
+
+hex_smk_target_name = '@0@smk.hex'.format(prefix)
+hex_smk = custom_target(hex_smk_target_name,
+    input : ihx_smk,
+    output : hex_smk_target_name,
+    capture: true,
+    install : true,
+    install_dir : 'firmware',
+    depends : interrupt_check,
+    command : [packihx, '@INPUT@'],
+)
+alias_target('hex', hex_smk)
+
+if sinowisp.found()
+    run_target('flash',
+        command : [sinowisp, 'write', '-d', keyboard, '--force', hex_smk.full_path()], # TODO: try to remove the need for --force
+        depends : hex_smk,
+    )
+endif
+
+summary(
+    {
+        'Keyboard'   : keyboard,
+        'Layout'     : layout,
+        'MCU'        : platform,
+        'Radio'      : wireless == '' ? 'none' : wireless,
+        'USB ID'     : '@0@:@1@'.format(get_option('vendor_id'), get_option('product_id')),
+        'LED matrix' : has_led_matrix ? '@0@x@1@'.format(led_rows, led_cols) : 'none',
+        'Firmware'   : hex_smk_target_name,
+        'Flashing'   : sinowisp.found(),
+        'smk-console': build_smk_console,
+    },
+    bool_yn : true,
+    section : 'SMK',
+)
+
+else
+
+summary(
+    {
+        'Keyboard'   : 'none, building host tools only',
+        'smk-console': build_smk_console,
+    },
+    bool_yn : true,
+    section : 'SMK',
+)
+
+endif
 
 # Simulator-based firmware tests, run in the patched uCsim simulator (flake
 # package ucsim-sh68f90). Discovers every tests/test_*.py so new test files are

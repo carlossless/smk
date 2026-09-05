@@ -44,13 +44,25 @@ If setting up prerequisites without nix, you will need the following tools insta
 
 ### Building & Flashing
 
-Once all prerequisites are set up, you can build and flash firmware for a specific combination of keyboard and layout using the following commands:
+A build directory targets one keyboard. Every supported keyboard has a cross-file under [`cross-file/`](cross-file) that names its MCU, USB IDs, LED matrix and radio, so configuring a build is just picking the right one:
 
 ```sh
-meson setup build # configure meson build dir
-meson compile -C build nuphy-air60_default_smk.hex # build firmware for nuphy-air60 with the default layout
-meson compile -C build nuphy-air60_default_flash # write firmware to the device via sinowisp
+meson setup build --cross-file cross-file/nuphy-air60.ini # configure for nuphy-air60
+meson compile -C build                                    # build the firmware
+meson compile -C build flash                              # write it to the device via sinowisp
 ```
+
+The firmware lands in `build/nuphy-air60_default_smk.hex`. `meson setup` prints an `Unknown CPU family mcs51` warning because meson does not know the 8051 by name, and nothing depends on it recognising it.
+
+A cross-file only supplies defaults, so you can still override any of them with `-Doption=value`, either while configuring or afterwards with `meson configure build -Doption=value`. To build several keyboards at once, give each one its own build directory.
+
+If you are bringing up a new board or a different toolchain, configure by hand instead, using the toolchain-only cross-file:
+
+```sh
+meson setup build --cross-file cross-file/sdcc-mcs51.ini -Dkeyboard=nuphy-air60 -Dplatform=sh68f90
+```
+
+Run `meson configure build` to see every option and its current value. Omitting `-Dkeyboard` builds only the host-side tools.
 
 ## Acknowledgements
 

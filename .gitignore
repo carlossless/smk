@@ -2,7 +2,7 @@
 
 .direnv/
 
-build/
+build*/
 
 # `nix build` output symlink
 /result

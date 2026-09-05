@@ -9,7 +9,8 @@ these tests skip when only a non-debug firmware is present.
 
 Run from the repo root (inside `nix develop`, after building firmware):
 
-    meson compile -C build nuphy-air60_default_smk.hex
+    meson setup build --cross-file cross-file/nuphy-air60.ini
+    meson compile -C build
     python3 -m unittest discover -s tests        # or: python3 tests/test_source_breakpoints.py
 """
 

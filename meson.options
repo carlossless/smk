@@ -1,3 +1,23 @@
+option('keyboard', type : 'combo',
+       choices : ['', 'example', 'eyooso-z11', 'nuphy-air60'],
+       value : '',
+       description: 'Keyboard the firmware is built for. Empty builds the host tools only; a keyboard requires the matching cross-file.')
+option('platform', type : 'combo', choices : ['sh68f90'], value : 'sh68f90',
+       description: 'MCU the keyboard is built around')
+option('keyboard_layout', type : 'string', value : 'default',
+       description: 'Layout under src/keyboards/<keyboard>/layouts to build')
+option('wireless', type : 'combo', choices : ['', 'bk3632'], value : '',
+       description: 'Radio fitted to the keyboard')
+option('vendor_id', type : 'string', value : '0x258a', description: 'USB vendor ID to report')
+option('product_id', type : 'string', value : '0xdead', description: 'USB product ID to report')
+option('freq_sys', type : 'integer', min : 1, value : 24000000, description: 'System clock in Hz')
+option('watchdog', type : 'boolean', value : true, description: 'Kick the watchdog from the busy-wait delay loops')
+
+option('led_rows', type : 'integer', min : 0, value : 0, description: 'LED matrix rows; 0 means the board has no LED matrix')
+option('led_cols', type : 'integer', min : 0, value : 0, description: 'LED matrix columns; 0 means the board has no LED matrix')
+option('led_cx2', type : 'integer', min : 0, value : 0, description: 'Doubled x coordinate of the LED matrix centre, for the radial effects')
+option('led_cy2', type : 'integer', min : 0, value : 0, description: 'Doubled y coordinate of the LED matrix centre, for the radial effects')
+
 option('nkro', type : 'feature', value : 'enabled', description: 'NKRO support')
 option('sleep', type : 'feature', value : 'enabled', description: 'Inactivity sleep (SH68F90 Power-Down mode, INT4/USB wake)')
 option('debug_sink', type : 'combo', choices : ['console', 'uart', 'both'], value : 'console',
