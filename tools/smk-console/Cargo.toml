@@ -1,0 +1,15 @@
+[package]
+name = "smk-console"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+description = "Print SMK's HID debug console output"
+license = "GPL-2.0-only"
+publish = false
+
+[dependencies]
+clap = { version = "4.6", features = ["derive"] }
+hidra = { version = "0.0.4", default-features = false }
+
+[lints.clippy]
+pedantic = "warn"

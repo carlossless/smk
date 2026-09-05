@@ -60,6 +60,29 @@ jobs:
         name: sim-tests-testlog
         path: build/meson-logs/testlog.txt
 
+  smk-console:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: tools/smk-console
+    steps:
+    - uses: actions/checkout@v6
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy, rustfmt
+    - uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: tools/smk-console
+    - name: Format
+      run: cargo fmt --check
+    - name: Lint
+      run: cargo clippy --all-targets -- -D warnings
+    - name: Build
+      run: cargo build --release
+
   format-check:
     runs-on: ubuntu-latest
     steps:

@@ -9,3 +9,6 @@ build/
 
 # Python bytecode caches
 __pycache__/
+
+# Cargo build dir (tools/smk-console)
+target/
