@@ -41,6 +41,7 @@ If setting up prerequisites without nix, you will need the following tools insta
 * [meson](https://mesonbuild.com/) >= 0.53
 * [ninja](https://ninja-build.org/) >= 1.11.1
 * [sinowisp](https://github.com/carlossless/sinowisp) latest version - required only for flashing
+* [rust](https://www.rust-lang.org/) >= 1.85 - required only for `smk-console`
 
 ### Building & Flashing
 
@@ -51,6 +52,17 @@ meson setup build # configure meson build dir
 meson compile -C build nuphy-air60_default_smk.hex # build firmware for nuphy-air60 with the default layout
 meson compile -C build nuphy-air60_default_flash # write firmware to the device via sinowisp
 ```
+
+### Debug Console
+
+Debug builds ship their log output as HID reports. `smk-console` ([tools/smk-console](tools/smk-console)) prints them, and runs on Linux, macOS and Windows:
+
+```sh
+cargo run --release --manifest-path tools/smk-console/Cargo.toml               # defaults to 05ac:024f (nuphy-air60)
+cargo run --release --manifest-path tools/smk-console/Cargo.toml -- 258a:002a  # eyooso-z11
+```
+
+It picks devices up and drops them as they are plugged and unplugged, so it can be left running across a reflash. On Linux the `/dev/hidraw*` node needs a udev rule, or `sudo`.
 
 ## Acknowledgements
 
