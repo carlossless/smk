@@ -52,9 +52,9 @@ static void led_drive(uint8_t col, uint8_t anodes)
     uint8_t pin        = kb_col_pins[col];
 
     sfr_page_1();
-    P6 = (pin < 8) ? (uint8_t) ~(1u << pin) : 0xFFu;
-    P7 = (pin >= 8 && pin < 16) ? (uint8_t) ~(1u << (pin - 8)) : 0xFFu;
-    P8 = (pin >= 16) ? (uint8_t) ~(1u << (pin - 16)) : 0xFFu;
+    P6 = (pin < 8) ? (uint8_t)~(1u << pin) : 0xFFu;
+    P7 = (pin >= 8 && pin < 16) ? (uint8_t)~(1u << (pin - 8)) : 0xFFu;
+    P8 = (pin >= 16) ? (uint8_t)~(1u << (pin - 16)) : 0xFFu;
     P5 = (uint8_t)((P5 & ~KB_ANODE_P5_MASK) | ((anodes >> 3) & KB_ANODE_P5_MASK));
 
     sfr_page_0();
@@ -143,9 +143,7 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
     return wrapped;
 }
 
-void indicators_post_update(void)
-{
-}
+void indicators_post_update(void) {}
 
 // An anode left high forward-biases the backlight against whichever column the scan
 // pulls low and clamps that row line, so the matrix would read every key as pressed.
@@ -154,6 +152,4 @@ void indicators_pwm_disable(void)
     led_blank();
 }
 
-void indicators_pwm_enable(void)
-{
-}
+void indicators_pwm_enable(void) {}

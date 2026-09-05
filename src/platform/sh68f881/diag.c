@@ -18,7 +18,7 @@
 #    define INFO_ID_CODE         0x127Bu
 
 #    define INFO_SECURITY_LEN 17u
-#    define CODE_OPTION_LEN 4u // this part has no separate high option line
+#    define CODE_OPTION_LEN   4u // this part has no separate high option line
 
 // FLASHCON.FAC: point MOVC at the information block.
 #    define FLASHCON_FAC 0x01u

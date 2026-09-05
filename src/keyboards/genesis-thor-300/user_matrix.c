@@ -4,12 +4,12 @@
 // The column ports live on SFR page 1 and the row ports on page 0, so every column
 // access borrows page 1 and hands it straight back. Leaving page 1 latched would stop
 // RSTSTAT being the watchdog kick and the part would reset in a loop.
-#define WITH_COLUMN_PAGE(body)      \
-    do {                            \
+#define WITH_COLUMN_PAGE(body)       \
+    do {                             \
         uint8_t saved_page = INSCON; \
-        sfr_page_1();               \
-        body;                       \
-        INSCON = saved_page;        \
+        sfr_page_1();                \
+        body;                        \
+        INSCON = saved_page;         \
     } while (0)
 
 const __code uint8_t kb_col_pins[MATRIX_COLS] = {
@@ -31,11 +31,11 @@ void user_matrix_col_select(uint8_t col)
 
     WITH_COLUMN_PAGE({
         if (pin < 8) {
-            P6 &= (uint8_t) ~(1u << pin);
+            P6 &= (uint8_t)~(1u << pin);
         } else if (pin < 16) {
-            P7 &= (uint8_t) ~(1u << (pin - 8));
+            P7 &= (uint8_t)~(1u << (pin - 8));
         } else {
-            P8 &= (uint8_t) ~(1u << (pin - 16));
+            P8 &= (uint8_t)~(1u << (pin - 16));
         }
     });
 }
@@ -67,7 +67,7 @@ uint8_t user_matrix_read_rows(void)
 
     uint8_t saved_page = INSCON;
     sfr_page_0();
-    rows = (uint8_t)(((P2 >> 1) & 0x07u) | ((P4 >> 1) & 0x38u) | 0xC0u);
+    rows   = (uint8_t)(((P2 >> 1) & 0x07u) | ((P4 >> 1) & 0x38u) | 0xC0u);
     INSCON = saved_page;
 
     return rows;

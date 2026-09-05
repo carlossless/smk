@@ -42,7 +42,10 @@ SFR(IPH1, 0xb5);
 SFR(IENC, 0xba);
 
 // Vector 0x005B is IEN1 bit 4: (0x5B - 3) / 8.
-enum { _INT_TIMER2 = 5, _INT_USB = 11 };
+enum {
+    _INT_TIMER2 = 5,
+    _INT_USB    = 11
+};
 
 // POWER
 SFR(SUSLO, 0x8e);

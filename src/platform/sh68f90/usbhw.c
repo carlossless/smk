@@ -79,13 +79,9 @@ void usb_hw_ep2_in_send(uint8_t *src, uint8_t len)
 }
 
 // IEPxRDY reads back the endpoint's busy state here, so completion needs no bookkeeping.
-void usb_hw_ep1_in_complete(void)
-{
-}
+void usb_hw_ep1_in_complete(void) {}
 
-void usb_hw_ep2_in_complete(void)
-{
-}
+void usb_hw_ep2_in_complete(void) {}
 
 #if DEBUG == 1
 bool usb_hw_ep2_in_free(void)
