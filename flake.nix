@@ -92,6 +92,12 @@
             ucsim-sh68f90 # patched 8051 simulator (USB vector 7 + SIE model)
             python3       # USB simulator test suite (tests/)
 
+            # host-side smk-console (tools/smk-console)
+            cargo
+            rustc
+            clippy
+            rustfmt
+
             # useful supplementary tools
             binutils # for objcopy
             uhubctl
