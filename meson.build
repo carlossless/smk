@@ -185,14 +185,6 @@ host_cc = find_program('cc', 'gcc', required : true)
 gen_led_geometry = join_paths(meson.current_build_dir(), 'led_geometry_gen')
 run_command(host_cc, '-O2', '-o', gen_led_geometry, join_paths(meson.current_source_dir(), 'utils/led_geometry_gen.c'), check : true)
 
-# Host-side reader for the HID debug console; built with the host compiler.
-executable(
-    'smk-console',
-    'tools/smk-console.c',
-    native : true,
-    install : false,
-)
-
 dir_base = meson.current_source_dir()
 
 cc_incs = []
