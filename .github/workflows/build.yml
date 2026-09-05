@@ -10,6 +10,7 @@ jobs:
   build:
     strategy:
       matrix:
+        keyboard: [example, eyooso-z11, genesis-thor-300, nuphy-air60]
         nkro: [enabled, disabled]
         buildtype: [debug, release]
     runs-on: ubuntu-latest
@@ -25,13 +26,13 @@ jobs:
         name: smk
         authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
     - name: Setup
-      run: nix develop --command meson setup build -Dnkro=${{ matrix.nkro }} -Dbuildtype=${{ matrix.buildtype }}
+      run: nix develop --command meson setup build --cross-file cross-file/${{ matrix.keyboard }}.ini -Dnkro=${{ matrix.nkro }} -Dbuildtype=${{ matrix.buildtype }}
     - name: Build
       run: nix develop --command meson compile -C build
     - name: Archive code coverage results
       uses: actions/upload-artifact@v7
       with:
-        name: smk-${{ matrix.buildtype }}-${{ matrix.nkro == 'enabled' && 'nkro' || '6kro' }}
+        name: smk-${{ matrix.keyboard }}-${{ matrix.buildtype }}-${{ matrix.nkro == 'enabled' && 'nkro' || '6kro' }}
         path: build/*.hex
 
   sim-tests:
@@ -48,9 +49,9 @@ jobs:
         name: smk
         authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
     - name: Setup
-      run: nix develop --command meson setup build
+      run: nix develop --command meson setup build --cross-file cross-file/nuphy-air60.ini
     - name: Build firmware (nuphy-air60)
-      run: nix develop --command meson compile -C build nuphy-air60_default_smk.hex
+      run: nix develop --command meson compile -C build
     - name: Run simulator tests
       run: nix develop --command meson test -C build sim-tests --print-errorlogs
     - name: Upload meson testlog on failure

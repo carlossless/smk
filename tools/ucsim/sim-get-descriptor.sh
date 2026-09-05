@@ -6,7 +6,7 @@
 # minimal SIE model that logs each EP0 IN packet the firmware produces.
 #
 #   nix develop        # brings ucsim_51 onto PATH
-#   meson compile -C build nuphy-air60_default_smk.hex
+#   meson setup build --cross-file cross-file/nuphy-air60.ini && meson compile -C build
 #   tools/ucsim/sim-get-descriptor.sh build/nuphy-air60_default_smk.hex
 #
 # Expected: "[SIE] EP0 IN[0] 8 bytes: 12 01 10 01 00 00 00 08" -- the start of the
