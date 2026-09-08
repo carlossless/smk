@@ -1,10 +1,10 @@
 #include "settings.h"
-#include "flash.h"
+#include "nvm.h"
 #if DEBUG == 1
 #    include "debug.h"
 #endif
 
-_Static_assert(sizeof(user_settings_t) + 4u <= 512u, "user_settings_t too large for the settings sector");
+_Static_assert(sizeof(user_settings_t) <= NVM_CAPACITY, "user_settings_t too large for the settings record");
 
 user_settings_t user_settings;
 
@@ -12,7 +12,7 @@ static bool settings_dirty;
 
 bool settings_load(void)
 {
-    return flash_settings_load((__xdata uint8_t *)&user_settings, (uint8_t)sizeof(user_settings));
+    return nvm_load((__xdata uint8_t *)&user_settings, (uint8_t)sizeof(user_settings));
 }
 
 #if DEBUG == 1
@@ -31,7 +31,7 @@ void settings_save(void)
 #endif
 
     settings_save_pre();
-    flash_settings_save((const __xdata uint8_t *)&user_settings, (uint8_t)sizeof(user_settings));
+    nvm_save((const __xdata uint8_t *)&user_settings, (uint8_t)sizeof(user_settings));
     settings_save_post();
 }
 

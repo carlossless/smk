@@ -11,7 +11,6 @@ env = environment()
 env.set('DEBUG', '1')
 
 default_options = {
-    'freq_sys': '24000000', # 24Mhz
     'watchdog_enable': '1',
     'vendor_id': '0x258a',
     'product_id': '0xdead',
@@ -22,6 +21,7 @@ parts = [
     ['example', 'sh68f90', ['default'], {}],
     ['nuphy-air60', 'sh68f90', ['default'], { 'vendor_id': '0x05ac', 'product_id': '0x024f', 'wireless': 'bk3632', 'led_rows': '5', 'led_cols': '16', 'led_cx2': '13', 'led_cy2': '4' }],
     ['eyooso-z11', 'sh68f90', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x002a', 'led_rows': '5', 'led_cols': '14', 'led_cx2': '13', 'led_cy2': '4' }],
+    ['genesis-thor-300', 'sh68f881', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x001f', 'led_rows': '6', 'led_cols': '19', 'led_cx2': '17', 'led_cy2': '5' }],
 ]
 
 # SMK
@@ -39,6 +39,7 @@ inc_base_dirs = [
 src_smk = [
     'src/main.c',
     'src/smk/host.c',
+    'src/smk/usb.c',
     'src/smk/matrix.c',
     'src/smk/report.c',
     'src/smk/keyboard.c',
@@ -90,17 +91,38 @@ src_platform_sh68f90 = [
     'src/platform/sh68f90/clock.c',
     'src/platform/sh68f90/delay.c',
     'src/platform/sh68f90/diag.c',
-    'src/platform/sh68f90/flash.c',
+    'src/platform/sh68f90/nvm.c',
     'src/platform/sh68f90/isp.c',
     'src/platform/sh68f90/ldo.c',
     'src/platform/sh68f90/pwm.c',
     'src/platform/sh68f90/systick.c',
     'src/platform/sh68f90/uart.c',
-    'src/platform/sh68f90/usb.c',
+    'src/platform/sh68f90/usbhw.c',
     'src/platform/sh68f90/stack.c',
     'src/platform/sh68f90/power.c',
     'src/platform/sh68f90/extint.c',
     'src/platform/sh68f90/interrupts.c',
+]
+
+inc_platform_sh68f881 = [
+    'src/platform/sh68f881',
+]
+
+src_platform_sh68f881 = [
+    'src/platform/sh68f881/startup.c',
+    'src/platform/sh68f881/clock.c',
+    'src/platform/sh68f881/delay.c',
+    'src/platform/sh68f881/diag.c',
+    'src/platform/sh68f881/usbhw.c',
+    'src/platform/sh68f881/isp.c',
+    'src/platform/sh68f881/ldo.c',
+    'src/platform/sh68f881/debug_sink.c',
+    'src/platform/sh68f881/power.c',
+    'src/platform/sh68f881/extint.c',
+    'src/platform/sh68f881/systick.c',
+    'src/platform/sh68f881/stack.c',
+    'src/platform/sh68f881/nvm.c',
+    'src/platform/sh68f881/interrupts.c',
 ]
 
 inc_platform_bk3632 = [
@@ -126,6 +148,25 @@ possible_src_layout = [
     'layout.c',
 ]
 
+platform_specs = {
+    'sh68f90' : {
+        'flash_size'      : 65536,
+        'bootloader_size' : 4096,
+        'sector_size'     : 512,
+        'xram_size'       : 4096,
+        'freq_sys'        : 24000000,
+        'settings_store'  : 'flash',
+    },
+    'sh68f881' : {
+        'flash_size'      : 32768,
+        'bootloader_size' : 4096,
+        'sector_size'     : 1024,
+        'xram_size'       : 2304,
+        'freq_sys'        : 12000000,
+        'settings_store'  : 'eeprom',
+    },
+}
+
 cc_base_args = [
     '--Werror',
     '--std-c23',
@@ -133,9 +174,7 @@ cc_base_args = [
     '-mmcs51',
     '--model-large',
     '--stack-auto',
-    '--xram-size', '0x1000',
     '--xram-loc', '0x0000',
-    '--code-size', '0xec00', # cap code below the flash config sector (0xEC00) + bootloader
     '--opt-code-speed',
     '--out-fmt-ihx',
 
@@ -219,12 +258,36 @@ foreach part : parts
         if platform == 'sh68f90'
             src_main += src_platform_sh68f90
             inc_dirs += inc_platform_sh68f90
+        elif platform == 'sh68f881'
+            src_main += src_platform_sh68f881
+            inc_dirs += inc_platform_sh68f881
         else
             error('unsupported platform: @0@'.format(platform))
         endif
 
-        cc_args = cc_base_args + [
-            '-DFREQ_SYS=@0@'.format(options['freq_sys']),
+        spec            = platform_specs[platform]
+        bootloader_addr = spec['flash_size'] - spec['bootloader_size']
+        marker_addr     = bootloader_addr - spec['sector_size']
+
+        platform_cc_args = [
+            '--xram-size', '@0@'.format(spec['xram_size']),
+            '-DFREQ_SYS=@0@'.format(spec['freq_sys']),
+        ]
+
+        if spec['settings_store'] == 'flash'
+            settings_addr = marker_addr - spec['sector_size']
+            platform_cc_args += [
+                '--code-size', '@0@'.format(settings_addr),
+                '-DFLASH_CFG_ADDR=@0@u'.format(settings_addr),
+                '-DFLASH_CFG_SIZE=@0@u'.format(spec['sector_size']),
+                '-DFLASH_MARKER_ADDR=@0@u'.format(marker_addr),
+            ]
+        else
+            # settings live in the EEPROM-like block, so code may run up to the marker sector
+            platform_cc_args += ['--code-size', '@0@'.format(marker_addr)]
+        endif
+
+        cc_args = cc_base_args + platform_cc_args + [
             '-DWATCHDOG_ENABLE=@0@'.format(options['watchdog_enable']),
             '-DUSB_VID=@0@'.format(options['vendor_id']),
             '-DUSB_PID=@0@'.format(options['product_id']),
@@ -316,7 +379,7 @@ foreach part : parts
             input : ihx_smk,
             output : '@0@smk.interrupts-ok'.format(prefix),
             command : [py, check_interrupts,
-                       '--src', meson.current_source_dir() / 'src',
+                       '--src', meson.current_source_dir() / 'src/platform' / platform,
                        '--asmdir', meson.current_build_dir() / '@0@smk.ihx.p'.format(prefix),
                        '--map', meson.current_build_dir() / '@0@smk.map'.format(prefix),
                        '--stamp', '@OUTPUT@'],

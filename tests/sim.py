@@ -208,6 +208,7 @@ class Sim:
         self.lines = load_lines(cdb) if cdb.exists() else {}
         self.LED_STATE = s["keyboard_state"]      # struct, led_state is field 0
         self.USB_DEVICE_STATE = s["usb_device_state"]
+        self.USB_TASK = s["usb_task"]
         # POST_INIT can't be a single symbol -- it's the address after the LCALL
         # _init inside main(). find_post_init() walks main()'s prologue to find it.
         self.POST_INIT = find_post_init(s, self.firmware)
@@ -394,17 +395,18 @@ class Sim:
         ]
         return self.run(cmds)
 
-    def trigger_isp_jump(self, confirm=(0x05, 0x75), phase2_break=None):
+    def trigger_isp_jump(self, confirm=(0x05, 0x75), phase2_break=None, run_task=True):
         """Perform the SET_REPORT(ISP) control transfer that makes the firmware
         jump into the ISP bootloader: SETUP arms USB_EP0_STATE_ISP, then the OUT
-        data stage carries the confirm bytes that gate isp_jump(). Returns sim
+        data stage carries the confirm bytes that gate the jump. Returns sim
         output including `info registers`.
 
-        phase2_break is where phase 2 stops: the bootloader entry (default) for
-        the success case, or SLED_END for the negative case where no jump should
-        happen and the ISR returns to the NOP sled."""
+        The ISR only records the request, so phase 3 enters usb_task() the way
+        the main loop does and that is where isp_jump() runs. run_task=False
+        stops after the ISR for the negative case, where no jump should happen
+        and the ISR returns to the NOP sled."""
         if phase2_break is None:
-            phase2_break = self.ISP_BOOTLOADER
+            phase2_break = self.SLED_END
         out_data = list(confirm) + [0] * (8 - len(confirm))
         cmds = self._boot_to_post_init() + [
             # phase 1: SET_REPORT(Feature, ISP) SETUP -> usb_ep0_state = ISP
@@ -412,16 +414,23 @@ class Sim:
             f"set mem sfr 0x{self.USBIF1:x} 0x{self.SETUPIF:02x}",
             f"break 0x{self.SLED_END:x}",
             "run",
-            # phase 2: OUT data stage -> usb_ep0_out_irq -> isp_jump() -> 0xff00.
-            # reset PC to the sled top so a non-jumping ISR return lands back on
-            # the sled and reaches the break (rather than sliding past it).
+            # phase 2: OUT data stage -> usb_ep0_out_irq -> usb_isp_requested.
+            # reset PC to the sled top so the ISR return lands back on the sled
+            # and reaches the break (rather than sliding past it).
             self._set_xram(self.EP0_OUT_BUF, out_data),
             f"set mem sfr 0x{self.USBIF2:x} 0x{self.OEP0IF:02x}",
             "pc 0x9000",
             f"break 0x{phase2_break:x}",
             "run",
-            "info registers",
         ]
+        if run_task:
+            # phase 3: the main loop calls usb_task(), which is what jumps.
+            cmds += [
+                f"pc 0x{self.USB_TASK:x}",
+                f"break 0x{self.ISP_BOOTLOADER:x}",
+                "run",
+            ]
+        cmds += ["info registers"]
         return self.run(cmds)
 
     # --- parsing ----------------------------------------------------------
