@@ -113,7 +113,7 @@ class TestIspJump(unittest.TestCase):
     def test_wrong_confirm_bytes_do_not_jump(self):
         """isp_jump() is gated on the OUT payload being 0x05 0x75; a wrong payload
         must NOT jump -- the ISR returns to the NOP sled instead."""
-        out = SIM.trigger_isp_jump(confirm=(0x00, 0x00), phase2_break=SIM.SLED_END)
+        out = SIM.trigger_isp_jump(confirm=(0x00, 0x00), run_task=False)
         self.assertEqual(SIM.stopped_at(out), SIM.SLED_END,
                          "with wrong confirm bytes the CPU should return to the sled, not jump")
         self.assertNotEqual(SIM.acc(out), SIM.ISP_MAGIC_ACC,

@@ -39,6 +39,7 @@ inc_base_dirs = [
 src_smk = [
     'src/main.c',
     'src/smk/host.c',
+    'src/smk/usb.c',
     'src/smk/matrix.c',
     'src/smk/report.c',
     'src/smk/keyboard.c',
@@ -96,7 +97,7 @@ src_platform_sh68f90 = [
     'src/platform/sh68f90/pwm.c',
     'src/platform/sh68f90/systick.c',
     'src/platform/sh68f90/uart.c',
-    'src/platform/sh68f90/usb.c',
+    'src/platform/sh68f90/usbhw.c',
     'src/platform/sh68f90/stack.c',
     'src/platform/sh68f90/power.c',
     'src/platform/sh68f90/extint.c',

@@ -103,6 +103,7 @@ void main(void)
 
         indicators_render();
 
+        usb_task();
         settings_task();
         sleep_task();
 
