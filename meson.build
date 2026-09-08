@@ -11,7 +11,6 @@ env = environment()
 env.set('DEBUG', '1')
 
 default_options = {
-    'freq_sys': '24000000', # 24Mhz
     'watchdog_enable': '1',
     'vendor_id': '0x258a',
     'product_id': '0xdead',
@@ -127,6 +126,16 @@ possible_src_layout = [
     'layout.c',
 ]
 
+platform_specs = {
+    'sh68f90' : {
+        'flash_size'      : 65536,
+        'bootloader_size' : 4096,
+        'sector_size'     : 512,
+        'xram_size'       : 4096,
+        'freq_sys'        : 24000000,
+    },
+}
+
 cc_base_args = [
     '--Werror',
     '--std-c23',
@@ -134,9 +143,7 @@ cc_base_args = [
     '-mmcs51',
     '--model-large',
     '--stack-auto',
-    '--xram-size', '0x1000',
     '--xram-loc', '0x0000',
-    '--code-size', '0xec00', # cap code below the flash config sector (0xEC00) + bootloader
     '--opt-code-speed',
     '--out-fmt-ihx',
 
@@ -224,8 +231,18 @@ foreach part : parts
             error('unsupported platform: @0@'.format(platform))
         endif
 
-        cc_args = cc_base_args + [
-            '-DFREQ_SYS=@0@'.format(options['freq_sys']),
+        spec            = platform_specs[platform]
+        bootloader_addr = spec['flash_size'] - spec['bootloader_size']
+        marker_addr     = bootloader_addr - spec['sector_size']
+        settings_addr   = marker_addr - spec['sector_size']
+
+        platform_cc_args = [
+            '--code-size', '@0@'.format(settings_addr),
+            '--xram-size', '@0@'.format(spec['xram_size']),
+            '-DFREQ_SYS=@0@'.format(spec['freq_sys']),
+        ]
+
+        cc_args = cc_base_args + platform_cc_args + [
             '-DWATCHDOG_ENABLE=@0@'.format(options['watchdog_enable']),
             '-DUSB_VID=@0@'.format(options['vendor_id']),
             '-DUSB_PID=@0@'.format(options['product_id']),
