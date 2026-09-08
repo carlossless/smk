@@ -41,13 +41,22 @@ VECTOR_STRIDE = 8
 
 
 def declared_vectors(src_root):
-    """Vector index -> name, from `enum interrupt_index` in the platform header."""
-    for path in glob.glob(src_root + "/**/*.h", recursive=True):
+    """Vector index -> name, from `enum interrupt_index` in the platform header.
+
+    --src must name one platform: a tree holding two of them would silently check the
+    firmware against whichever part globbed first.
+    """
+    found = {}
+    for path in sorted(glob.glob(src_root + "/**/*.h", recursive=True)):
         text = open(path, errors="ignore").read()
         body = re.search(r"enum\s+interrupt_index\s*\{(.*?)\}", text, re.S)
         if body:
-            return {int(num): name for name, num in re.findall(r"(\w+)\s*=\s*(\d+)", body.group(1))}
-    return {}
+            found[path] = {int(num): name for name, num in re.findall(r"(\w+)\s*=\s*(\d+)", body.group(1))}
+    if len(found) > 1:
+        print("check_interrupts: more than one `enum interrupt_index` under --src (%s) — "
+              "point --src at a single platform" % ", ".join(found), file=sys.stderr)
+        return {}
+    return next(iter(found.values()), {})
 
 
 def vector_table(asm_dir):

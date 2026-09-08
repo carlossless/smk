@@ -90,7 +90,7 @@ src_platform_sh68f90 = [
     'src/platform/sh68f90/clock.c',
     'src/platform/sh68f90/delay.c',
     'src/platform/sh68f90/diag.c',
-    'src/platform/sh68f90/flash.c',
+    'src/platform/sh68f90/nvm.c',
     'src/platform/sh68f90/isp.c',
     'src/platform/sh68f90/ldo.c',
     'src/platform/sh68f90/pwm.c',
@@ -101,6 +101,27 @@ src_platform_sh68f90 = [
     'src/platform/sh68f90/power.c',
     'src/platform/sh68f90/extint.c',
     'src/platform/sh68f90/interrupts.c',
+]
+
+inc_platform_sh68f881 = [
+    'src/platform/sh68f881',
+]
+
+src_platform_sh68f881 = [
+    'src/platform/sh68f881/startup.c',
+    'src/platform/sh68f881/clock.c',
+    'src/platform/sh68f881/delay.c',
+    'src/platform/sh68f881/diag.c',
+    'src/platform/sh68f881/usbhw.c',
+    'src/platform/sh68f881/isp.c',
+    'src/platform/sh68f881/ldo.c',
+    'src/platform/sh68f881/debug_sink.c',
+    'src/platform/sh68f881/power.c',
+    'src/platform/sh68f881/extint.c',
+    'src/platform/sh68f881/systick.c',
+    'src/platform/sh68f881/stack.c',
+    'src/platform/sh68f881/nvm.c',
+    'src/platform/sh68f881/interrupts.c',
 ]
 
 inc_platform_bk3632 = [
@@ -133,6 +154,15 @@ platform_specs = {
         'sector_size'     : 512,
         'xram_size'       : 4096,
         'freq_sys'        : 24000000,
+        'settings_store'  : 'flash',
+    },
+    'sh68f881' : {
+        'flash_size'      : 32768,
+        'bootloader_size' : 4096,
+        'sector_size'     : 1024,
+        'xram_size'       : 2304,
+        'freq_sys'        : 12000000,
+        'settings_store'  : 'eeprom',
     },
 }
 
@@ -227,6 +257,9 @@ foreach part : parts
         if platform == 'sh68f90'
             src_main += src_platform_sh68f90
             inc_dirs += inc_platform_sh68f90
+        elif platform == 'sh68f881'
+            src_main += src_platform_sh68f881
+            inc_dirs += inc_platform_sh68f881
         else
             error('unsupported platform: @0@'.format(platform))
         endif
@@ -234,13 +267,24 @@ foreach part : parts
         spec            = platform_specs[platform]
         bootloader_addr = spec['flash_size'] - spec['bootloader_size']
         marker_addr     = bootloader_addr - spec['sector_size']
-        settings_addr   = marker_addr - spec['sector_size']
 
         platform_cc_args = [
-            '--code-size', '@0@'.format(settings_addr),
             '--xram-size', '@0@'.format(spec['xram_size']),
             '-DFREQ_SYS=@0@'.format(spec['freq_sys']),
         ]
+
+        if spec['settings_store'] == 'flash'
+            settings_addr = marker_addr - spec['sector_size']
+            platform_cc_args += [
+                '--code-size', '@0@'.format(settings_addr),
+                '-DFLASH_CFG_ADDR=@0@u'.format(settings_addr),
+                '-DFLASH_CFG_SIZE=@0@u'.format(spec['sector_size']),
+                '-DFLASH_MARKER_ADDR=@0@u'.format(marker_addr),
+            ]
+        else
+            # settings live in the EEPROM-like block, so code may run up to the marker sector
+            platform_cc_args += ['--code-size', '@0@'.format(marker_addr)]
+        endif
 
         cc_args = cc_base_args + platform_cc_args + [
             '-DWATCHDOG_ENABLE=@0@'.format(options['watchdog_enable']),
@@ -334,7 +378,7 @@ foreach part : parts
             input : ihx_smk,
             output : '@0@smk.interrupts-ok'.format(prefix),
             command : [py, check_interrupts,
-                       '--src', meson.current_source_dir() / 'src',
+                       '--src', meson.current_source_dir() / 'src/platform' / platform,
                        '--asmdir', meson.current_build_dir() / '@0@smk.ihx.p'.format(prefix),
                        '--map', meson.current_build_dir() / '@0@smk.map'.format(prefix),
                        '--stamp', '@OUTPUT@'],

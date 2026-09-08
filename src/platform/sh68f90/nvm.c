@@ -1,24 +1,24 @@
-#include "flash.h"
+#include "nvm.h"
 #include "sh68f90.h"
 #include <stdbool.h>
 
-#define CFG_ADDR   0xEC00u // sector 118
-#define CFG_SIZE   512u
+#define CFG_ADDR   FLASH_CFG_ADDR
+#define CFG_SIZE   FLASH_CFG_SIZE
 #define CFG_END    (CFG_ADDR + CFG_SIZE)
 #define CFG_MAGIC0 0x5Au
 #define CFG_MAGIC1 0xA5u
 #define CFG_HDR    3u
 
-_Static_assert((CFG_ADDR & (CFG_SIZE - 1)) == 0, "CFG_ADDR must be aligned to a 512-byte flash sector boundary");
-_Static_assert(CFG_END <= 0xEE00u, "CFG_END must not reach sector 119 (holds reset-vector redirect at 0xEFFC)");
+_Static_assert((CFG_ADDR & (CFG_SIZE - 1)) == 0, "CFG_ADDR must be aligned to a flash sector boundary");
+_Static_assert(CFG_END <= FLASH_MARKER_ADDR, "CFG_END must stay clear of the sector holding the boot marker");
 
-// SSP operation codes (datasheet 7.4).
 // IB_CON2..5 must receive this key, in order, to arm an SSP operation.
 #define SSP_KEY_2 0x05u
 #define SSP_KEY_3 0x0Au
 #define SSP_KEY_4 0x09u
 #define SSP_KEY_5 0x06u
 
+// SSP operation codes (datasheet 7.4).
 #define SSP_PROGRAM 0x6Eu
 #define SSP_ERASE   0xE6u
 
@@ -38,7 +38,7 @@ static void ssp_run(uint16_t addr, uint8_t op, uint8_t data)
     if (addr < CFG_ADDR || addr >= CFG_END) {
         return;
     }
-    // A sector erase auto-IDLEs the CPU for ~5 ms with interrupts off.
+    // a sector erase auto-IDLEs the CPU for ~5 ms with interrupts off.
     __critical
     {
         XPAGE     = (uint8_t)(addr >> 8);
@@ -100,7 +100,7 @@ static bool record_checksum_valid(uint8_t len)
     return flash_read(payload_addr(len)) == sum;
 }
 
-bool flash_settings_load(__xdata uint8_t *dst, uint8_t len)
+bool nvm_load(__xdata uint8_t *dst, uint8_t len)
 {
     if (!record_header_valid(len) || !record_checksum_valid(len)) {
         return false;
@@ -112,13 +112,13 @@ bool flash_settings_load(__xdata uint8_t *dst, uint8_t len)
     return true;
 }
 
-void flash_settings_save(const __xdata uint8_t *src, uint8_t len)
+void nvm_save(const __xdata uint8_t *src, uint8_t len)
 {
     if (stored_record_matches(src, len)) {
         return;
     }
 
-    // A sector only programs after an erase, so every change rewrites the record.
+    // a sector only programs after an erase, so every change rewrites the record.
     flash_erase_config();
     flash_program(CFG_ADDR + 0, CFG_MAGIC0);
     flash_program(CFG_ADDR + 1, CFG_MAGIC1);
