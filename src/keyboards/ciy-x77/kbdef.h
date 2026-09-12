@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #define MATRIX_ROWS 6
-#define MATRIX_COLS 22
+#define MATRIX_COLS 18
 
 // row pin bits, read on SFR page 1, active low. P5.6 and P5.7 are the EEPROM bus.
 #define KB_R0_P5_0 _P5_0
@@ -17,7 +17,7 @@
 
 #define KB_R_P5_MASK (uint8_t)(KB_R0_P5_0 | KB_R1_P5_1 | KB_R2_P5_2 | KB_R3_P5_3 | KB_R4_P5_4 | KB_R5_P5_5)
 
-// column pin bits, driven low one at a time. P0, P1 and P4 are on SFR page 0, P7 on page 1.
+// column pin bits, driven low one at a time, all on SFR page 0.
 #define KB_C0_P0_0  _P0_0
 #define KB_C1_P0_1  _P0_1
 #define KB_C2_P0_2  _P0_2
@@ -36,20 +36,14 @@
 #define KB_C15_P1_7 _P1_7
 #define KB_C16_P4_6 _P4_6
 #define KB_C17_P4_7 _P4_7
-#define KB_C18_P7_1 _P7_1
-#define KB_C19_P7_2 _P7_2
-#define KB_C20_P7_3 _P7_3
-#define KB_C21_P7_4 _P7_4
 
 #define KB_C_P0_MASK _P0_ALL
 #define KB_C_P1_MASK _P1_ALL
 #define KB_C_P4_MASK (uint8_t)(KB_C16_P4_6 | KB_C17_P4_7)
-#define KB_C_P7_MASK (uint8_t)(KB_C18_P7_1 | KB_C19_P7_2 | KB_C20_P7_3 | KB_C21_P7_4)
 
 // grouping the columns by port is what lets a column index alone pick the port to drive.
 #define KB_C_P1_FIRST 8
 #define KB_C_P4_FIRST 16
-#define KB_C_P7_FIRST 18
 
 extern const __code uint8_t kb_col_masks[MATRIX_COLS];
 

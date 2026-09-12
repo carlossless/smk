@@ -204,6 +204,23 @@ static bool ee_write(const __xdata uint8_t *src, uint8_t len)
     return true;
 }
 
+// an empty record and an absent chip both read as all-ones, so the address probe is the
+// only thing that separates "nothing saved yet" from "the bus is not working".
+bool nvm_present(void)
+{
+    bool acked;
+
+    WITH_EE_PAGE({
+        bus_start();
+        acked = write_byte(KB_EE_DEV_ADDR);
+        bus_stop();
+        bus_idle();
+    });
+
+    watchdog_kick();
+    return acked;
+}
+
 static __xdata uint8_t record[NVM_RECORD_SIZE];
 
 static uint8_t record_length(uint8_t len)

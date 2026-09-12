@@ -131,6 +131,10 @@ bool usb_hw_ep2_in_free(void)
 
 void usb_hw_console_send(const __xdata uint8_t *data, uint8_t len)
 {
+    // console_task gates on usb_hw_ep2_in_free(), so leaving this clear lets the next line
+    // overwrite the buffer before the host has collected this one.
+    ep2_in_busy = 1;
+
     uint8_t saved_page = INSCON;
     sfr_page_1();
 

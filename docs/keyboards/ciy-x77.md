@@ -3,8 +3,8 @@
 ## Specs
 
 - MCU: SH68F89
-- Layout: full-size (ANSI 104)
-- Matrix: 6 rows x 22 columns
+- Layout: TKL (ANSI 87)
+- Matrix: 6 rows x 18 columns
 - Backlight: per-key RGB, driven from the four PCA units
 - Indicators: Num, Caps and Scroll Lock LEDs on P3.0-P3.2
 - Settings store: an external 24Cxx I2C EEPROM, not the MCU's own data block
@@ -30,16 +30,22 @@
 
 ## Matrix
 
-Columns are driven low one at a time: 0-7 on P0, 8-15 on P1, 16-17 on P4.6/P4.7 and 18-21
-on P7.1-P7.4. Rows read back on P5.0-P5.5, active low. P0, P1 and P4 are on SFR page 0
-while P5 and P7 are on page 1, so a full scan crosses the page boundary in both
-directions.
+Columns are driven low one at a time: 0-7 on P0, 8-15 on P1 and 16-17 on P4.6/P4.7. Rows
+read back on P5.0-P5.5, active low. The columns are on SFR page 0 and the rows on page 1,
+so every scan crosses the page boundary.
 
-The matrix carries 116 positions and an ANSI board fits 104 of them. The twelve spare
-cells are the ISO and JIS extras, which the stock firmware maps to Yen, Ro, NonUS hash,
-NonUS backslash, Kana, Henkan, Muhenkan, Hanja and a right Gui. They are `KC_NO` here.
-If your unit is ISO, the NonUS backslash at `(4,14)` and the NonUS hash at `(3,12)` are the
-two to bring back.
+The stock firmware ships one keymap for the whole board family, so its matrix is wider
+than this unit's. Two groups of its positions are not fitted on an ANSI TKL:
+
+- **Columns 18-21 on P7.1-P7.4** are a numpad. `MATRIX_COLS` is 18 and P7 is left an input,
+  since those pins may not even be routed here. A full-size unit would want them back.
+- **The ISO and JIS extras**, which the stock keymap fills with Yen at `(1,13)`, NonUS hash
+  at `(3,12)` and `(4,12)`, Ro at `(4,11)`, NonUS backslash at `(4,14)`,
+  Kana/Henkan/Muhenkan at `(5,3)`, `(5,6)`, `(5,7)` and `(5,11)`, Hanja at `(5,4)` and a
+  right Gui at `(5,13)`. They are `KC_NO` here. On an ISO unit the NonUS backslash at
+  `(4,14)` and the NonUS hash at `(3,12)` are the two to bring back.
+
+All 18 columns and all 6 rows are confirmed on hardware.
 
 ## Settings storage
 

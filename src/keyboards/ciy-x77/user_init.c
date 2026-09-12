@@ -44,9 +44,11 @@ void user_init(void)
     P6PCR = _P6_ALL;
     P6CR  = _P_NONE;
 
+    // P7 carries the columns of the full-size variant of this board; unfitted here, so it
+    // stays an input rather than driving pins that may not be routed.
     P7    = _P7_ALL;
     P7PCR = _P7_ALL;
-    P7CR  = KB_C_P7_MASK;
+    P7CR  = _P_NONE;
 
     INSCON = saved_page;
 }
