@@ -16,7 +16,7 @@
 - [x] Key Scan
 - [x] Lock LEDs
 - [x] Settings persistence
-- [ ] RGB Matrix
+- [x] RGB Matrix
 
 ## Fn Layer
 
@@ -27,6 +27,10 @@
 - `Fn`+`Gui` - Gui lock, drops Gui and App
 - `Fn`+`ScrLk` - NKRO toggle
 - `Fn`+`W` - WASD swap, both ways, so the arrows type WASD
+- `Fn`+`1`-`5` - select a backlight animation directly, `5` turns it off
+- `Fn`+`Ins` - cycle to the next animation
+- `Fn`+`Up`/`Down` - backlight brightness
+- `Fn`+`Left`/`Right` - animation speed
 
 ## Matrix
 
@@ -46,6 +50,34 @@ than this unit's. Two groups of its positions are not fitted on an ANSI TKL:
   `(4,14)` and the NonUS hash at `(3,12)` are the two to bring back.
 
 All 18 columns and all 6 rows are confirmed on hardware.
+
+## Backlight
+
+Per-key RGB, driven from the four PCA units. They give nine compare channels between them,
+which is three keys' worth of blue, green and red, so a column is lit in two subframes and a
+frame is 36 of them. `P4.4` and `P4.5` pick which three rows a subframe drives.
+
+| pins | role |
+| --- | --- |
+| P3.3, P3.4, P3.5 | row+0 blue, green, red |
+| P3.7, P4.0, P4.2 | row+1 blue, green, red |
+| P4.3, P6.0, P6.1 | row+2 blue, green, red |
+| P4.4 | row group enable, rows 0-2 |
+| P4.5 | row group enable, rows 3-5 |
+| P7.0 | backlight supply enable, active low |
+
+Three of those are worth calling out because nothing about them is obvious from the pinout:
+
+- **`P7.0` gates the supply.** Left high, nothing lights whatever the PCA is doing, and it
+  sits among the matrix columns on P7.1-P7.4 where it reads like one of them.
+- **The colour order is blue, green, red**, not RGB.
+- **`P3` and `P4` are never read back.** Both mix PCA outputs with other functions, so a
+  read samples the live PWM on those bits and writing the value back latches a channel on.
+  Every write is a computed value, and P4 shares one shadow with the column driver.
+
+Brightness is a real PWM level rather than frame dithering, since the compare value is the
+duty. The effect is evaluated from the main loop, one key per pass: at a 0.25 ms subframe it
+does not fit in the tick interrupt, and overrunning it starves USB.
 
 ## Settings storage
 
