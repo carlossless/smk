@@ -5,7 +5,9 @@
 
 #define _SBUF(addr) static __xdata __at(addr) volatile uint8_t
 
-#define INSCON_PAGE_MASK (uint8_t)~_BKS0
+// bit 7 is cleared alongside BKS0: the datasheet's register table calls it unimplemented,
+// but its text names a BKS1, and the ISP bootloader selects page 0 with `anl INSCON,#0x3f`.
+#define INSCON_PAGE_MASK (uint8_t)~(_BKS0 | 0x80u)
 
 #define sfr_page_1() (INSCON |= _BKS0)
 #define sfr_page_0() (INSCON &= INSCON_PAGE_MASK)

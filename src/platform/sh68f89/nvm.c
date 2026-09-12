@@ -10,8 +10,25 @@
 #define CFG_HDR    3u
 
 #define EE_BASE     0u
-#define EE_HALF_US  5u // ~100 kHz, well inside every 24Cxx grade
 #define EE_WRITE_MS 6u // 24Cxx self-timed write cycle, datasheet maximum is 5 ms
+
+// The bus runs with SFR page 1 latched, where 0xB1 is USBCON rather than RSTSTAT, so the
+// half-period cannot use delay_us(): its watchdog kick would write 0x02 into USBCON and
+// drop the D+ pull-up. Spin on nops instead and kick the watchdog between transfers.
+// ~60 cycles, so ~2.5 us at a 24 MHz FREQ_SYS and a bus around 200 kHz.
+#define EE_HALF_PERIOD 10u
+
+static void ee_delay(void)
+{
+    for (uint8_t i = 0; i < EE_HALF_PERIOD; i++) {
+        // clang-format off
+        __asm
+            nop
+            nop
+        __endasm;
+        // clang-format on
+    }
+}
 
 // SDA and SCL are plain GPIO with no open-drain mode on this port, so a release is a
 // switch to input and the line comes back up on its pull-up.
@@ -48,28 +65,28 @@ static void bus_idle(void)
 {
     SDA_RELEASE();
     SCL_RELEASE();
-    delay_us(EE_HALF_US);
+    ee_delay();
 }
 
 static void bus_start(void)
 {
     SDA_RELEASE();
     SCL_RELEASE();
-    delay_us(EE_HALF_US);
+    ee_delay();
     SDA_LOW();
-    delay_us(EE_HALF_US);
+    ee_delay();
     SCL_LOW();
-    delay_us(EE_HALF_US);
+    ee_delay();
 }
 
 static void bus_stop(void)
 {
     SDA_LOW();
-    delay_us(EE_HALF_US);
+    ee_delay();
     SCL_RELEASE();
-    delay_us(EE_HALF_US);
+    ee_delay();
     SDA_RELEASE();
-    delay_us(EE_HALF_US);
+    ee_delay();
 }
 
 static bool write_byte(uint8_t value)
@@ -81,19 +98,19 @@ static bool write_byte(uint8_t value)
             SDA_LOW();
         }
         value = (uint8_t)(value << 1);
-        delay_us(EE_HALF_US);
+        ee_delay();
         SCL_RELEASE();
-        delay_us(EE_HALF_US);
+        ee_delay();
         SCL_LOW();
     }
 
     SDA_RELEASE();
-    delay_us(EE_HALF_US);
+    ee_delay();
     SCL_RELEASE();
-    delay_us(EE_HALF_US);
+    ee_delay();
     bool acked = !SDA_READ();
     SCL_LOW();
-    delay_us(EE_HALF_US);
+    ee_delay();
     return acked;
 }
 
@@ -103,9 +120,9 @@ static uint8_t read_byte(bool ack)
 
     SDA_RELEASE();
     for (uint8_t bit = 0; bit < 8; bit++) {
-        delay_us(EE_HALF_US);
+        ee_delay();
         SCL_RELEASE();
-        delay_us(EE_HALF_US);
+        ee_delay();
         value = (uint8_t)((value << 1) | (SDA_READ() ? 1u : 0u));
         SCL_LOW();
     }
@@ -115,12 +132,12 @@ static uint8_t read_byte(bool ack)
     } else {
         SDA_RELEASE();
     }
-    delay_us(EE_HALF_US);
+    ee_delay();
     SCL_RELEASE();
-    delay_us(EE_HALF_US);
+    ee_delay();
     SCL_LOW();
     SDA_RELEASE();
-    delay_us(EE_HALF_US);
+    ee_delay();
     return value;
 }
 
@@ -146,6 +163,7 @@ static bool ee_read(uint8_t offset, __xdata uint8_t *dst, uint8_t len)
         bus_idle();
     });
 
+    watchdog_kick();
     return ok;
 }
 
