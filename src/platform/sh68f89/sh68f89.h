@@ -496,964 +496,964 @@ SBIT(P3CCF0, 0xf8, 0);
  * \name Bits from register INSCON
  * @{
  */
-#define _DPS   (1u << 0)
-#define _MUL   (1u << 2)
-#define _DIV   (1u << 3)
-#define _BKS0  (1u << 6)
+#define _DPS  (1u << 0)
+#define _MUL  (1u << 2)
+#define _DIV  (1u << 3)
+#define _BKS0 (1u << 6)
 /**@}*/
 
 /**
  * \name Bits from register PCON
  * @{
  */
-#define _IDL    (1u << 0)
-#define _PD     (1u << 1)
-#define _GF0    (1u << 2)
-#define _GF1    (1u << 3)
-#define _SSTAT  (1u << 6)
-#define _SMOD   (1u << 7)
+#define _IDL   (1u << 0)
+#define _PD    (1u << 1)
+#define _GF0   (1u << 2)
+#define _GF1   (1u << 3)
+#define _SSTAT (1u << 6)
+#define _SMOD  (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register RSTSTAT
  * @{
  */
-#define _WDT0  (1u << 0)
-#define _WDT1  (1u << 1)
-#define _WDT2  (1u << 2)
-#define _CLRF  (1u << 3)
-#define _LVRF  (1u << 4)
-#define _PORF  (1u << 5)
-#define _WDOF  (1u << 7)
+#define _WDT0 (1u << 0)
+#define _WDT1 (1u << 1)
+#define _WDT2 (1u << 2)
+#define _CLRF (1u << 3)
+#define _LVRF (1u << 4)
+#define _PORF (1u << 5)
+#define _WDOF (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register CLKCON
  * @{
  */
-#define _FS        (1u << 2)
-#define _OSC2ON    (1u << 3)
-#define _SCMIF     (1u << 4)
-#define _CLKS0     (1u << 5)
-#define _CLKS1     (1u << 6)
-#define _SPDUP32K  (1u << 7)
+#define _FS       (1u << 2)
+#define _OSC2ON   (1u << 3)
+#define _SCMIF    (1u << 4)
+#define _CLKS0    (1u << 5)
+#define _CLKS1    (1u << 6)
+#define _SPDUP32K (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register PLLCON
  * @{
  */
-#define _PLLFS   (1u << 0)
-#define _PLLON   (1u << 1)
-#define _PLLSTA  (1u << 2)
+#define _PLLFS  (1u << 0)
+#define _PLLON  (1u << 1)
+#define _PLLSTA (1u << 2)
 /**@}*/
 
 /**
  * \name Bits from register CLKLO
  * @{
  */
-#define _CLKLO0   (1u << 0)
-#define _CLKLO1   (1u << 1)
-#define _CLKLO2   (1u << 2)
-#define _CLKLO3   (1u << 3)
-#define _CLKRCEN  (1u << 7)
+#define _CLKLO0  (1u << 0)
+#define _CLKLO1  (1u << 1)
+#define _CLKLO2  (1u << 2)
+#define _CLKLO3  (1u << 3)
+#define _CLKRCEN (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register LPDCON
  * @{
  */
-#define _LPDS0  (1u << 0)
-#define _LPDS1  (1u << 1)
-#define _LPDS2  (1u << 2)
-#define _LPDS3  (1u << 3)
-#define _LPDIF  (1u << 4)
-#define _LPDMD  (1u << 5)
-#define _LPDEN  (1u << 7)
+#define _LPDS0 (1u << 0)
+#define _LPDS1 (1u << 1)
+#define _LPDS2 (1u << 2)
+#define _LPDS3 (1u << 3)
+#define _LPDIF (1u << 4)
+#define _LPDMD (1u << 5)
+#define _LPDEN (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register REGCON
  * @{
  */
-#define _REGEN  (1u << 0)
+#define _REGEN (1u << 0)
 /**@}*/
 
 /**
  * \name Bits from register FLASHCON
  * @{
  */
-#define _FAC  (1u << 0)
+#define _FAC (1u << 0)
 /**@}*/
 
 /**
  * \name Bits from register IEN0
  * @{
  */
-#define _EPCA0  (1u << 0)
-#define _EPCA1  (1u << 1)
-#define _EPCA2  (1u << 2)
-#define _EPCA3  (1u << 3)
-#define _ES0    (1u << 4)
-#define _ET2    (1u << 5)
-#define _EADC   (1u << 6)
-#define _EA     (1u << 7)
+#define _EPCA0 (1u << 0)
+#define _EPCA1 (1u << 1)
+#define _EPCA2 (1u << 2)
+#define _EPCA3 (1u << 3)
+#define _ES0   (1u << 4)
+#define _ET2   (1u << 5)
+#define _EADC  (1u << 6)
+#define _EA    (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register IEN1
  * @{
  */
-#define _ESPI       (1u << 0)
-#define _EX2_EDAC   (1u << 1)
-#define _EX3        (1u << 2)
-#define _EX4        (1u << 3)
-#define _ET3        (1u << 4)
-#define _EUSB_ETWI  (1u << 5)
-#define _ES1        (1u << 6)
-#define _ESCM_ELPD  (1u << 7)
+#define _ESPI      (1u << 0)
+#define _EX2_EDAC  (1u << 1)
+#define _EX3       (1u << 2)
+#define _EX4       (1u << 3)
+#define _ET3       (1u << 4)
+#define _EUSB_ETWI (1u << 5)
+#define _ES1       (1u << 6)
+#define _ESCM_ELPD (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register IPH0
  * @{
  */
-#define _PPCA0H  (1u << 0)
-#define _PPCA1H  (1u << 1)
-#define _PPCA2H  (1u << 2)
-#define _PPCA3H  (1u << 3)
-#define _PS0H    (1u << 4)
-#define _PT2H    (1u << 5)
-#define _PADCH   (1u << 6)
+#define _PPCA0H (1u << 0)
+#define _PPCA1H (1u << 1)
+#define _PPCA2H (1u << 2)
+#define _PPCA3H (1u << 3)
+#define _PS0H   (1u << 4)
+#define _PT2H   (1u << 5)
+#define _PADCH  (1u << 6)
 /**@}*/
 
 /**
  * \name Bits from register IPL0
  * @{
  */
-#define _PPCA0L  (1u << 0)
-#define _PPCA1L  (1u << 1)
-#define _PPCA2L  (1u << 2)
-#define _PPCA3L  (1u << 3)
-#define _PS0L    (1u << 4)
-#define _PT2L    (1u << 5)
-#define _PADCL   (1u << 6)
+#define _PPCA0L (1u << 0)
+#define _PPCA1L (1u << 1)
+#define _PPCA2L (1u << 2)
+#define _PPCA3L (1u << 3)
+#define _PS0L   (1u << 4)
+#define _PT2L   (1u << 5)
+#define _PADCL  (1u << 6)
 /**@}*/
 
 /**
  * \name Bits from register IPH1
  * @{
  */
-#define _PSPIH      (1u << 0)
-#define _PX2DACH    (1u << 1)
-#define _PX3H       (1u << 2)
-#define _PX4H       (1u << 3)
-#define _PT3H       (1u << 4)
-#define _PUSB_TWIH  (1u << 5)
-#define _PS1H       (1u << 6)
-#define _PSCM_LPDH  (1u << 7)
+#define _PSPIH     (1u << 0)
+#define _PX2DACH   (1u << 1)
+#define _PX3H      (1u << 2)
+#define _PX4H      (1u << 3)
+#define _PT3H      (1u << 4)
+#define _PUSB_TWIH (1u << 5)
+#define _PS1H      (1u << 6)
+#define _PSCM_LPDH (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register IPL1
  * @{
  */
-#define _PSPIL      (1u << 0)
-#define _PX2DACL    (1u << 1)
-#define _PX3L       (1u << 2)
-#define _PX4L       (1u << 3)
-#define _PT3L       (1u << 4)
-#define _PUSB_TWIL  (1u << 5)
-#define _PS1L       (1u << 6)
-#define _PSCM_LPDL  (1u << 7)
+#define _PSPIL     (1u << 0)
+#define _PX2DACL   (1u << 1)
+#define _PX3L      (1u << 2)
+#define _PX4L      (1u << 3)
+#define _PT3L      (1u << 4)
+#define _PUSB_TWIL (1u << 5)
+#define _PS1L      (1u << 6)
+#define _PSCM_LPDL (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register IENC
  * @{
  */
-#define _EXS40  (1u << 0)
-#define _EXS41  (1u << 1)
-#define _EXS42  (1u << 2)
-#define _EXS43  (1u << 3)
-#define _EXS44  (1u << 4)
-#define _EXS45  (1u << 5)
-#define _EXS46  (1u << 6)
-#define _EXS47  (1u << 7)
+#define _EXS40 (1u << 0)
+#define _EXS41 (1u << 1)
+#define _EXS42 (1u << 2)
+#define _EXS43 (1u << 3)
+#define _EXS44 (1u << 4)
+#define _EXS45 (1u << 5)
+#define _EXS46 (1u << 6)
+#define _EXS47 (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register EXF0
  * @{
  */
-#define _IE2   (1u << 0)
-#define _IE3   (1u << 1)
-#define _IT20  (1u << 2)
-#define _IT21  (1u << 3)
-#define _IT30  (1u << 4)
-#define _IT31  (1u << 5)
-#define _IT40  (1u << 6)
-#define _IT41  (1u << 7)
+#define _IE2  (1u << 0)
+#define _IE3  (1u << 1)
+#define _IT20 (1u << 2)
+#define _IT21 (1u << 3)
+#define _IT30 (1u << 4)
+#define _IT31 (1u << 5)
+#define _IT40 (1u << 6)
+#define _IT41 (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register EXF1
  * @{
  */
-#define _IF40  (1u << 0)
-#define _IF41  (1u << 1)
-#define _IF42  (1u << 2)
-#define _IF43  (1u << 3)
-#define _IF44  (1u << 4)
-#define _IF45  (1u << 5)
-#define _IF46  (1u << 6)
-#define _IF47  (1u << 7)
+#define _IF40 (1u << 0)
+#define _IF41 (1u << 1)
+#define _IF42 (1u << 2)
+#define _IF43 (1u << 3)
+#define _IF44 (1u << 4)
+#define _IF45 (1u << 5)
+#define _IF46 (1u << 6)
+#define _IF47 (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register EXCON
  * @{
  */
-#define _IP0      (1u << 0)
-#define _IP1      (1u << 1)
-#define _EXTFS0   (1u << 2)
-#define _EXTFS1   (1u << 3)
-#define _I4P0     (1u << 4)
-#define _I4P1     (1u << 5)
-#define _EXT4FS0  (1u << 6)
-#define _EXT4FS1  (1u << 7)
+#define _IP0     (1u << 0)
+#define _IP1     (1u << 1)
+#define _EXTFS0  (1u << 2)
+#define _EXTFS1  (1u << 3)
+#define _I4P0    (1u << 4)
+#define _I4P1    (1u << 5)
+#define _EXT4FS0 (1u << 6)
+#define _EXT4FS1 (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register T2CON
  * @{
  */
-#define _CP_RL2  (1u << 0)
-#define _C_T2    (1u << 1)
-#define _TR2     (1u << 2)
-#define _EXEN2   (1u << 3)
-#define _EXF2    (1u << 6)
-#define _TF2     (1u << 7)
+#define _CP_RL2 (1u << 0)
+#define _C_T2   (1u << 1)
+#define _TR2    (1u << 2)
+#define _EXEN2  (1u << 3)
+#define _EXF2   (1u << 6)
+#define _TF2    (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register T2MOD
  * @{
  */
-#define _DCEN    (1u << 0)
-#define _T2OE    (1u << 1)
-#define _TCLKP2  (1u << 7)
+#define _DCEN   (1u << 0)
+#define _T2OE   (1u << 1)
+#define _TCLKP2 (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register T3CON
  * @{
  */
-#define _T3CLKS0  (1u << 0)
-#define _T3CLKS1  (1u << 1)
-#define _TR3      (1u << 2)
-#define _T3PS0    (1u << 4)
-#define _T3PS1    (1u << 5)
-#define _TF3      (1u << 7)
+#define _T3CLKS0 (1u << 0)
+#define _T3CLKS1 (1u << 1)
+#define _TR3     (1u << 2)
+#define _T3PS0   (1u << 4)
+#define _T3PS1   (1u << 5)
+#define _TF3     (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register SCON
  * @{
  */
-#define _RI         (1u << 0)
-#define _TI         (1u << 1)
-#define _RB8        (1u << 2)
-#define _TB8        (1u << 3)
-#define _REN        (1u << 4)
-#define _SM2_TXCOL  (1u << 5)
-#define _SM1_RXOV   (1u << 6)
-#define _SM0_FE     (1u << 7)
+#define _RI        (1u << 0)
+#define _TI        (1u << 1)
+#define _RB8       (1u << 2)
+#define _TB8       (1u << 3)
+#define _REN       (1u << 4)
+#define _SM2_TXCOL (1u << 5)
+#define _SM1_RXOV  (1u << 6)
+#define _SM0_FE    (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register SBRTL
  * @{
  */
-#define _SBRTEN  (1u << 7)
+#define _SBRTEN (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register SCON1
  * @{
  */
-#define _RI1          (1u << 0)
-#define _TI1          (1u << 1)
-#define _RB81         (1u << 2)
-#define _TB81         (1u << 3)
-#define _REN1         (1u << 4)
-#define _SM12_TXCOL1  (1u << 5)
-#define _SM11_RXOV1   (1u << 6)
-#define _SM10_FE1     (1u << 7)
+#define _RI1         (1u << 0)
+#define _TI1         (1u << 1)
+#define _RB81        (1u << 2)
+#define _TB81        (1u << 3)
+#define _REN1        (1u << 4)
+#define _SM12_TXCOL1 (1u << 5)
+#define _SM11_RXOV1  (1u << 6)
+#define _SM10_FE1    (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register SBRTL1
  * @{
  */
-#define _SBRTEN1  (1u << 7)
+#define _SBRTEN1 (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register PCON1
  * @{
  */
-#define _SSTAT1  (1u << 6)
-#define _SMOD1   (1u << 7)
+#define _SSTAT1 (1u << 6)
+#define _SMOD1  (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register SPCON
  * @{
  */
-#define _SPR0   (1u << 0)
-#define _SPR1   (1u << 1)
-#define _SPR2   (1u << 2)
-#define _SSDIS  (1u << 3)
-#define _CPOL   (1u << 4)
-#define _CPHA   (1u << 5)
-#define _MSTR   (1u << 6)
-#define _DIR    (1u << 7)
+#define _SPR0  (1u << 0)
+#define _SPR1  (1u << 1)
+#define _SPR2  (1u << 2)
+#define _SSDIS (1u << 3)
+#define _CPOL  (1u << 4)
+#define _CPHA  (1u << 5)
+#define _MSTR  (1u << 6)
+#define _DIR   (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register SPSTA
  * @{
  */
-#define _RXOV  (1u << 3)
-#define _WCOL  (1u << 4)
-#define _MODF  (1u << 5)
-#define _SPIF  (1u << 6)
-#define _SPEN  (1u << 7)
+#define _RXOV (1u << 3)
+#define _WCOL (1u << 4)
+#define _MODF (1u << 5)
+#define _SPIF (1u << 6)
+#define _SPEN (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register USBCON
  * @{
  */
-#define _GOSUSP  (1u << 0)
-#define _WKUP    (1u << 1)
-#define _SW2CON  (1u << 2)
-#define _DMSTA   (1u << 3)
-#define _DPSTA   (1u << 4)
-#define _SWRST   (1u << 5)
-#define _SW1CON  (1u << 6)
-#define _ENUSB   (1u << 7)
+#define _GOSUSP (1u << 0)
+#define _WKUP   (1u << 1)
+#define _SW2CON (1u << 2)
+#define _DMSTA  (1u << 3)
+#define _DPSTA  (1u << 4)
+#define _SWRST  (1u << 5)
+#define _SW1CON (1u << 6)
+#define _ENUSB  (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register USBIF1
  * @{
  */
-#define _USBRSTIF  (1u << 0)
-#define _SUSPIF    (1u << 1)
-#define _RESMIF    (1u << 2)
-#define _SOFIF     (1u << 3)
-#define _SETUPIF   (1u << 4)
-#define _OW        (1u << 5)
-#define _OVERIF    (1u << 6)
-#define _PUPIF     (1u << 7)
+#define _USBRSTIF (1u << 0)
+#define _SUSPIF   (1u << 1)
+#define _RESMIF   (1u << 2)
+#define _SOFIF    (1u << 3)
+#define _SETUPIF  (1u << 4)
+#define _OW       (1u << 5)
+#define _OVERIF   (1u << 6)
+#define _PUPIF    (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register USBIF2
  * @{
  */
-#define _IEP0IF  (1u << 0)
-#define _IEP1IF  (1u << 1)
-#define _IEP2IF  (1u << 2)
-#define _OEP0IF  (1u << 4)
-#define _OEP1IF  (1u << 5)
-#define _OEP2IF  (1u << 6)
+#define _IEP0IF (1u << 0)
+#define _IEP1IF (1u << 1)
+#define _IEP2IF (1u << 2)
+#define _OEP0IF (1u << 4)
+#define _OEP1IF (1u << 5)
+#define _OEP2IF (1u << 6)
 /**@}*/
 
 /**
  * \name Bits from register USBIE1
  * @{
  */
-#define _PBRSTIE  (1u << 0)
-#define _SUSPIE   (1u << 1)
-#define _RESMIE   (1u << 2)
-#define _SOFIE    (1u << 3)
-#define _SETUPIE  (1u << 4)
-#define _OVERIE   (1u << 6)
-#define _PUPIE    (1u << 7)
+#define _PBRSTIE (1u << 0)
+#define _SUSPIE  (1u << 1)
+#define _RESMIE  (1u << 2)
+#define _SOFIE   (1u << 3)
+#define _SETUPIE (1u << 4)
+#define _OVERIE  (1u << 6)
+#define _PUPIE   (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register USBIE2
  * @{
  */
-#define _IEP0IE  (1u << 0)
-#define _IEP1IE  (1u << 1)
-#define _IEP2IE  (1u << 2)
-#define _OEP0IE  (1u << 4)
-#define _OEP1IE  (1u << 5)
-#define _OEP2IE  (1u << 6)
+#define _IEP0IE (1u << 0)
+#define _IEP1IE (1u << 1)
+#define _IEP2IE (1u << 2)
+#define _OEP0IE (1u << 4)
+#define _OEP1IE (1u << 5)
+#define _OEP2IE (1u << 6)
 /**@}*/
 
 /**
  * \name Bits from register EP0CON
  * @{
  */
-#define _OEP0RDY  (1u << 0)
-#define _OEP0STL  (1u << 1)
-#define _IEP0RDY  (1u << 2)
-#define _IEP0STL  (1u << 3)
-#define _OEP0DTG  (1u << 6)
-#define _IEP0DTG  (1u << 7)
+#define _OEP0RDY (1u << 0)
+#define _OEP0STL (1u << 1)
+#define _IEP0RDY (1u << 2)
+#define _IEP0STL (1u << 3)
+#define _OEP0DTG (1u << 6)
+#define _IEP0DTG (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register EP1CON
  * @{
  */
-#define _OEP1RDY  (1u << 0)
-#define _OEP1STL  (1u << 1)
-#define _IEP1RDY  (1u << 2)
-#define _IEP1STL  (1u << 3)
-#define _OEP1DTG  (1u << 6)
-#define _IEP1DTG  (1u << 7)
+#define _OEP1RDY (1u << 0)
+#define _OEP1STL (1u << 1)
+#define _IEP1RDY (1u << 2)
+#define _IEP1STL (1u << 3)
+#define _OEP1DTG (1u << 6)
+#define _IEP1DTG (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register EP2CON
  * @{
  */
-#define _OEP2RDY  (1u << 0)
-#define _OEP2STL  (1u << 1)
-#define _IEP2RDY  (1u << 2)
-#define _IEP2STL  (1u << 3)
-#define _OEP2DTG  (1u << 6)
-#define _IEP2DTG  (1u << 7)
+#define _OEP2RDY (1u << 0)
+#define _OEP2STL (1u << 1)
+#define _IEP2RDY (1u << 2)
+#define _IEP2STL (1u << 3)
+#define _OEP2DTG (1u << 6)
+#define _IEP2DTG (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register TWICON
  * @{
  */
-#define _EFREE  (1u << 0)
-#define _TFREE  (1u << 1)
-#define _AA     (1u << 2)
-#define _TWINT  (1u << 3)
-#define _STO    (1u << 4)
-#define _STA    (1u << 5)
-#define _ENTWI  (1u << 6)
-#define _TOUT   (1u << 7)
+#define _EFREE (1u << 0)
+#define _TFREE (1u << 1)
+#define _AA    (1u << 2)
+#define _TWINT (1u << 3)
+#define _STO   (1u << 4)
+#define _STA   (1u << 5)
+#define _ENTWI (1u << 6)
+#define _TOUT  (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register TWISTA
  * @{
  */
-#define _ETOT  (1u << 0)
-#define _CR0   (1u << 1)
-#define _CR1   (1u << 2)
+#define _ETOT (1u << 0)
+#define _CR0  (1u << 1)
+#define _CR1  (1u << 2)
 /**@}*/
 
 /**
  * \name Bits from register TWIADR
  * @{
  */
-#define _GC  (1u << 0)
+#define _GC (1u << 0)
 /**@}*/
 
 /**
  * \name Bits from register TWIAMR
  * @{
  */
-#define _CTRTOUT  (1u << 0)
+#define _CTRTOUT (1u << 0)
 /**@}*/
 
 /**
  * \name Bits from register TWTFREE
  * @{
  */
-#define _CNT0  (1u << 6)
-#define _CNT1  (1u << 7)
+#define _CNT0 (1u << 6)
+#define _CNT1 (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register PCACON
  * @{
  */
-#define _PR0  (1u << 0)
-#define _PR1  (1u << 1)
-#define _PR2  (1u << 2)
-#define _PR3  (1u << 3)
+#define _PR0 (1u << 0)
+#define _PR1 (1u << 1)
+#define _PR2 (1u << 2)
+#define _PR3 (1u << 3)
 /**@}*/
 
 /**
  * \name Bits from register P0CF
  * @{
  */
-#define _P0CCF0  (1u << 0)
-#define _P0CCF1  (1u << 1)
-#define _CF0     (1u << 7)
+#define _P0CCF0 (1u << 0)
+#define _P0CCF1 (1u << 1)
+#define _CF0    (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P0CMD
  * @{
  */
-#define _P0CPS0  (1u << 0)
-#define _P0CPS1  (1u << 1)
-#define _P0CPS2  (1u << 2)
-#define _P0SDEN  (1u << 6)
-#define _ECF0    (1u << 7)
+#define _P0CPS0 (1u << 0)
+#define _P0CPS1 (1u << 1)
+#define _P0CPS2 (1u << 2)
+#define _P0SDEN (1u << 6)
+#define _ECF0   (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P1CF
  * @{
  */
-#define _P1CCF0  (1u << 0)
-#define _P1CCF1  (1u << 1)
-#define _P1CCF2  (1u << 2)
-#define _CF1     (1u << 7)
+#define _P1CCF0 (1u << 0)
+#define _P1CCF1 (1u << 1)
+#define _P1CCF2 (1u << 2)
+#define _CF1    (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P1CMD
  * @{
  */
-#define _P1CPS0  (1u << 0)
-#define _P1CPS1  (1u << 1)
-#define _P1CPS2  (1u << 2)
-#define _P1SDEN  (1u << 6)
-#define _ECF1    (1u << 7)
+#define _P1CPS0 (1u << 0)
+#define _P1CPS1 (1u << 1)
+#define _P1CPS2 (1u << 2)
+#define _P1SDEN (1u << 6)
+#define _ECF1   (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P2CF
  * @{
  */
-#define _P2CCF0  (1u << 0)
-#define _P2CCF1  (1u << 1)
-#define _CF2     (1u << 7)
+#define _P2CCF0 (1u << 0)
+#define _P2CCF1 (1u << 1)
+#define _CF2    (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P2CMD
  * @{
  */
-#define _P2CPS0  (1u << 0)
-#define _P2CPS1  (1u << 1)
-#define _P2CPS2  (1u << 2)
-#define _P2SDEN  (1u << 6)
-#define _ECF2    (1u << 7)
+#define _P2CPS0 (1u << 0)
+#define _P2CPS1 (1u << 1)
+#define _P2CPS2 (1u << 2)
+#define _P2SDEN (1u << 6)
+#define _ECF2   (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P3CF
  * @{
  */
-#define _P3CCF0  (1u << 0)
-#define _P3CCF1  (1u << 1)
-#define _CF3     (1u << 7)
+#define _P3CCF0 (1u << 0)
+#define _P3CCF1 (1u << 1)
+#define _CF3    (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P3CMD
  * @{
  */
-#define _P3CPS0  (1u << 0)
-#define _P3CPS1  (1u << 1)
-#define _P3CPS2  (1u << 2)
-#define _P3SDEN  (1u << 6)
-#define _ECF3    (1u << 7)
+#define _P3CPS0 (1u << 0)
+#define _P3CPS1 (1u << 1)
+#define _P3CPS2 (1u << 2)
+#define _P3SDEN (1u << 6)
+#define _ECF3   (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P0CPM0
  * @{
  */
-#define _P0ECCF0  (1u << 0)
-#define _P0MAT0   (1u << 1)
-#define _P0TCP0   (1u << 2)
-#define _P0ECOM0  (1u << 3)
-#define _P0FSN0   (1u << 4)
-#define _P0FSP0   (1u << 5)
-#define _P0SMN0   (1u << 6)
-#define _P0SMP0   (1u << 7)
+#define _P0ECCF0 (1u << 0)
+#define _P0MAT0  (1u << 1)
+#define _P0TCP0  (1u << 2)
+#define _P0ECOM0 (1u << 3)
+#define _P0FSN0  (1u << 4)
+#define _P0FSP0  (1u << 5)
+#define _P0SMN0  (1u << 6)
+#define _P0SMP0  (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P0CPM1
  * @{
  */
-#define _P0ECCF1  (1u << 0)
-#define _P0MAT1   (1u << 1)
-#define _P0TCP1   (1u << 2)
-#define _P0ECOM1  (1u << 3)
-#define _P0FSN1   (1u << 4)
-#define _P0FSP1   (1u << 5)
-#define _P0SMN1   (1u << 6)
-#define _P0SMP1   (1u << 7)
+#define _P0ECCF1 (1u << 0)
+#define _P0MAT1  (1u << 1)
+#define _P0TCP1  (1u << 2)
+#define _P0ECOM1 (1u << 3)
+#define _P0FSN1  (1u << 4)
+#define _P0FSP1  (1u << 5)
+#define _P0SMN1  (1u << 6)
+#define _P0SMP1  (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P1CPM0
  * @{
  */
-#define _P1ECCF0  (1u << 0)
-#define _P1MAT0   (1u << 1)
-#define _P1TCP0   (1u << 2)
-#define _P1ECOM0  (1u << 3)
-#define _P1FSN0   (1u << 4)
-#define _P1FSP0   (1u << 5)
-#define _P1SMN0   (1u << 6)
-#define _P1SMP0   (1u << 7)
+#define _P1ECCF0 (1u << 0)
+#define _P1MAT0  (1u << 1)
+#define _P1TCP0  (1u << 2)
+#define _P1ECOM0 (1u << 3)
+#define _P1FSN0  (1u << 4)
+#define _P1FSP0  (1u << 5)
+#define _P1SMN0  (1u << 6)
+#define _P1SMP0  (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P1CPM1
  * @{
  */
-#define _P1ECCF1  (1u << 0)
-#define _P1MAT1   (1u << 1)
-#define _P1TCP1   (1u << 2)
-#define _P1ECOM1  (1u << 3)
-#define _P1FSN1   (1u << 4)
-#define _P1FSP1   (1u << 5)
-#define _P1SMN1   (1u << 6)
-#define _P1SMP1   (1u << 7)
+#define _P1ECCF1 (1u << 0)
+#define _P1MAT1  (1u << 1)
+#define _P1TCP1  (1u << 2)
+#define _P1ECOM1 (1u << 3)
+#define _P1FSN1  (1u << 4)
+#define _P1FSP1  (1u << 5)
+#define _P1SMN1  (1u << 6)
+#define _P1SMP1  (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P1CPM2
  * @{
  */
-#define _P1ECCF2  (1u << 0)
-#define _P1MAT2   (1u << 1)
-#define _P1TCP2   (1u << 2)
-#define _P1ECOM2  (1u << 3)
-#define _P1FSN2   (1u << 4)
-#define _P1FSP2   (1u << 5)
-#define _P1SMN2   (1u << 6)
-#define _P1SMP2   (1u << 7)
+#define _P1ECCF2 (1u << 0)
+#define _P1MAT2  (1u << 1)
+#define _P1TCP2  (1u << 2)
+#define _P1ECOM2 (1u << 3)
+#define _P1FSN2  (1u << 4)
+#define _P1FSP2  (1u << 5)
+#define _P1SMN2  (1u << 6)
+#define _P1SMP2  (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P2CPM0
  * @{
  */
-#define _P2ECCF0  (1u << 0)
-#define _P2MAT0   (1u << 1)
-#define _P2TCP0   (1u << 2)
-#define _P2ECOM0  (1u << 3)
-#define _P2FSN0   (1u << 4)
-#define _P2FSP0   (1u << 5)
-#define _P2SMN0   (1u << 6)
-#define _P2SMP0   (1u << 7)
+#define _P2ECCF0 (1u << 0)
+#define _P2MAT0  (1u << 1)
+#define _P2TCP0  (1u << 2)
+#define _P2ECOM0 (1u << 3)
+#define _P2FSN0  (1u << 4)
+#define _P2FSP0  (1u << 5)
+#define _P2SMN0  (1u << 6)
+#define _P2SMP0  (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P2CPM1
  * @{
  */
-#define _P2ECCF1  (1u << 0)
-#define _P2MAT1   (1u << 1)
-#define _P2TCP1   (1u << 2)
-#define _P2ECOM1  (1u << 3)
-#define _P2FSN1   (1u << 4)
-#define _P2FSP1   (1u << 5)
-#define _P2SMN1   (1u << 6)
-#define _P2SMP1   (1u << 7)
+#define _P2ECCF1 (1u << 0)
+#define _P2MAT1  (1u << 1)
+#define _P2TCP1  (1u << 2)
+#define _P2ECOM1 (1u << 3)
+#define _P2FSN1  (1u << 4)
+#define _P2FSP1  (1u << 5)
+#define _P2SMN1  (1u << 6)
+#define _P2SMP1  (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P3CPM0
  * @{
  */
-#define _P3ECCF0  (1u << 0)
-#define _P3MAT0   (1u << 1)
-#define _P3TCP0   (1u << 2)
-#define _P3ECOM0  (1u << 3)
-#define _P3FSN0   (1u << 4)
-#define _P3FSP0   (1u << 5)
-#define _P3SMN0   (1u << 6)
-#define _P3SMP0   (1u << 7)
+#define _P3ECCF0 (1u << 0)
+#define _P3MAT0  (1u << 1)
+#define _P3TCP0  (1u << 2)
+#define _P3ECOM0 (1u << 3)
+#define _P3FSN0  (1u << 4)
+#define _P3FSP0  (1u << 5)
+#define _P3SMN0  (1u << 6)
+#define _P3SMP0  (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P3CPM1
  * @{
  */
-#define _P3ECCF1  (1u << 0)
-#define _P3MAT1   (1u << 1)
-#define _P3TCP1   (1u << 2)
-#define _P3ECOM1  (1u << 3)
-#define _P3FSN1   (1u << 4)
-#define _P3FSP1   (1u << 5)
-#define _P3SMN1   (1u << 6)
-#define _P3SMP1   (1u << 7)
+#define _P3ECCF1 (1u << 0)
+#define _P3MAT1  (1u << 1)
+#define _P3TCP1  (1u << 2)
+#define _P3ECOM1 (1u << 3)
+#define _P3FSN1  (1u << 4)
+#define _P3FSP1  (1u << 5)
+#define _P3SMN1  (1u << 6)
+#define _P3SMP1  (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P0FORCE
  * @{
  */
-#define _P0FCO0  (1u << 0)
-#define _P0FCO1  (1u << 1)
-#define _P0OSC0  (1u << 4)
-#define _P0OSC1  (1u << 5)
+#define _P0FCO0 (1u << 0)
+#define _P0FCO1 (1u << 1)
+#define _P0OSC0 (1u << 4)
+#define _P0OSC1 (1u << 5)
 /**@}*/
 
 /**
  * \name Bits from register P1FORCE
  * @{
  */
-#define _P1FCO0  (1u << 0)
-#define _P1FCO1  (1u << 1)
-#define _P1FCO2  (1u << 2)
-#define _P1OSC0  (1u << 4)
-#define _P1OSC1  (1u << 5)
-#define _P1OSC2  (1u << 6)
+#define _P1FCO0 (1u << 0)
+#define _P1FCO1 (1u << 1)
+#define _P1FCO2 (1u << 2)
+#define _P1OSC0 (1u << 4)
+#define _P1OSC1 (1u << 5)
+#define _P1OSC2 (1u << 6)
 /**@}*/
 
 /**
  * \name Bits from register P2FORCE
  * @{
  */
-#define _P2FCO0  (1u << 0)
-#define _P2FCO1  (1u << 1)
-#define _P2OSC0  (1u << 4)
-#define _P2OSC1  (1u << 5)
+#define _P2FCO0 (1u << 0)
+#define _P2FCO1 (1u << 1)
+#define _P2OSC0 (1u << 4)
+#define _P2OSC1 (1u << 5)
 /**@}*/
 
 /**
  * \name Bits from register P3FORCE
  * @{
  */
-#define _P3FCO0  (1u << 0)
-#define _P3FCO1  (1u << 1)
-#define _P3OSC0  (1u << 4)
-#define _P3OSC1  (1u << 5)
+#define _P3FCO0 (1u << 0)
+#define _P3FCO1 (1u << 1)
+#define _P3OSC0 (1u << 4)
+#define _P3OSC1 (1u << 5)
 /**@}*/
 
 /**
  * \name Bits from register DISPCON
  * @{
  */
-#define _VOL0     (1u << 0)
-#define _VOL1     (1u << 1)
-#define _VOL2     (1u << 2)
-#define _VOL3     (1u << 3)
-#define _DUTY0    (1u << 4)
-#define _DUTY1    (1u << 5)
-#define _DISPON   (1u << 6)
-#define _DISPSEL  (1u << 7)
+#define _VOL0    (1u << 0)
+#define _VOL1    (1u << 1)
+#define _VOL2    (1u << 2)
+#define _VOL3    (1u << 3)
+#define _DUTY0   (1u << 4)
+#define _DUTY1   (1u << 5)
+#define _DISPON  (1u << 6)
+#define _DISPSEL (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register DISPCON1
  * @{
  */
-#define _MOD0    (1u << 0)
-#define _MOD1    (1u << 1)
-#define _FCCTL0  (1u << 2)
-#define _FCCTL1  (1u << 3)
-#define _RLCD    (1u << 4)
+#define _MOD0   (1u << 0)
+#define _MOD1   (1u << 1)
+#define _FCCTL0 (1u << 2)
+#define _FCCTL1 (1u << 3)
+#define _RLCD   (1u << 4)
 /**@}*/
 
 /**
  * \name Bits from register OPCON
  * @{
  */
-#define _OPNSEL0  (1u << 0)
-#define _OPNSEL1  (1u << 1)
-#define _OPPSEL0  (1u << 2)
-#define _OPPSEL1  (1u << 3)
-#define _OPEN     (1u << 7)
+#define _OPNSEL0 (1u << 0)
+#define _OPNSEL1 (1u << 1)
+#define _OPPSEL0 (1u << 2)
+#define _OPPSEL1 (1u << 3)
+#define _OPEN    (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register OPIOS
  * @{
  */
-#define _OPP0IO  (1u << 0)
-#define _OPP1IO  (1u << 1)
-#define _OPN0IO  (1u << 2)
-#define _OPN1IO  (1u << 3)
-#define _OPN2IO  (1u << 4)
+#define _OPP0IO (1u << 0)
+#define _OPP1IO (1u << 1)
+#define _OPN0IO (1u << 2)
+#define _OPN1IO (1u << 3)
+#define _OPN2IO (1u << 4)
 /**@}*/
 
 /**
  * \name Bits from register ADCON1
  * @{
  */
-#define _GO_DONE  (1u << 0)
-#define _TRS0     (1u << 1)
-#define _TRS1     (1u << 2)
-#define _TRS2     (1u << 3)
-#define _TRE      (1u << 4)
-#define _EC       (1u << 5)
-#define _ADCIF    (1u << 6)
-#define _ADON     (1u << 7)
+#define _GO_DONE (1u << 0)
+#define _TRS0    (1u << 1)
+#define _TRS1    (1u << 2)
+#define _TRS2    (1u << 3)
+#define _TRE     (1u << 4)
+#define _EC      (1u << 5)
+#define _ADCIF   (1u << 6)
+#define _ADON    (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register ADCON2
  * @{
  */
-#define _ACGIF  (1u << 1)
-#define _ACLIF  (1u << 2)
-#define _ACGIE  (1u << 3)
-#define _ACLIE  (1u << 4)
-#define _ADCIE  (1u << 7)
+#define _ACGIF (1u << 1)
+#define _ACLIF (1u << 2)
+#define _ACGIE (1u << 3)
+#define _ACLIE (1u << 4)
+#define _ADCIE (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register SCHCON1
  * @{
  */
-#define _SCH0   (1u << 0)
-#define _SCH1   (1u << 1)
-#define _SCH2   (1u << 2)
-#define _SCH3   (1u << 3)
-#define _ALR    (1u << 5)
-#define _VREF0  (1u << 6)
-#define _VREF1  (1u << 7)
+#define _SCH0  (1u << 0)
+#define _SCH1  (1u << 1)
+#define _SCH2  (1u << 2)
+#define _SCH3  (1u << 3)
+#define _ALR   (1u << 5)
+#define _VREF0 (1u << 6)
+#define _VREF1 (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register DACCON0
  * @{
  */
-#define _DACIF     (1u << 0)
-#define _DACIO     (1u << 1)
-#define _DACDF     (1u << 2)
-#define _DACLSEL0  (1u << 3)
-#define _DACLSEL1  (1u << 4)
-#define _DACOSEL0  (1u << 5)
-#define _DACOSEL1  (1u << 6)
-#define _DACEN     (1u << 7)
+#define _DACIF    (1u << 0)
+#define _DACIO    (1u << 1)
+#define _DACDF    (1u << 2)
+#define _DACLSEL0 (1u << 3)
+#define _DACLSEL1 (1u << 4)
+#define _DACOSEL0 (1u << 5)
+#define _DACOSEL1 (1u << 6)
+#define _DACEN    (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register DACCON1
  * @{
  */
-#define _DACSREF0  (1u << 0)
-#define _DACSREF1  (1u << 1)
-#define _REFON     (1u << 2)
-#define _REFSEL    (1u << 3)
-#define _VREFS     (1u << 4)
-#define _OFFSETSW  (1u << 6)
-#define _DACCALON  (1u << 7)
+#define _DACSREF0 (1u << 0)
+#define _DACSREF1 (1u << 1)
+#define _REFON    (1u << 2)
+#define _REFSEL   (1u << 3)
+#define _VREFS    (1u << 4)
+#define _OFFSETSW (1u << 6)
+#define _DACCALON (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register DACCAL
  * @{
  */
-#define _OFFSETSIGN  (1u << 7)
+#define _OFFSETSIGN (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P6OS
  * @{
  */
-#define _P6OS6  (1u << 6)
-#define _P6OS7  (1u << 7)
+#define _P6OS6 (1u << 6)
+#define _P6OS7 (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P1SS
  * @{
  */
-#define _P1S0  (1u << 0)
-#define _P1S1  (1u << 1)
-#define _P1S2  (1u << 2)
-#define _P1S3  (1u << 3)
-#define _P1S4  (1u << 4)
-#define _P1S5  (1u << 5)
-#define _P1S6  (1u << 6)
-#define _P1S7  (1u << 7)
+#define _P1S0 (1u << 0)
+#define _P1S1 (1u << 1)
+#define _P1S2 (1u << 2)
+#define _P1S3 (1u << 3)
+#define _P1S4 (1u << 4)
+#define _P1S5 (1u << 5)
+#define _P1S6 (1u << 6)
+#define _P1S7 (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P2SS
  * @{
  */
-#define _P2S0  (1u << 0)
-#define _P2S1  (1u << 1)
-#define _P2S2  (1u << 2)
-#define _P2S3  (1u << 3)
-#define _P2S4  (1u << 4)
-#define _P2S5  (1u << 5)
-#define _P2S6  (1u << 6)
-#define _P2S7  (1u << 7)
+#define _P2S0 (1u << 0)
+#define _P2S1 (1u << 1)
+#define _P2S2 (1u << 2)
+#define _P2S3 (1u << 3)
+#define _P2S4 (1u << 4)
+#define _P2S5 (1u << 5)
+#define _P2S6 (1u << 6)
+#define _P2S7 (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P3SS
  * @{
  */
-#define _P3S0  (1u << 0)
-#define _P3S1  (1u << 1)
-#define _P3S2  (1u << 2)
-#define _P3S3  (1u << 3)
-#define _P3S4  (1u << 4)
-#define _P3S5  (1u << 5)
-#define _P3S6  (1u << 6)
-#define _P3S7  (1u << 7)
+#define _P3S0 (1u << 0)
+#define _P3S1 (1u << 1)
+#define _P3S2 (1u << 2)
+#define _P3S3 (1u << 3)
+#define _P3S4 (1u << 4)
+#define _P3S5 (1u << 5)
+#define _P3S6 (1u << 6)
+#define _P3S7 (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P4SS
  * @{
  */
-#define _P4S0  (1u << 0)
-#define _P4S1  (1u << 1)
-#define _P4S2  (1u << 2)
-#define _P4S3  (1u << 3)
-#define _P4S4  (1u << 4)
-#define _P4S5  (1u << 5)
-#define _P4S6  (1u << 6)
-#define _P4S7  (1u << 7)
+#define _P4S0 (1u << 0)
+#define _P4S1 (1u << 1)
+#define _P4S2 (1u << 2)
+#define _P4S3 (1u << 3)
+#define _P4S4 (1u << 4)
+#define _P4S5 (1u << 5)
+#define _P4S6 (1u << 6)
+#define _P4S7 (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P5SS
  * @{
  */
-#define _P5S0  (1u << 0)
-#define _P5S1  (1u << 1)
-#define _P5S2  (1u << 2)
-#define _P5S3  (1u << 3)
-#define _P5S4  (1u << 4)
-#define _P5S5  (1u << 5)
-#define _P5S6  (1u << 6)
-#define _P5S7  (1u << 7)
+#define _P5S0 (1u << 0)
+#define _P5S1 (1u << 1)
+#define _P5S2 (1u << 2)
+#define _P5S3 (1u << 3)
+#define _P5S4 (1u << 4)
+#define _P5S5 (1u << 5)
+#define _P5S6 (1u << 6)
+#define _P5S7 (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P6SS
  * @{
  */
-#define _P6S0  (1u << 0)
-#define _P6S1  (1u << 1)
-#define _P6S2  (1u << 2)
-#define _P6S3  (1u << 3)
-#define _P6S4  (1u << 4)
-#define _P6S5  (1u << 5)
-#define _P6S6  (1u << 6)
-#define _P6S7  (1u << 7)
+#define _P6S0 (1u << 0)
+#define _P6S1 (1u << 1)
+#define _P6S2 (1u << 2)
+#define _P6S3 (1u << 3)
+#define _P6S4 (1u << 4)
+#define _P6S5 (1u << 5)
+#define _P6S6 (1u << 6)
+#define _P6S7 (1u << 7)
 /**@}*/
 
 /**
  * \name Bits from register P7SS
  * @{
  */
-#define _P7S0  (1u << 0)
-#define _P7S1  (1u << 1)
+#define _P7S0 (1u << 0)
+#define _P7S1 (1u << 1)
 /**@}*/
 
 // no pins: an empty direction or pull-up mask.
