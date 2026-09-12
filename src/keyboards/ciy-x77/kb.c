@@ -5,6 +5,11 @@
 #include "keyboard.h"
 #include "kbdef.h"
 
+extern void indicators_next_effect();
+extern void indicators_set_effect(uint8_t fx);
+extern void indicators_step_brightness(bool up);
+extern void indicators_step_speed(bool up);
+
 static __bit keyboard_locked;
 static __bit gui_locked;
 static __bit wasd_swapped;
@@ -66,6 +71,32 @@ bool kb_process_record(uint16_t keycode, bool key_pressed)
         case WASD_TG:
             if (key_pressed) {
                 wasd_swapped = !wasd_swapped;
+            }
+            return false;
+        case FX_NEXT:
+            if (key_pressed) {
+                indicators_next_effect();
+            }
+            return false;
+        case FX_SET_0:
+        case FX_SET_1:
+        case FX_SET_2:
+        case FX_SET_3:
+        case FX_SET_OFF:
+            if (key_pressed) {
+                indicators_set_effect((uint8_t)(keycode - FX_SET_0));
+            }
+            return false;
+        case BRI_UP:
+        case BRI_DN:
+            if (key_pressed) {
+                indicators_step_brightness(keycode == BRI_UP);
+            }
+            return false;
+        case SPD_UP:
+        case SPD_DN:
+            if (key_pressed) {
+                indicators_step_speed(keycode == SPD_UP);
             }
             return false;
         default:

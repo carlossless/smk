@@ -4,8 +4,10 @@
 #include <stdint.h>
 
 // Timer2 takes T2MOD.TCLKP2's default 1/12 prescale, so 2 MHz at a 24 MHz FREQ_SYS.
-#define RELOAD_LED_SUBFRAME 0xFC18 // ~0.5 ms
-#define RELOAD_MATRIX_SCAN  0xC180 // ~8 ms
+// a board with N LED subframes per scan spends every scan slot dark, so the scan slot is
+// kept close to a subframe: at 36 subframes a 8 ms slot alone is a 30% dark duty.
+#define RELOAD_LED_SUBFRAME 0xFE0C // ~0.25 ms
+#define RELOAD_MATRIX_SCAN  0xF830 // ~1 ms
 
 static void timer2_reload(uint16_t reload)
 {

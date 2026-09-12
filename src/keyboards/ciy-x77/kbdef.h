@@ -47,6 +47,15 @@
 
 extern const __code uint8_t kb_col_masks[MATRIX_COLS];
 
+// P4 mixes matrix columns, PCA outputs, the LED group enables and the EEPROM write protect,
+// so reading it back samples live PWM on the PCA bits. Every write goes through this shadow
+// instead; idle is write protect high and both columns deselected.
+#define KB_P4_IDLE 0xC2u
+extern uint8_t kb_p4_shadow;
+
+// a column is lit for both row groups before the next one, so a frame is twice the columns.
+#define LED_SUBFRAMES_PER_SCAN (MATRIX_COLS * 2)
+
 // USB pin bits
 #define USB_DM_P2_6 _P2_6
 #define USB_DP_P2_7 _P2_7
@@ -57,6 +66,10 @@ extern const __code uint8_t kb_col_masks[MATRIX_COLS];
 #define LED_SCROLL_P3_2 _P3_2
 
 #define KB_LOCK_LED_MASK (uint8_t)(LED_NUM_P3_0 | LED_CAPS_P3_1 | LED_SCROLL_P3_2)
+
+// P3 mixes the lock LEDs with four PCA outputs, so it gets the same shadow treatment as P4:
+// lock LEDs off (they sink), PCA latches low, P3.6 high as the stock init leaves it.
+#define KB_P3_IDLE 0x47u
 
 // settings live in a 24Cxx on a bit-banged bus: SDA and SCL share P5 with the matrix rows,
 // write protect is a page 0 pin the platform releases only for the duration of a write.

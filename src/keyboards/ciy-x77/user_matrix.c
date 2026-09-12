@@ -19,14 +19,17 @@
         INSCON = saved_page;         \
     } while (0)
 
+uint8_t kb_p4_shadow = KB_P4_IDLE;
+
 const __code uint8_t kb_col_masks[MATRIX_COLS] = {KB_C0_P0_0, KB_C1_P0_1, KB_C2_P0_2, KB_C3_P0_3, KB_C4_P0_4, KB_C5_P0_5, KB_C6_P0_6, KB_C7_P0_7, KB_C8_P1_0, KB_C9_P1_1, KB_C10_P1_2, KB_C11_P1_3, KB_C12_P1_4, KB_C13_P1_5, KB_C14_P1_6, KB_C15_P1_7, KB_C16_P4_6, KB_C17_P4_7};
 
 void user_matrix_cols_deselect_all(void)
 {
     WITH_PAGE_0({
-        P0 |= KB_C_P0_MASK;
-        P1 |= KB_C_P1_MASK;
-        P4 |= KB_C_P4_MASK;
+        P0 = KB_C_P0_MASK;
+        P1 = KB_C_P1_MASK;
+        kb_p4_shadow |= KB_C_P4_MASK;
+        P4 = kb_p4_shadow;
     });
 }
 
@@ -36,11 +39,12 @@ void user_matrix_col_select(uint8_t col)
 
     WITH_PAGE_0({
         if (col < KB_C_P1_FIRST) {
-            P0 &= (uint8_t)~mask;
+            P0 = (uint8_t)~mask;
         } else if (col < KB_C_P4_FIRST) {
-            P1 &= (uint8_t)~mask;
+            P1 = (uint8_t)~mask;
         } else {
-            P4 &= (uint8_t)~mask;
+            kb_p4_shadow &= (uint8_t)~mask;
+            P4 = kb_p4_shadow;
         }
     });
 }
@@ -51,11 +55,12 @@ void user_matrix_col_deselect(uint8_t col)
 
     WITH_PAGE_0({
         if (col < KB_C_P1_FIRST) {
-            P0 |= mask;
+            P0 = KB_C_P0_MASK;
         } else if (col < KB_C_P4_FIRST) {
-            P1 |= mask;
+            P1 = KB_C_P1_MASK;
         } else {
-            P4 |= mask;
+            kb_p4_shadow |= mask;
+            P4 = kb_p4_shadow;
         }
     });
 }
