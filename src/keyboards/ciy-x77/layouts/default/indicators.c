@@ -4,6 +4,7 @@
 #include "settings.h"
 #include "keyboard.h"
 #include "led_effect.h"
+#include "pca.h"
 
 #define LED_ROWS MATRIX_ROWS
 #define LED_COLS MATRIX_COLS
@@ -41,20 +42,11 @@ static uint8_t regen_col;
 // P7.0 gates the backlight supply and is active low; left high nothing lights at all.
 #define LED_SUPPLY_P7_0 _P7_0
 
+// the nine channels in the order the hardware lays them out: three consecutive rows, each
+// blue, green then red.
 static void pca_load(const __xdata uint8_t *bgr0, const __xdata uint8_t *bgr1, const __xdata uint8_t *bgr2)
 {
-    // ECOM off and the counters stopped while the compare values change, so a channel
-    // cannot latch a half-written duty.
-    P0CPM0 = 0xD0;
-    P0CPM1 = 0xD0;
-    P1CPM0 = 0xD0;
-    P1CPM1 = 0xD0;
-    P1CPM2 = 0xD0;
-    P2CPM0 = 0xD0;
-    P2CPM1 = 0xD0;
-    P3CPM0 = 0xD0;
-    P3CPM1 = 0xD0;
-    PCACON = 0;
+    pca_hold();
 
     P1CPH0 = 0;
     P1CPL0 = bgr0[0];
@@ -75,20 +67,7 @@ static void pca_load(const __xdata uint8_t *bgr0, const __xdata uint8_t *bgr1, c
     P0CPH0 = 0;
     P0CPL0 = bgr2[2];
 
-    P0CF   = 0;
-    P1CF   = 0;
-    P2CF   = 0;
-    P3CF   = 0;
-    P0CPM0 = 0xD8;
-    P0CPM1 = 0xD8;
-    P1CPM0 = 0xD8;
-    P1CPM1 = 0xD8;
-    P1CPM2 = 0xD8;
-    P2CPM0 = 0xD8;
-    P2CPM1 = 0xD8;
-    P3CPM0 = 0xD8;
-    P3CPM1 = 0xD8;
-    PCACON = 0x0F;
+    pca_release();
 }
 
 void indicators_init(void)
@@ -108,47 +87,7 @@ void indicators_init(void)
     P7CR |= LED_SUPPLY_P7_0;
     P7 &= (uint8_t)~LED_SUPPLY_P7_0;
 
-    PCACON = 0;
-    P0TOPH = 0;
-    P0TOPL = 0xFF;
-    P0CMD  = 0x02;
-    P1TOPH = 0;
-    P1TOPL = 0xFF;
-    P1CMD  = 0x02;
-    P2TOPH = 0;
-    P2TOPL = 0xFF;
-    P2CMD  = 0x02;
-    P3TOPH = 0;
-    P3TOPL = 0xFF;
-    P3CMD  = 0x02;
-    P0CPL0 = 0;
-    P0CPH0 = 0;
-    P0CPL1 = 0;
-    P0CPH1 = 0;
-    P1CPL0 = 0;
-    P1CPH0 = 0;
-    P1CPL1 = 0;
-    P1CPH1 = 0;
-    P1CPL2 = 0;
-    P1CPH2 = 0;
-    P2CPL0 = 0;
-    P2CPH0 = 0;
-    P2CPL1 = 0;
-    P2CPH1 = 0;
-    P3CPL0 = 0;
-    P3CPH0 = 0;
-    P3CPL1 = 0;
-    P3CPH1 = 0;
-    P0CPM0 = 0xD8;
-    P0CPM1 = 0xD8;
-    P1CPM0 = 0xD8;
-    P1CPM1 = 0xD8;
-    P1CPM2 = 0xD8;
-    P2CPM0 = 0xD8;
-    P2CPM1 = 0xD8;
-    P3CPM0 = 0xD8;
-    P3CPM1 = 0xD8;
-    PCACON = 0x0F;
+    pca_init();
 
     INSCON = saved_page;
 }
@@ -231,7 +170,9 @@ void indicators_factory_reset(void)
     settings_save();
 }
 
-// one key re-evaluated per subframe: a whole column at once starves the USB interrupt.
+// Re-evaluating the effect is by far the most expensive thing here, so it runs from the
+// main loop rather than the subframe interrupt: at a 0.25 ms subframe it does not fit in
+// the interrupt, and overrunning it starves USB until the device stops enumerating.
 static void led_regen_one(void)
 {
     uint8_t rgb[3];
@@ -300,8 +241,6 @@ bool indicators_update_step(keyboard_state_t *keyboard, uint8_t current_step)
     pca_load(led_fb[led_col][base], led_fb[led_col][base + 1], led_fb[led_col][base + 2]);
     INSCON = saved_page;
 
-    led_regen_one();
-
     // one column low, then the group enable, so the drive settles before anything lights
     led_drive(led_col, led_group);
 
@@ -329,6 +268,10 @@ void indicators_post_update(void) {}
 // the value back latches the channel on.
 void indicators_render(void)
 {
+    if (user_settings.led_effect < FX_OFF) {
+        led_regen_one();
+    }
+
     uint8_t state = keyboard_state.led_state;
     uint8_t low   = 0;
 

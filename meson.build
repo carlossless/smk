@@ -144,6 +144,7 @@ src_platform_sh68f89 = [
     'src/platform/sh68f89/systick.c',
     'src/platform/sh68f89/stack.c',
     'src/platform/sh68f89/nvm.c',
+    'src/platform/sh68f89/pca.c',
     'src/platform/sh68f89/interrupts.c',
 ]
 
