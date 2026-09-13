@@ -83,26 +83,14 @@ src_user = [
 
 # PLATFORM
 
-inc_platform_sh68f90 = [
-    'src/platform/sh68f90',
+inc_platform_bk3632 = [
+    'src/platform/bk3632',
+    'src/platform', # for bb_spi
 ]
 
-src_platform_sh68f90 = [
-    'src/platform/sh68f90/startup.c',
-    'src/platform/sh68f90/clock.c',
-    'src/platform/sh68f90/delay.c',
-    'src/platform/sh68f90/diag.c',
-    'src/platform/sh68f90/nvm.c',
-    'src/platform/sh68f90/isp.c',
-    'src/platform/sh68f90/ldo.c',
-    'src/platform/sh68f90/pwm.c',
-    'src/platform/sh68f90/systick.c',
-    'src/platform/sh68f90/uart.c',
-    'src/platform/sh68f90/usbhw.c',
-    'src/platform/sh68f90/stack.c',
-    'src/platform/sh68f90/power.c',
-    'src/platform/sh68f90/extint.c',
-    'src/platform/sh68f90/interrupts.c',
+src_platform_bk3632 = [
+    'src/platform/bb_spi.c',
+    'src/platform/bk3632/rf_controller.c',
 ]
 
 inc_platform_sh68f881 = [
@@ -148,14 +136,26 @@ src_platform_sh68f89 = [
     'src/platform/sh68f89/interrupts.c',
 ]
 
-inc_platform_bk3632 = [
-    'src/platform/bk3632',
-    'src/platform', # for bb_spi
+inc_platform_sh68f90 = [
+    'src/platform/sh68f90',
 ]
 
-src_platform_bk3632 = [
-    'src/platform/bb_spi.c',
-    'src/platform/bk3632/rf_controller.c',
+src_platform_sh68f90 = [
+    'src/platform/sh68f90/startup.c',
+    'src/platform/sh68f90/clock.c',
+    'src/platform/sh68f90/delay.c',
+    'src/platform/sh68f90/diag.c',
+    'src/platform/sh68f90/nvm.c',
+    'src/platform/sh68f90/isp.c',
+    'src/platform/sh68f90/ldo.c',
+    'src/platform/sh68f90/pwm.c',
+    'src/platform/sh68f90/systick.c',
+    'src/platform/sh68f90/uart.c',
+    'src/platform/sh68f90/usbhw.c',
+    'src/platform/sh68f90/stack.c',
+    'src/platform/sh68f90/power.c',
+    'src/platform/sh68f90/extint.c',
+    'src/platform/sh68f90/interrupts.c',
 ]
 
 possible_src_keyboard = [
@@ -172,14 +172,6 @@ possible_src_layout = [
 ]
 
 platform_specs = {
-    'sh68f90' : {
-        'flash_size'      : 65536,
-        'bootloader_size' : 4096,
-        'sector_size'     : 512,
-        'xram_size'       : 4096,
-        'freq_sys'        : 24000000,
-        'settings_store'  : 'flash',
-    },
     'sh68f881' : {
         'flash_size'      : 32768,
         'bootloader_size' : 4096,
@@ -195,6 +187,14 @@ platform_specs = {
         'xram_size'       : 2816,
         'freq_sys'        : 24000000,
         'settings_store'  : 'external',
+    },
+    'sh68f90' : {
+        'flash_size'      : 65536,
+        'bootloader_size' : 4096,
+        'sector_size'     : 512,
+        'xram_size'       : 4096,
+        'freq_sys'        : 24000000,
+        'settings_store'  : 'flash',
     },
 }
 
@@ -286,15 +286,15 @@ foreach part : parts
     foreach layout : layouts
         src_main = src_smk
         inc_dirs = inc_base_dirs
-        if platform == 'sh68f90'
-            src_main += src_platform_sh68f90
-            inc_dirs += inc_platform_sh68f90
-        elif platform == 'sh68f881'
+        if platform == 'sh68f881'
             src_main += src_platform_sh68f881
             inc_dirs += inc_platform_sh68f881
         elif platform == 'sh68f89'
             src_main += src_platform_sh68f89
             inc_dirs += inc_platform_sh68f89
+        elif platform == 'sh68f90'
+            src_main += src_platform_sh68f90
+            inc_dirs += inc_platform_sh68f90
         else
             error('unsupported platform: @0@'.format(platform))
         endif
