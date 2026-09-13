@@ -1,7 +1,6 @@
 #include "uart.h"
 #include "uart_hw.h"
 #include "watchdog.h"
-#include "console.h"
 #include <stdint.h>
 
 #if defined(DEBUG_SINK_UART) && !UART_HW_PRESENT
@@ -120,19 +119,3 @@ void uart_interrupt_handler() __interrupt(UART_VECTOR)
 }
 
 #endif // DEBUG_SINK_UART
-
-void debug_putc(char c)
-{
-#ifdef DEBUG_SINK_UART
-    uart_putc((unsigned char)c);
-#endif
-#ifdef DEBUG_SINK_CONSOLE
-    console_putc((unsigned char)c);
-#endif
-    (void)c;
-}
-
-void putchar(int c)
-{
-    debug_putc((char)c);
-}

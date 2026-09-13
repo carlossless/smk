@@ -15,6 +15,12 @@ src_pca = files('pca.c')
 # it in src/nvm/flash
 src_flash = files('flash.c')
 
+src_startup = files('startup.c')
+src_delay = files('delay.c')
+src_uart = files('uart.c')
+src_ldo = files('ldo.c')
+src_reset = files('reset.c')
+
 src_libc_files = ['startup.c', 'delay.c', 'uart.c']
 
 if get_option('isp').enabled()
@@ -28,3 +34,5 @@ src_libc += files(src_libc_files)
 subdir('sh68f90')
 subdir('sh68f89')
 subdir('sh68f881')
+
+subdir('examples')

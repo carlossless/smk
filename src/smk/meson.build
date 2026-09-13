@@ -7,6 +7,7 @@ src_smk += files(
     'report.c',
     'keyboard.c',
     'console.c',
+    'debug_sink.c',
     'settings.c',
     'led_effect.c',
     'sleep.c',

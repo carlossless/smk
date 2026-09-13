@@ -24,7 +24,8 @@ keyboards = {}
 
 subdir('src')
 
-cc_base_args = [
+# what any translation unit for these parts needs, with nothing about this firmware in it
+cc_model_args = [
     '--Werror',
     '--std-c23',
     '-mmcs51',
@@ -34,8 +35,9 @@ cc_base_args = [
     '0x0000',
     '--opt-code-speed',
     '--out-fmt-ihx',
-    '-DSMK_VERSION=@0@'.format(meson.project_version()),
 ]
+
+cc_base_args = cc_model_args + ['-DSMK_VERSION=@0@'.format(meson.project_version())]
 
 if get_option('nkro').enabled()
     cc_base_args += '-DNKRO_ENABLE=1'
@@ -261,6 +263,57 @@ foreach keyboard, board : keyboards
         message('target available: @0@, flash: @1@'.format(hex_smk_target_name, flash_target_name))
     endforeach
 endforeach
+
+# Library examples. Each one links its own short list of modules and nothing else, so a
+# dependency that creeps from the library into the rest of the tree fails here first. They
+# build under the `examples` target and are not installed.
+
+example_hexes = []
+
+foreach example : sino51lib_examples
+    foreach platform : example['parts']
+        spec = platforms[platform]
+
+        ex_args = cc_model_args + [
+            '--xram-size',
+            '@0@'.format(spec['xram_size']),
+            '-DFREQ_SYS=@0@'.format(spec['freq_sys']),
+            '--code-size',
+            '@0@'.format(spec['flash_size'] - spec['bootloader_size'] - spec['sector_size']),
+            '-DWATCHDOG_ENABLE=1',
+        ] + example['args']
+
+        ex_incs = ['-I' + dir_base, '-I' + spec['dir'], '-I' + dir_base / 'src/sino51lib', '-I' + dir_base / 'src/smk']
+
+        ex_prefix = 'ex-@0@-@1@'.format(example['name'], platform)
+
+        ex_compiler = generator(
+            py,
+            output : '@BASENAME@.rel',
+            depfile : '@BASENAME@.d',
+            arguments : [sdcc_compile, '@DEPFILE@', cc.full_path()] + ex_args + ex_incs + ['-c', '@INPUT@', '-o', '@OUTPUT@'],
+        )
+
+        ex_rel = ex_compiler.process(example['src'] + spec['example_core'])
+
+        ex_ihx = custom_target(
+            ex_prefix + '.ihx',
+            input : ex_rel,
+            output : ex_prefix + '.ihx',
+            command : [cc, ex_args, '-o', '@OUTPUT@', '@INPUT@'],
+        )
+
+        example_hexes += custom_target(
+            ex_prefix + '.hex',
+            input : ex_ihx,
+            output : ex_prefix + '.hex',
+            capture : true,
+            command : [packihx, '@INPUT@'],
+        )
+    endforeach
+endforeach
+
+alias_target('examples', example_hexes)
 
 # Simulator-based firmware tests, run in the patched uCsim simulator (flake
 # package ucsim-sh68f90). Discovers every tests/test_*.py so new test files are

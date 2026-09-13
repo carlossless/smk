@@ -28,6 +28,8 @@ jobs:
       run: nix develop --command meson setup build -Dnkro=${{ matrix.nkro }} -Dbuildtype=${{ matrix.buildtype }}
     - name: Build
       run: nix develop --command meson compile -C build
+    - name: Build library examples
+      run: nix develop --command meson compile -C build examples
     - name: Archive code coverage results
       uses: actions/upload-artifact@v7
       with:
