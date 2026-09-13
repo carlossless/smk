@@ -134,6 +134,9 @@ enum custom_keycodes {
     BRI_DN,
     SPD_UP,
     SPD_DN,
+    CLR_FWD, // steps the colour wheel, as the stock Fn+Up/Down do
+    CLR_BAK,
+    FX_RST, // restores the backlight defaults, as the stock Fn+Del does
 
     // direct effect select, one keycode per animation plus off.
     FX_SET_0,

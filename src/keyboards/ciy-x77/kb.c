@@ -9,6 +9,8 @@ extern void indicators_next_effect();
 extern void indicators_set_effect(uint8_t fx);
 extern void indicators_step_brightness(bool up);
 extern void indicators_step_speed(bool up);
+extern void indicators_step_color(bool forward);
+extern void indicators_factory_reset();
 
 static __bit keyboard_locked;
 static __bit gui_locked;
@@ -97,6 +99,17 @@ bool kb_process_record(uint16_t keycode, bool key_pressed)
         case SPD_DN:
             if (key_pressed) {
                 indicators_step_speed(keycode == SPD_UP);
+            }
+            return false;
+        case CLR_FWD:
+        case CLR_BAK:
+            if (key_pressed) {
+                indicators_step_color(keycode == CLR_FWD);
+            }
+            return false;
+        case FX_RST:
+            if (key_pressed) {
+                indicators_factory_reset();
             }
             return false;
         default:

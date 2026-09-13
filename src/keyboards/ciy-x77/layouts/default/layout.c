@@ -63,30 +63,33 @@ const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      * |   |   |Cmp|Www|Mai|Cal| |Stp|Prv|Ply|Nxt| |Fx+|Vo-|Vo+|Mut|  |   |NKR|Lck|
      * `---'   `---------------' `---------------' `---------------'  `-----------'
      * ,-----------------------------------------------------------.  ,-----------.
-     * |   |Fx0|Fx1|Fx2|Fx3|Off|   |   |   |   |   |   |   |       |  |   |   |   |
+     * |   |Fx0|Fx1|Fx2|Fx3|Off|   |   |   |   |   |Sp+|Sp-|       |  |   |   |Br+|
      * |-----------------------------------------------------------|  |-----------|
-     * |     |   |WSD|   |   |   |   |   |   |   |   |   |   |     |  |   |   |   |
+     * |     |   |WSD|   |   |   |   |   |   |   |   |   |   |     |  |Rst|   |Br-|
      * |-----------------------------------------------------------|  `-----------'
      * |      |   |   |   |   |   |   |   |   |   |   |   |        |
      * |-----------------------------------------------------------|      ,---.
-     * |         |   |   |   |   |   |   |   |   |   |   |         |      |Br+|
+     * |         |   |   |   |   |   |   |   |   |   |   |         |      |Cl+|
      * |-----------------------------------------------------------|  ,-----------.
-     * |    |Gui|   |                             |   |   |   |    |  |Sp-|Br-|Sp+|
+     * |    |Gui|   |                             |   |   |   |    |  |   |Cl-|   |
      * `-----------------------------------------------------------'  `-----------'
      *
-     * The function row follows the stock keyboard: My Computer, WWW Home, Mail, Calculator,
-     * Stop, Previous, Play/Pause, Next, then Volume down, Volume up and Mute. Stock also
-     * puts a lighting control on F9 and effect selects on 1-5, which is where Fx+ and
-     * Fx0-Off sit. Keyboard lock, NKRO, the WASD swap and Gui lock are this firmware's own
-     * and take keys stock leaves with no secondary function.
+     * Taken from the stock keyboard's own manual and firmware. The function row is its
+     * media set, Fn+F9 cycles the animation, brightness is on PgUp/PgDn, animation speed on
+     * -/=, the colour wheel on Up/Down, backlight defaults on Del and the Gui lock on Gui.
+     *
+     * Not reproduced: the backlight recording on Esc and 1-5, which is what stock uses those
+     * five effect slots for, the Fn lock on End, and the backlight direction on Left/Right,
+     * which these animations have no notion of. Fx0-Off, Rst, NKR, Lck and WSD are this
+     * firmware's own.
      */
     [_FL] = LAYOUT_TKL(
         _______, KC_MYCM, KC_WHOM, KC_MAIL, KC_CALC, KC_MSTP, KC_MPRV, KC_MPLY, KC_MNXT, FX_NEXT, KC_VOLD, KC_VOLU, KC_MUTE, _______, NKRO_TG, KB_LOCK,
-        _______, FX_SET_0, FX_SET_1, FX_SET_2, FX_SET_3, FX_SET_OFF, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
-        _______, _______, WASD_TG, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
+        _______, FX_SET_0, FX_SET_1, FX_SET_2, FX_SET_3, FX_SET_OFF, _______, _______, _______, _______, _______, SPD_UP,  SPD_DN,  _______, _______, _______, BRI_UP,
+        _______, _______, WASD_TG, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, FX_RST,  _______, BRI_DN,
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
-        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,          BRI_UP,
-        _______, GUI_LOCK, _______,                 _______,                   _______, _______, _______, _______, SPD_DN,  BRI_DN,  SPD_UP
+        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,          CLR_FWD,
+        _______, GUI_LOCK, _______,                 _______,                   _______, _______, _______, _______, _______, CLR_BAK, _______
     )
 };
 

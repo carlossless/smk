@@ -162,12 +162,43 @@ void indicators_step_speed(bool up)
     settings_save();
 }
 
+// eight steps round the wheel, which is what the stock colour keys give
+#define LED_COLOR_STEP 32u
+
+void indicators_step_color(bool forward)
+{
+    user_settings.led_color = (uint8_t)(user_settings.led_color + (forward ? LED_COLOR_STEP : (uint8_t)-LED_COLOR_STEP));
+    settings_save();
+}
+
 void indicators_factory_reset(void)
 {
     user_settings.led_effect     = FX_RADIAL;
     user_settings.led_brightness = LED_BRIGHTNESS_LEVELS - 1;
     user_settings.led_speed      = 2;
+    user_settings.led_color      = 0;
     settings_save();
+}
+
+// as led_effect_rgb, but with the board's colour offset folded into the wheel index so the
+// colour keys shift the whole animation round the wheel. FX_SOLID stays white.
+static bool effect_rgb(uint8_t row, uint8_t col, uint8_t bright, uint8_t out[3])
+{
+    const led_effect_t fx = (led_effect_t)user_settings.led_effect;
+
+    if (fx >= FX_OFF) {
+        return false;
+    }
+    if (fx == FX_SOLID) {
+        out[0] = out[1] = out[2] = bright;
+        return true;
+    }
+
+    led_color_wheel((uint8_t)(led_effect_index(fx, row, col, led_phase) + user_settings.led_color), out);
+    out[0] = (uint8_t)(((uint16_t)out[0] * bright) >> 8);
+    out[1] = (uint8_t)(((uint16_t)out[1] * bright) >> 8);
+    out[2] = (uint8_t)(((uint16_t)out[2] * bright) >> 8);
+    return true;
 }
 
 // Re-evaluating the effect is by far the most expensive thing here, so it runs from the
@@ -176,7 +207,7 @@ void indicators_factory_reset(void)
 static void led_regen_one(void)
 {
     uint8_t rgb[3];
-    if (led_effect_rgb((led_effect_t)user_settings.led_effect, regen_row, regen_col, led_phase, led_brightness_scale[user_settings.led_brightness], rgb)) {
+    if (effect_rgb(regen_row, regen_col, led_brightness_scale[user_settings.led_brightness], rgb)) {
         led_fb[regen_col][regen_row][0] = rgb[2]; // blue
         led_fb[regen_col][regen_row][1] = rgb[1]; // green
         led_fb[regen_col][regen_row][2] = rgb[0]; // red
