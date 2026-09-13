@@ -25,7 +25,7 @@ from sim import find_firmware, find_sim, load_symbols
 from pathlib import Path
 
 # --- Air60 matrix wiring (src/keyboards/nuphy-air60/kbdef.h) ----------------
-# P-register SFR addresses (src/platform/sh68f90/sh68f90.h).
+# P-register SFR addresses (src/sino51lib/sh68f90/sh68f90.h).
 P1, P2, P3, P5, P7 = 0x90, 0x98, 0xa0, 0x88, 0xf8
 
 # Columns are driven low one at a time; each pressed key shorts its column to
