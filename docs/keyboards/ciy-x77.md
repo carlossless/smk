@@ -2,7 +2,7 @@
 
 ## Specs
 
-- MCU: SH68F89
+- MCU: [SH68F89](../platforms/sh68f89.md)
 - Layout: TKL, ANSI 87 (`default`) or ISO 88 (`iso`)
 - Matrix: 6 rows x 18 columns
 - Backlight: per-key RGB, driven from the four PCA units

@@ -2,7 +2,7 @@
 
 ## Specs
 
-- MCU: BYK901(-0997A) (SH68F90A)
+- MCU: BYK901(-0997A) ([SH68F90A](../platforms/sh68f90.md))
 - Backlight: Single Color LEDs (Yellow)
 - Indicators: Single CAPS_LOCK LED
 - Wireless: None

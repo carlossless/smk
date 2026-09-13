@@ -2,7 +2,7 @@
 
 ## Specs
 
-- MCU: BYK916 (SH68F90A)
+- MCU: BYK916 ([SH68F90A](../platforms/sh68f90.md))
 - Backlight: RGB LEDs
 - Indicators: 2x5 RGB LEDs (on each side, part of the RGB backlight matrix)
 - Switches:

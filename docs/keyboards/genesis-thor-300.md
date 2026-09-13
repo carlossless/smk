@@ -2,7 +2,7 @@
 
 ## Specs
 
-- MCU: SH68F881
+- MCU: [SH68F881](../platforms/sh68f881.md)
 - Layout: TKL (ISO, tall Enter)
 - Matrix: 6 rows x 19 columns
 - Backlight: single colour LEDs, one per key, sharing the key matrix
