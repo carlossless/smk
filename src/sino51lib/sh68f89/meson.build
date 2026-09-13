@@ -8,8 +8,6 @@ src_sh68f89 = files(
     'systick.c',
 ) + src_pca
 
-# boards here keep their settings off-chip, so nothing links nvm.c; that leaves diag as the
-# SSP engine's only caller, and only in a debug build
 if get_option('buildtype') == 'debug'
     src_sh68f89 += src_flash
 endif

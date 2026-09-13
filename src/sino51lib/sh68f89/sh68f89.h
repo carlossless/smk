@@ -45,7 +45,7 @@ SFR(ISPCON, 0xa6);
 // WDT, page 0
 SFR(RSTSTAT, 0xb1);
 
-#define WATCHDOG_PERIOD 0x02 // _WDT1
+#define WATCHDOG_PERIOD 0x02
 
 #define ISP_ENTRY 0xff00
 #define ISP_KEY_B 0xa5
@@ -96,8 +96,6 @@ SFR(SCON, 0x98);
 SFR(SBUF, 0x99);
 SFR(SADDR, 0x9a);
 SFR(SADEN, 0x9b);
-// the datasheet's SFR overview puts SBRTEN and SBRT[14:8] on the 0x9c row, contradicting its
-// own table 9.29 and the vendor header, which agree that the high half is SBRTH at 0x9d.
 SFR(SBRTL, 0x9c);
 SFR(SBRTH, 0x9d);
 SFR(SFINE, 0x9e);

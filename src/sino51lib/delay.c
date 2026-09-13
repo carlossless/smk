@@ -6,10 +6,11 @@
 #    error FREQ_SYS must be defined
 #endif
 
-// Every part in the family is a 1T core (1 machine cycle == 1 oscillator cycle), so FREQ_SYS
-// alone turns the loop's cycle cost into time. One iteration is tuned to cost exactly
-// DELAY_LOOP_CYCLES: body (19c, either a `MOV direct,#data` watchdog kick plus 16 NOPs or 19
-// NOPs) + DJNZ Rn taken (5c). Entry/exit add a fixed ~18+14 cycles.
+// 1T core (1 machine cycle == 1 oscillator cycle), so a cycle count converts to time through
+// FREQ_SYS alone. The inner loop is tuned so one iteration costs exactly 24 cycles:
+//   body (19c) + DJNZ Rn taken (5c)
+// where the body is either `MOV direct,#data` watchdog kick (3c) + 16 NOPs, or 19 NOPs.
+// Entry and exit add a fixed ~18+14 cycles.
 #define DELAY_LOOP_CYCLES   24u
 #define DELAY_CYCLES_PER_US (FREQ_SYS / 1000000u)
 
@@ -18,7 +19,6 @@ _Static_assert(DELAY_CYCLES_PER_US % DELAY_LOOP_CYCLES == 0, "FREQ_SYS does not 
 #    define DELAY_ITERS(us) ((uint16_t)((us) * (DELAY_CYCLES_PER_US / DELAY_LOOP_CYCLES)))
 #else
 _Static_assert(DELAY_LOOP_CYCLES % DELAY_CYCLES_PER_US == 0, "FREQ_SYS does not scale the delay loop by a whole number");
-// rounded up: a caller must never get a shorter delay than it asked for
 #    define DELAY_DIV       ((uint16_t)(DELAY_LOOP_CYCLES / DELAY_CYCLES_PER_US))
 #    define DELAY_ITERS(us) ((uint16_t)(((us) + (DELAY_DIV - 1u)) / DELAY_DIV))
 #endif

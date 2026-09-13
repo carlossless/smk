@@ -10,7 +10,6 @@
 #define USBIE1_RESUME_ARM       (uint8_t)(_PBRSTIE | _SUSPIE | _RESMIE | _SOFIE | _SETUPIE | _OVERIE)
 #define REGULATOR_SETTLE_US     500
 
-// The USB block answers on SFR page 1, where the clock and regulator registers do not.
 #define USB_PAGE_ENTER()             \
     uint8_t usb_saved_page = INSCON; \
     sfr_page_1()
@@ -37,8 +36,6 @@ static void clock_tree_stop(void)
 
 static void wake_sources_arm(powerdown_mode_t mode)
 {
-    // A plug, unplug, bus reset or resume is a documented way out of power-down on this part,
-    // so a board with no wake pin of its own still comes back when the host asks for it.
     USB_PAGE_ENTER();
     USBIE1 |= (_PUPIE | _RESMIE | _PBRSTIE);
     USBIF1 &= USBIF1_BUS_EVENTS_CLEAR;
@@ -54,8 +51,6 @@ static void wake_sources_arm(powerdown_mode_t mode)
 
 static void halt_until_wake(void)
 {
-    // The key write and PCON.PD must be consecutive instructions; nothing may come between
-    // them, and the datasheet wants three NOPs after.
     // clang-format off
     __asm
         nop
@@ -104,7 +99,6 @@ void power_enter_powerdown(powerdown_mode_t mode)
 
     halt_until_wake();
 
-    // the oscillator comes back cold, so bring the tree up the way a reset would.
     clock_init();
     usb_resume(mode);
 }

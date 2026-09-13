@@ -1,10 +1,3 @@
-// A USB device that enumerates and does nothing else: one vendor-class interface, no
-// endpoints beyond the control pipe, no strings. It exists to show that usbhw.c is usable on
-// its own -- the only thing it wants from outside is usb_irq_dispatch(), supplied here.
-//
-// Everything that makes a keyboard a keyboard, and the HID reports with it, is in src/smk and
-// none of it is linked.
-
 #include "clock.h"
 #include "ldo.h"
 #include "peripherals.h"
@@ -29,36 +22,36 @@ void usb_interrupt_handler(void) __interrupt(USB_VECTOR);
 // clang-format off
 static const __code uint8_t device_desc[] = {
     18, DESC_DEVICE,
-    0x00, 0x02,           // USB 2.00
-    0xFF, 0x00, 0x00,     // vendor class, no subclass or protocol
+    0x00, 0x02,
+    0xFF, 0x00, 0x00,
     EP0_PACKET,
-    0x8A, 0x25,           // idVendor  0x258a
-    0xAD, 0xDE,           // idProduct 0xdead
-    0x00, 0x01,           // bcdDevice 1.00
-    0, 0, 0,              // no strings
-    1,                    // one configuration
+    0x8A, 0x25,
+    0xAD, 0xDE,
+    0x00, 0x01,
+    0, 0, 0,
+    1,
 };
 
 static const __code uint8_t config_desc[] = {
     9, DESC_CONFIG,
-    32, 0,                // wTotalLength
-    1, 1,                 // one interface, configuration value 1
-    0,                    // no string
-    0x80,                 // bus powered, no remote wakeup
-    50,                   // 100 mA
+    32, 0,
+    1, 1,
+    0,
+    0x80,
+    50,
 
-    9, 0x04,              // interface 0
-    0, 2,                 // alternate 0, two endpoints
-    0xFF, 0x00, 0x00,     // vendor class
-    0,                    // no string
+    9, 0x04,
+    0, 2,
+    0xFF, 0x00, 0x00,
+    0,
 
-    7, 0x05,              // endpoint 1 IN
-    0x81, 0x03,           // interrupt
+    7, 0x05,
+    0x81, 0x03,
     EP1_PACKET, 0,
-    10,                   // every 10 ms
+    10,
 
-    7, 0x05,              // endpoint 2 IN
-    0x82, 0x03,           // interrupt
+    7, 0x05,
+    0x82, 0x03,
     EP2_PACKET, 0,
     10,
 };
@@ -144,7 +137,6 @@ static void ep0_in_complete(void)
         return;
     }
 
-    // the address only takes effect once the host has seen the status stage
     if (pending_address != 0) {
         USBADDR         = pending_address;
         pending_address = 0;
@@ -172,8 +164,6 @@ void usb_irq_dispatch(void)
     if (if1 & _USBRSTIF) {
         USBIF1 &= ~_USBRSTIF;
 
-        // a bus reset drops the device back to address zero, so tear the block down and
-        // bring it up again rather than trying to patch up what it was doing
         configured = 0;
         usb_hw_deinit();
         usb_hw_init();

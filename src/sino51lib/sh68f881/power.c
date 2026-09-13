@@ -9,7 +9,6 @@
 #define REGULATOR_SETTLE_US 500
 #define USBIE1_RESUME_ARM   (uint8_t)(_OVERIE | _SETUPIE | _SOFIE | _RESMIE | _SUSPIE | _PBRSTIE)
 
-// The USB block answers on SFR page 1, where the clock and regulator registers do not.
 #define USB_PAGE_ENTER()             \
     uint8_t usb_saved_page = INSCON; \
     sfr_page_1()
@@ -36,8 +35,6 @@ static void clock_tree_stop(void)
 
 static void halt_until_wake(void)
 {
-    // The key write and PCON.PD must be consecutive instructions; nothing may come between
-    // them, and the datasheet wants three NOPs after.
     // clang-format off
     __asm
         nop
@@ -76,10 +73,6 @@ static void usb_resume(powerdown_mode_t mode)
     usb_init();
 }
 
-// The only documented ways out of power-down here are an external interrupt, Timer3, the base
-// timer and reset. USB is not one of them, unlike on the SH68F89, so a board that enters this
-// without arming a wake pin of its own in user_sleep_prepare() will not come back until it is
-// unplugged. Keeping USB alive across the sleep does not change that.
 void power_enter_powerdown(powerdown_mode_t mode)
 {
     usb_park(mode);
@@ -93,7 +86,6 @@ void power_enter_powerdown(powerdown_mode_t mode)
 
     halt_until_wake();
 
-    // the oscillator comes back cold, so bring the tree up the way a reset would.
     clock_init();
     usb_resume(mode);
 }

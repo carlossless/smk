@@ -5,7 +5,6 @@
 #    include "debug.h"
 #    include <stdint.h>
 
-// information block layout in the address space MOVC sees while FAC is set; the same map a programmer reaches over ICP.
 #    define INFO_CUSTOMER_ID     0x1000u
 #    define INFO_OPERATION_NUM   0x1004u
 #    define INFO_CODE_OPTION_LOW 0x1006u
@@ -17,7 +16,7 @@
 
 #    define INFO_SECURITY_LEN 17u
 #    define CODE_OPTION_LEN   8u
-#    define CODE_OPTION_SPLIT 4u // bytes 0-3 sit with the customer fields, 4-7 stand alone
+#    define CODE_OPTION_SPLIT 4u
 
 bool diag_emit(uint8_t step)
 {
@@ -68,4 +67,4 @@ bool diag_emit(uint8_t step)
     return true;
 }
 
-#endif // DEBUG
+#endif

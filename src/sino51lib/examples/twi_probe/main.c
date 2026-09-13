@@ -1,7 +1,3 @@
-// Hardware TWI master, on the pins the part fixes (see its twi_hw.h). Walks the 7-bit address
-// space and counts the devices that acknowledge, which is the smallest useful thing a bus
-// master can do.
-
 #include "clock.h"
 #include "delay.h"
 #include "ldo.h"
@@ -9,7 +5,7 @@
 #include "twi.h"
 #include "watchdog.h"
 
-#define FIRST_ADDR 0x50u // a 24Cxx, as good a placeholder as any
+#define FIRST_ADDR 0x50u
 
 static uint8_t found;
 static uint8_t first_byte;
@@ -44,15 +40,13 @@ void main(void)
         }
 
         if (found != 0) {
-            // the shape of a register read: address, register, repeated START, read back
             if (twi_start() && twi_write_address(FIRST_ADDR, false) && twi_write(0x00)) {
                 if (twi_start() && twi_write_address(FIRST_ADDR, true)) {
-                    first_byte = twi_read(false); // NAK the last byte the master wants
+                    first_byte = twi_read(false);
                 }
             }
             twi_stop();
         } else {
-            // nothing answered: drop the block and bring it back up
             twi_deinit();
             twi_init();
         }

@@ -12,8 +12,6 @@
 
 _Static_assert(NVM_CAPACITY >= 1u, "the sector is too small to hold a record");
 
-// A uint8_t length cannot exceed a capacity of 255 or more, and SDCC rejects the comparison
-// that says so, so the guards below only exist on a part where the length can overrun.
 #define NVM_LEN_CAN_OVERRUN (NVM_CAPACITY < 255u)
 
 static uint8_t checksum(const __xdata uint8_t *src, uint8_t len)
@@ -25,8 +23,6 @@ static uint8_t checksum(const __xdata uint8_t *src, uint8_t len)
     return sum;
 }
 
-// Header and checksum go through the same run-length calls as the payload, so the store is
-// reached from exactly three places however long the record is.
 static __xdata uint8_t frame[CFG_HDR];
 
 static bool header_valid(uint8_t len)
@@ -63,7 +59,6 @@ void nvm_save(const __xdata uint8_t *src, uint8_t len)
         return;
     }
 
-    // a sector only programs after an erase, so every change rewrites the record.
     flash_erase(NVM_WINDOW, RECORD_AT(0));
 
     frame[0] = CFG_MAGIC0;

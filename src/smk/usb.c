@@ -1068,8 +1068,6 @@ static void usb_hid_set_report_handler(struct usb_req_setup *req)
             break;
 
         case REPORT_TYPE_FEATURE: {
-            // one read, because either arm below can be compiled out and an else-if chain
-            // cannot be
             uint8_t report_id = (uint8_t)(req->wValue & 0xff);
             (void)report_id;
 #ifdef ISP_ENABLE

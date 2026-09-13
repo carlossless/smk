@@ -1,8 +1,6 @@
 #include <stdint.h>
 
-// SDCC's genXINIT copies XINIT with paged MOVX through P2 at 0xA0, a plain GPIO port on
-// every part in this family, so initialized __xdata needs this DPTR redo. It runs from the
-// GSINIT2 hook; returning 0 leaves SDCC's own RAM clear and C-level initializers in place.
+// SDCC's genXINIT copies XINIT with paged MOVX, but P2 is a GPIO port here, so initialized __xdata needs this DPTR redo.
 uint8_t __sdcc_external_startup(void) __naked
 {
     // clang-format off

@@ -10,19 +10,15 @@ void usb_hw_deinit(void);
 void usb_hw_ep1_in_send(uint8_t *src, uint8_t len);
 void usb_hw_ep2_in_send(uint8_t *src, uint8_t len);
 
-void usb_hw_ep1_in_complete(void); // ISR
-void usb_hw_ep2_in_complete(void); // ISR
+void usb_hw_ep1_in_complete(void);
+void usb_hw_ep2_in_complete(void);
 
 #if DEBUG == 1
 bool usb_hw_ep2_in_free(void);
 void usb_hw_console_send(const __xdata uint8_t *data, uint8_t len);
 #endif
 
-// The endpoint registers, as the SIE presents them. Every part in the family lays them out
-// the same way and gives every endpoint the same buffer size, so these are not per part.
-
 /**
- * Indicate an error in response to a EP0 transfer.
  */
 #define STALL_EP0()        \
     do {                   \

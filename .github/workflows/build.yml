@@ -35,7 +35,6 @@ jobs:
       with:
         name: smk-${{ matrix.buildtype }}-${{ matrix.nkro == 'enabled' && 'nkro' || '6kro' }}
         path: build/*_smk.hex
-    # the examples compile with the model flags only, so they come out the same in every leg
     - name: Archive library examples
       if: matrix.buildtype == 'debug' && matrix.nkro == 'enabled'
       uses: actions/upload-artifact@v7

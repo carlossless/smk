@@ -5,9 +5,9 @@
 #    error "pca.c: this part has no PCA block, see its pca_hw.h"
 #endif
 
-#define PCA_CMD_RUN  0x02u // counter running, no overflow interrupt
-#define PCA_CPM_PWM  0xD8u // PWM output, compare enabled
-#define PCA_CPM_HOLD 0xD0u // the same with compare disabled, for a reload
+#define PCA_CMD_RUN  0x02u
+#define PCA_CPM_PWM  0xD8u
+#define PCA_CPM_HOLD 0xD0u
 
 #define PCA_UNIT_START(cf, cmd, topl, toph) \
     toph = 0;                               \

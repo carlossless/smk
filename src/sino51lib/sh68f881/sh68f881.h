@@ -41,7 +41,7 @@ SFR(FLASHCON, 0xa7);
 // WDT
 SFR(RSTSTAT, 0xb1);
 
-#define WATCHDOG_PERIOD 0x02 // _WDT1
+#define WATCHDOG_PERIOD 0x02
 
 #define ISP_ENTRY 0x7f00
 #define ISP_KEY_B 0xa5

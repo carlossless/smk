@@ -41,4 +41,4 @@ void diag_task(void)
     step++;
 }
 
-#endif // DEBUG
+#endif

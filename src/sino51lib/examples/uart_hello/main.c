@@ -1,10 +1,3 @@
-// The EUART, on whichever pins the part puts it (see its uart_hw.h). The driver hands the
-// byte to the shift register and waits for the transmit-complete interrupt, so the vector has
-// to be declared here: SDCC builds the table from what the module holding main() can see.
-//
-// uart.c is compiled only when DEBUG_SINK_UART is defined, which is the build's name for
-// "send debug output to the serial port"; the example defines it for itself.
-
 #include "clock.h"
 #include "delay.h"
 #include "ldo.h"

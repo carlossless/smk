@@ -24,7 +24,6 @@ keyboards = {}
 
 subdir('src')
 
-# what any translation unit for these parts needs, with nothing about this firmware in it
 cc_model_args = [
     '--Werror',
     '--std-c23',
@@ -264,10 +263,6 @@ foreach keyboard, board : keyboards
     endforeach
 endforeach
 
-# Library examples. Each one links its own short list of modules and nothing else, so a
-# dependency that creeps from the library into the rest of the tree fails here first. They
-# build under the `examples` target and are not installed.
-
 example_hexes = []
 
 foreach example : sino51lib_examples
@@ -283,7 +278,6 @@ foreach example : sino51lib_examples
             '-DWATCHDOG_ENABLE=1',
         ] + example['args']
 
-        # no src/smk on the path: reaching into the firmware is the thing these prove absent
         ex_incs = ['-I' + dir_base, '-I' + spec['dir'], '-I' + dir_base / 'src/sino51lib']
 
         ex_prefix = 'ex-@0@-@1@'.format(example['name'], platform)

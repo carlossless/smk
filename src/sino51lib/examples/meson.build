@@ -1,9 +1,3 @@
-# Standalone firmware that uses the library and nothing else, one per peripheral. They are
-# what says the library can be picked up on its own: each lists exactly the modules it needs,
-# so anything that quietly drags in the rest of the tree shows up here as a link error.
-#
-# 'parts' names the parts an example is built for; 'src' is its closure, and 'core' is added
-# from the part for the bring-up every example does.
 
 sino51lib_examples = [
     {

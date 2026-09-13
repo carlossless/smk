@@ -22,6 +22,7 @@
 
 // Mode 1/3 baud rate:
 //   BaudRate = Fsys / (16 * (32768 - SBRT) + BFINE)
+// SBRT is a 15-bit value stored in SBRTH[6:0]:SBRTL[7:0]; SBRTH[7] is SBRTEN.
 #        define SBRT_INT (FREQ_SYS / 16 / UART_BPS)
 #        define SBRT_S   (32768 - SBRT_INT)
 #        define SFINE_S  ((FREQ_SYS / UART_BPS) - (16 * SBRT_INT))
@@ -118,4 +119,4 @@ void uart_interrupt_handler() __interrupt(UART_VECTOR)
     UART_PAGE_LEAVE();
 }
 
-#endif // DEBUG_SINK_UART
+#endif

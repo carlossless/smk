@@ -1,9 +1,3 @@
-// The bit-banged I2C master, which is what a board uses when the pins it has are not the ones
-// the TWI block sits on. Unlike twi.c this works on every part, because it is only GPIO.
-//
-// The pins arrive as macros from kbdef.h, so a board that has to select an SFR page or drive
-// through an inverter can still describe them; the one beside this file is a placeholder.
-
 #include "bb_i2c.h"
 #include "clock.h"
 #include "delay.h"
@@ -43,7 +37,6 @@ void main(void)
         }
 
         if (found != 0) {
-            // a register read: address, register, repeated START, then read and NAK
             bb_i2c_start();
             if (write_address(EEPROM_ADDR, false) && bb_i2c_write(0x00)) {
                 bb_i2c_start();

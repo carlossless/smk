@@ -1,10 +1,5 @@
 #pragma once
 
-// The PWM banks, where the part has them. The duty macros paste the register names together
-// from the bank the board names, so they hold for any part that follows the family's
-// PWM<bank><channel>DUTY<n><H|L> naming; the part's pwm_hw.h says whether there is a bank at
-// all and which vector the banks raise.
-
 #include "pwm_hw.h"
 #include <stdint.h>
 

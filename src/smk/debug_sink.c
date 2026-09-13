@@ -4,10 +4,6 @@
 #    include "uart.h"
 #endif
 
-// Where dprintf output goes. This is the firmware's choice, not the library's, so it lives
-// here rather than beside the EUART driver: an application that wants the driver and not the
-// HID console links one and not the other.
-
 void debug_putc(char c)
 {
 #ifdef DEBUG_SINK_UART

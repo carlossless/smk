@@ -1,9 +1,3 @@
-// The smallest thing that uses the library: reset status, regulator, clock, pin mux, GPIO,
-// the delay loop and the watchdog. Links no part of smk.
-//
-// GPIO_OUTPUT and friends paste the port number into a register name, so the port has to be
-// written as a literal digit; P3.0 here is a placeholder, pick a pin your board leaves free.
-
 #include "clock.h"
 #include "delay.h"
 #include "gpio.h"
@@ -25,7 +19,6 @@ void main(void)
     clock_init();
     peripherals_init();
 
-    // a pin read back: input, pull-up on, sample, then hand it to the output side
     GPIO_INPUT(3, SENSE_BIT);
     GPIO_PULLUP_ON(3, SENSE_BIT);
     delay_us(50);
@@ -36,7 +29,6 @@ void main(void)
     GPIO_PULLUP_WRITE(3, 0x00u);
     GPIO_WRITE(3, 0x00u);
 
-    // reset_status is whatever RSTSTAT held before anything kicked the watchdog
     uint16_t period = (reset_status != 0 && sense_high) ? BLINK_MS : BLINK_MS / 2u;
 
     for (;;) {

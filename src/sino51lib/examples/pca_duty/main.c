@@ -1,7 +1,3 @@
-// The PCA units as an 8-bit PWM bank. pca_init() brings every unit up with all its compare
-// modules driving; a duty only reloads cleanly between pca_hold() and pca_release(), which is
-// what the loop below does. Which registers exist is the part's pca_hw.h.
-
 #include "clock.h"
 #include "delay.h"
 #include "ldo.h"
