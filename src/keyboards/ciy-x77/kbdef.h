@@ -126,10 +126,7 @@ extern uint8_t kb_p4_shadow;
 
 enum custom_keycodes {
     FX_NEXT = SAFE_RANGE,
-    KB_LOCK,  // drops every key until pressed again
     GUI_LOCK, // drops Gui and App presses
-    NKRO_TG,  // switches the report between 6KRO and NKRO
-    WASD_TG,  // swaps WASD with the arrow cluster, both ways
     BRI_UP,
     BRI_DN,
     SPD_UP,

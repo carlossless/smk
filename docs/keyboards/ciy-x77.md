@@ -37,9 +37,6 @@ Backlight:
 
 Keyboard:
 
-- `Fn`+`Pause` - keyboard lock, drops every key until pressed again
-- `Fn`+`ScrLk` - NKRO toggle
-- `Fn`+`W` - WASD swap, both ways, so the arrows type WASD
 - `Fn`+`Gui` - Gui lock, drops Gui and App
 
 `Fn`+`Left`/`Right` are free: this layout carries a backlight direction control there,

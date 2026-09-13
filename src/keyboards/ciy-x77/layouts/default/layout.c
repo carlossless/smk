@@ -57,14 +57,14 @@ const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_LCTL, KC_LGUI, KC_LALT,                   KC_SPC,                    KC_RALT, MO(_FL), KC_APP,  KC_RCTL, KC_LEFT, KC_DOWN, KC_RGHT
     ),
 
-    /* Keymap _FL: (Fn Layer) media on the function row, keyboard toggles on the rest
+    /* Keymap _FL: (Fn Layer) media on the function row, backlight on the rest
      * ,---.   ,---------------. ,---------------. ,---------------.  ,-----------.
-     * |   |   |Cmp|Www|Mai|Cal| |Stp|Prv|Ply|Nxt| |Fx+|Vo-|Vo+|Mut|  |   |NKR|Lck|
+     * |   |   |Cmp|Www|Mai|Cal| |Stp|Prv|Ply|Nxt| |Fx+|Vo-|Vo+|Mut|  |   |   |   |
      * `---'   `---------------' `---------------' `---------------'  `-----------'
      * ,-----------------------------------------------------------.  ,-----------.
      * |   |Fx0|Fx1|Fx2|Fx3|Off|   |   |   |   |   |Sp+|Sp-|       |  |   |   |Br+|
      * |-----------------------------------------------------------|  |-----------|
-     * |     |   |WSD|   |   |   |   |   |   |   |   |   |   |     |  |Rst|   |Br-|
+     * |     |   |   |   |   |   |   |   |   |   |   |   |   |     |  |Rst|   |Br-|
      * |-----------------------------------------------------------|  `-----------'
      * |      |   |   |   |   |   |   |   |   |   |   |   |        |
      * |-----------------------------------------------------------|      ,---.
@@ -79,9 +79,9 @@ const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      * notion of.
      */
     [_FL] = LAYOUT_TKL(
-        _______, KC_MYCM, KC_WHOM, KC_MAIL, KC_CALC, KC_MSTP, KC_MPRV, KC_MPLY, KC_MNXT, FX_NEXT, KC_VOLD, KC_VOLU, KC_MUTE, _______, NKRO_TG, KB_LOCK,
+        _______, KC_MYCM, KC_WHOM, KC_MAIL, KC_CALC, KC_MSTP, KC_MPRV, KC_MPLY, KC_MNXT, FX_NEXT, KC_VOLD, KC_VOLU, KC_MUTE, _______, _______, _______,
         _______, FX_SET_0, FX_SET_1, FX_SET_2, FX_SET_3, FX_SET_OFF, _______, _______, _______, _______, _______, SPD_UP,  SPD_DN,  _______, _______, _______, BRI_UP,
-        _______, _______, WASD_TG, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, FX_RST,  _______, BRI_DN,
+        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, FX_RST,  _______, BRI_DN,
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,          CLR_FWD,
         _______, GUI_LOCK, _______,                 _______,                   _______, _______, _______, _______, _______, CLR_BAK, _______
