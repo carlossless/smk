@@ -6,10 +6,6 @@
 
 // clang-format off
 
-// The ISO variant of the board. Against the ANSI layout it gains two keys and loses one:
-// the tall Enter absorbs (2,13), the hash key next to it takes (3,12) and the extra key
-// left of Z takes (4,14). Everything else is the same matrix.
-
 #define LAYOUT_TKL_ISO( \
     K00_0, K02_0, K03_0, K04_0, K05_0, K07_0, K08_0, K09_0, K10_0, K11_0, K12_0, K13_0, K14_0, K15_0, K16_0, K17_0, \
     K00_1, K01_1, K02_1, K03_1, K04_1, K05_1, K06_1, K07_1, K08_1, K09_1, K10_1, K11_1, K12_1, K14_1, K15_1, K16_1, K17_1, \
