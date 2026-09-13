@@ -99,8 +99,8 @@ def read_intel_hex(hex_path):
 def find_post_init(syms, hex_path):
     """The address right after the first `LCALL _init` instruction in `_main`.
     `_main` itself isn't a stable breakpoint for "post-init" because main() may
-    call other functions first (e.g. stack_paint() under DEBUG=1), so we scan the
-    first ~64 bytes of main() for the 3-byte opcode `12 hi lo` matching _init."""
+    call other functions first, so we scan the first ~64 bytes of main() for the
+    3-byte opcode `12 hi lo` matching _init."""
     init_addr = syms["init"]
     target = (0x12, (init_addr >> 8) & 0xFF, init_addr & 0xFF)
     mem = read_intel_hex(hex_path)
