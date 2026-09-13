@@ -5,8 +5,7 @@
 
 #define _SBUF(addr) static __xdata __at(addr) volatile uint8_t
 
-// bit 7 is cleared alongside BKS0: the datasheet's register table calls it unimplemented,
-// but its text names a BKS1, and the ISP bootloader selects page 0 with `anl INSCON,#0x3f`.
+// bit 7 is cleared alongside BKS0: the ISP bootloader selects page 0 with `anl INSCON,#0x3f`.
 #define INSCON_PAGE_MASK (uint8_t)~(_BKS0 | 0x80u)
 
 #define sfr_page_1() (INSCON |= _BKS0)
@@ -151,7 +150,7 @@ SFR(TWIBR, 0xc2);
 SFR(TWIADR, 0xc3);
 SFR(TWIDAT, 0xc4);
 SFR(TWIAMR, 0xc5);
-// datasheet table 7.15 swaps these two; the SFR map and the vendor header both put
+// the vendor sources disagree on these two; the SFR map and the vendor header both put
 // TWTOUT at 0xc6, so the CNT bits below may in fact belong to the other address.
 SFR(TWTOUT, 0xc6);
 SFR(TWTFREE, 0xc7);
@@ -1581,8 +1580,6 @@ SBIT(P3CCF0, 0xf8, 0);
 #define USBCON_ENABLE (uint8_t)(_ENUSB | _SW1CON)
 #define USBIE1_INIT   (uint8_t)(_OVERIE | _SETUPIE | _RESMIE | _SUSPIE | _PBRSTIE)
 #define USBIE2_INIT   (uint8_t)(_OEP0IE | _IEP0IE)
-
-// USB buffers, in the 256-byte USB RAM window above the LCD RAM (datasheet 9.6.1)
 
 #define EP0_BUF_SIZE 8u
 #define EP1_BUF_SIZE 16u

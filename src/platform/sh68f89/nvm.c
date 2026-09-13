@@ -10,7 +10,7 @@
 #define CFG_HDR    3u
 
 #define EE_BASE     0u
-#define EE_WRITE_MS 6u // 24Cxx self-timed write cycle, datasheet maximum is 5 ms
+#define EE_WRITE_MS 6u // 24Cxx self-timed write cycle, 5 ms worst case
 
 // The bus runs with SFR page 1 latched, where 0xB1 is USBCON rather than RSTSTAT, so the
 // half-period cannot use delay_us(): its watchdog kick would write 0x02 into USBCON and
