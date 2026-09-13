@@ -20,17 +20,31 @@
 
 ## Fn Layer
 
-- `Fn`+`F1`-`F4` - my computer, web search, calculator, media select
-- `Fn`+`F5`-`F8` - previous, next, play/pause, stop
-- `Fn`+`F9`-`F11` - mute, volume down, volume up
-- `Fn`+`F12` - keyboard lock, drops every key until pressed again
-- `Fn`+`Gui` - Gui lock, drops Gui and App
-- `Fn`+`ScrLk` - NKRO toggle
-- `Fn`+`W` - WASD swap, both ways, so the arrows type WASD
-- `Fn`+`1`-`5` - select a backlight animation directly, `5` turns it off
-- `Fn`+`Ins` - cycle to the next animation
+The function row matches the stock keyboard, which is decodable from its firmware:
+
+- `Fn`+`F1`-`F4` - my computer, WWW home, mail, calculator
+- `Fn`+`F5`-`F8` - stop, previous, play/pause, next
+- `Fn`+`F10`-`F12` - volume down, volume up, mute
+
+Stock puts a lighting control on `F9` and effect selects on `1`-`5`; this firmware uses
+those keys the same way:
+
+- `Fn`+`F9` - cycle to the next backlight animation
+- `Fn`+`1`-`5` - select an animation directly, `5` turns it off
 - `Fn`+`Up`/`Down` - backlight brightness
 - `Fn`+`Left`/`Right` - animation speed
+
+The rest are this firmware's own and sit on keys stock leaves with no secondary function:
+
+- `Fn`+`Pause` - keyboard lock, drops every key until pressed again
+- `Fn`+`ScrLk` - NKRO toggle
+- `Fn`+`W` - WASD swap, both ways, so the arrows type WASD
+- `Fn`+`Gui` - Gui lock, drops Gui and App
+
+Stock's remaining secondary functions sit on `Esc`, `PrtSc`, `Ins`, `Home`, `Del`, `End`,
+`PgUp`, `PgDn`, `-`, `=`, `Gui` and `App`. They are the firmware's own key classes rather
+than HID usages, and which class is which is a behavioural question the image does not
+answer, so they are not reproduced here.
 
 ## Matrix
 

@@ -60,10 +60,10 @@ const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     /* Keymap _FL: (Fn Layer) media on the function row, keyboard toggles on the rest
      * ,---.   ,---------------. ,---------------. ,---------------.  ,-----------.
-     * |   |   |Cmp|Sch|Cal|Med| |Prv|Nxt|Ply|Stp| |Mut|Vo-|Vo+|Lck|  |   |NKR|   |
+     * |   |   |Cmp|Www|Mai|Cal| |Stp|Prv|Ply|Nxt| |Fx+|Vo-|Vo+|Mut|  |   |NKR|Lck|
      * `---'   `---------------' `---------------' `---------------'  `-----------'
      * ,-----------------------------------------------------------.  ,-----------.
-     * |   |Fx0|Fx1|Fx2|Fx3|Off|   |   |   |   |   |   |   |       |  |Fx+|   |   |
+     * |   |Fx0|Fx1|Fx2|Fx3|Off|   |   |   |   |   |   |   |       |  |   |   |   |
      * |-----------------------------------------------------------|  |-----------|
      * |     |   |WSD|   |   |   |   |   |   |   |   |   |   |     |  |   |   |   |
      * |-----------------------------------------------------------|  `-----------'
@@ -74,12 +74,15 @@ const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      * |    |Gui|   |                             |   |   |   |    |  |Sp-|Br-|Sp+|
      * `-----------------------------------------------------------'  `-----------'
      *
-     * Gui lock sits on the left Gui key and the WASD swap on W, both under the Fn key they
-     * toggle from. Fx0-Fx3 select a backlight animation, Off turns it off and Fx+ cycles.
+     * The function row follows the stock keyboard: My Computer, WWW Home, Mail, Calculator,
+     * Stop, Previous, Play/Pause, Next, then Volume down, Volume up and Mute. Stock also
+     * puts a lighting control on F9 and effect selects on 1-5, which is where Fx+ and
+     * Fx0-Off sit. Keyboard lock, NKRO, the WASD swap and Gui lock are this firmware's own
+     * and take keys stock leaves with no secondary function.
      */
     [_FL] = LAYOUT_TKL(
-        _______, KC_MYCM, KC_WSCH, KC_CALC, KC_MSEL, KC_MPRV, KC_MNXT, KC_MPLY, KC_MSTP, KC_MUTE, KC_VOLD, KC_VOLU, KB_LOCK, _______, NKRO_TG, _______,
-        _______, FX_SET_0, FX_SET_1, FX_SET_2, FX_SET_3, FX_SET_OFF, _______, _______, _______, _______, _______, _______, _______, _______, FX_NEXT, _______, _______,
+        _______, KC_MYCM, KC_WHOM, KC_MAIL, KC_CALC, KC_MSTP, KC_MPRV, KC_MPLY, KC_MNXT, FX_NEXT, KC_VOLD, KC_VOLU, KC_MUTE, _______, NKRO_TG, KB_LOCK,
+        _______, FX_SET_0, FX_SET_1, FX_SET_2, FX_SET_3, FX_SET_OFF, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
         _______, _______, WASD_TG, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,          BRI_UP,
