@@ -1,7 +1,7 @@
 platforms += {
     'sh68f90' : {
         'dir' : meson.current_source_dir(),
-        'src' : files(
+        'src' : src_flash + files(
             'clock.c',
             'diag_info.c',
             'usbhw.c',
@@ -9,7 +9,6 @@ platforms += {
             'power.c',
             'extint.c',
             'systick.c',
-            'nvm.c',
             'pwm.c',
         ),
         'flash_size' : 65536,

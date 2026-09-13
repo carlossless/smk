@@ -7,6 +7,10 @@ src_bb_i2c = files('bb_i2c.c')
 src_spi = files('spi.c')
 src_twi = files('twi.c')
 
+# the on-chip flash controller; the platform links it, for diag and for the store built on top
+# of it in src/nvm/flash
+src_flash = files('flash.c')
+
 src_libc += files(
     'startup.c',
     'delay.c',

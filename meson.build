@@ -5,6 +5,7 @@ env.set('DEBUG', '1')
 
 default_options = {
     'watchdog_enable' : '1',
+    'nvm' : 'flash',
     'vendor_id' : '0x258a',
     'product_id' : '0xdead',
 }
