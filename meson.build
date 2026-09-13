@@ -1,17 +1,12 @@
-project(
-    'smk',
-    'c',
-    version: 'alpha',
-    meson_version: '>=1.1.0'
-)
+project('smk', 'c', version : 'alpha', meson_version : '>=1.1.0')
 
 env = environment()
 env.set('DEBUG', '1')
 
 default_options = {
-    'watchdog_enable': '1',
-    'vendor_id': '0x258a',
-    'product_id': '0xdead',
+    'watchdog_enable' : '1',
+    'vendor_id' : '0x258a',
+    'product_id' : '0xdead',
 }
 
 dir_base = meson.current_source_dir()
@@ -31,14 +26,13 @@ subdir('src')
 cc_base_args = [
     '--Werror',
     '--std-c23',
-
     '-mmcs51',
     '--model-large',
     '--stack-auto',
-    '--xram-loc', '0x0000',
+    '--xram-loc',
+    '0x0000',
     '--opt-code-speed',
     '--out-fmt-ihx',
-
     '-DSMK_VERSION=@0@'.format(meson.project_version()),
 ]
 
@@ -52,7 +46,7 @@ endif
 
 if get_option('buildtype') == 'debug'
     cc_base_args += '-DDEBUG=1'
-    cc_base_args += '--debug'   # emit SDCC .cdb for source-level tests (tests/sim.py)
+    cc_base_args += '--debug'  # emit SDCC .cdb for source-level tests (tests/sim.py)
 
     debug_sink = get_option('debug_sink')
     if debug_sink == 'console' or debug_sink == 'both'
@@ -90,16 +84,18 @@ foreach dir : inc_base
     cc_incs += '-I' + dir
 endforeach
 
-compiler = generator(py,
+compiler = generator(
+    py,
     output : '@BASENAME@.rel',
     # depfile + wrapper: rebuild a .rel whenever one of its #included headers changes
     # (plain SDCC gives no header tracking, so header edits are otherwise silent).
     depfile : '@BASENAME@.d',
-    arguments : [sdcc_compile, '@DEPFILE@', cc.full_path()] + cc_base_args + cc_incs + ['-c', '@INPUT@', '-o', '@OUTPUT@']
+    arguments : [sdcc_compile, '@DEPFILE@', cc.full_path()] + cc_base_args + cc_incs + ['-c', '@INPUT@', '-o', '@OUTPUT@'],
 )
 
 rel_user = compiler.process(src_user + src_kb)
-lib_user = custom_target('user.lib',
+lib_user = custom_target(
+    'user.lib',
     input : rel_user,
     output : 'user.lib',
     command : [sdar, sdar_args, '@OUTPUT@', '@INPUT@'],
@@ -111,20 +107,22 @@ foreach keyboard, board : keyboards
         error('unsupported platform: @0@ (keyboard @1@)'.format(platform, keyboard))
     endif
 
-    spec            = platforms[platform]
-    options         = default_options + board['options']
+    spec = platforms[platform]
+    options = default_options + board['options']
     bootloader_addr = spec['flash_size'] - spec['bootloader_size']
-    marker_addr     = bootloader_addr - spec['sector_size']
+    marker_addr = bootloader_addr - spec['sector_size']
 
     platform_cc_args = [
-        '--xram-size', '@0@'.format(spec['xram_size']),
+        '--xram-size',
+        '@0@'.format(spec['xram_size']),
         '-DFREQ_SYS=@0@'.format(spec['freq_sys']),
     ]
 
     if spec['settings_store'] == 'flash'
         settings_addr = marker_addr - spec['sector_size']
         platform_cc_args += [
-            '--code-size', '@0@'.format(settings_addr),
+            '--code-size',
+            '@0@'.format(settings_addr),
             '-DFLASH_CFG_ADDR=@0@u'.format(settings_addr),
             '-DFLASH_CFG_SIZE=@0@u'.format(spec['sector_size']),
             '-DFLASH_MARKER_ADDR=@0@u'.format(marker_addr),
@@ -197,7 +195,8 @@ foreach keyboard, board : keyboards
             cc_incs += '-I' + dir
         endforeach
 
-        compiler = generator(py,
+        compiler = generator(
+            py,
             output : '@BASENAME@.rel',
             # See the user-lib compiler above: wrapper + depfile so ninja rebuilds a
             # .rel whenever one of its #included headers changes.
@@ -208,29 +207,39 @@ foreach keyboard, board : keyboards
         rel_main = compiler.process(src_main, geom_src)
 
         ihx_smk_target_name = '@0@smk.ihx'.format(prefix)
-        ihx_smk = custom_target(ihx_smk_target_name,
+        ihx_smk = custom_target(
+            ihx_smk_target_name,
             input : rel_main,
             output : ihx_smk_target_name,
-            depends: [lib_user],
+            depends : [lib_user],
             command : [cc, cc_args, '-o', '@OUTPUT@', '@INPUT@', '-l' + lib_user.full_path()],
         )
 
         # The .hex depends on this, so a violation breaks the build.
-        interrupt_check = custom_target('@0@interrupt-check'.format(prefix),
+        interrupt_check = custom_target(
+            '@0@interrupt-check'.format(prefix),
             input : ihx_smk,
             output : '@0@smk.interrupts-ok'.format(prefix),
-            command : [py, check_interrupts,
-                       '--src', spec['dir'],
-                       '--asmdir', meson.current_build_dir() / '@0@smk.ihx.p'.format(prefix),
-                       '--map', meson.current_build_dir() / '@0@smk.map'.format(prefix),
-                       '--stamp', '@OUTPUT@'],
+            command : [
+                py,
+                check_interrupts,
+                '--src',
+                spec['dir'],
+                '--asmdir',
+                meson.current_build_dir() / '@0@smk.ihx.p'.format(prefix),
+                '--map',
+                meson.current_build_dir() / '@0@smk.map'.format(prefix),
+                '--stamp',
+                '@OUTPUT@',
+            ],
         )
 
         hex_smk_target_name = '@0@smk.hex'.format(prefix)
-        hex_smk = custom_target(hex_smk_target_name,
+        hex_smk = custom_target(
+            hex_smk_target_name,
             input : ihx_smk,
             output : hex_smk_target_name,
-            capture: true,
+            capture : true,
             install : true,
             install_dir : 'firmware',
             depends : interrupt_check,
@@ -238,8 +247,9 @@ foreach keyboard, board : keyboards
         )
 
         flash_target_name = '@0@flash'.format(prefix)
-        run_target(flash_target_name,
-            command : [sinowisp, 'write', '-d', keyboard, '--force', hex_smk.full_path()], # TODO: try to remove the need for --force
+        run_target(
+            flash_target_name,
+            command : [sinowisp, 'write', '-d', keyboard, '--force', hex_smk.full_path()],  # TODO: try to remove the need for --force
             depends : hex_smk,
         )
 
@@ -254,11 +264,11 @@ endforeach
 sim = find_program('ucsim-sh68f90', required : false)
 py = find_program('python3', required : false)
 if sim.found() and py.found()
-    test('sim-tests',
+    test(
+        'sim-tests',
         py,
-        args : ['-m', 'unittest', 'discover', '-s', join_paths(dir_base, 'tests'),
-                '-t', join_paths(dir_base, 'tests')],
-        env : {'SMK_UCSIM': sim.full_path()},
+        args : ['-m', 'unittest', 'discover', '-s', join_paths(dir_base, 'tests'), '-t', join_paths(dir_base, 'tests')],
+        env : {'SMK_UCSIM' : sim.full_path()},
         # full suite is ~30s locally and most tests boot through real init;
         # bump well above the meson 30s default so slower CI runners pass.
         timeout : 300,

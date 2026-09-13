@@ -100,4 +100,6 @@ jobs:
       run: nix develop --command meson setup build
     - name: Lint
       run: nix develop --command ninja -C build clang-format-check
+    - name: Lint meson
+      run: nix develop --command meson format -c meson.format --check-only --recursive src meson.build meson.options
 
