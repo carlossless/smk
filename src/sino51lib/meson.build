@@ -15,13 +15,11 @@ src_pca = files('pca.c')
 # of it in src/nvm/flash
 src_flash = files('flash.c')
 
-src_libc += files(
-    'startup.c',
-    'delay.c',
-    'uart.c',
-    'isp.c',
-    'ldo.c',
-    'reset.c',
-    'diag.c',
-    'interrupts.c',
-)
+src_libc_files = ['startup.c', 'delay.c', 'uart.c']
+
+if get_option('isp').enabled()
+    src_libc_files += 'isp.c'
+endif
+
+src_libc_files += ['ldo.c', 'reset.c', 'diag.c', 'interrupts.c']
+src_libc += files(src_libc_files)

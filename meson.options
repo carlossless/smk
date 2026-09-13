@@ -1,4 +1,10 @@
 option('nkro', type : 'feature', value : 'enabled', description : 'NKRO support')
+option(
+    'isp',
+    type : 'feature',
+    value : 'enabled',
+    description : 'Jump to the ISP bootloader on the vendor HID feature report, which is how sinowisp reflashes a running board. Disabling it drops the report from the HID descriptor, so the only way back in is the hardware programming interface; on a board whose bootloader has no USB window of its own that means opening the case.',
+)
 option('sleep', type : 'feature', value : 'enabled', description : 'Inactivity sleep (SH68F90 Power-Down mode, INT4/USB wake)')
 option(
     'debug_sink',

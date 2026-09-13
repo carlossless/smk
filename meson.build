@@ -41,6 +41,10 @@ if get_option('nkro').enabled()
     cc_base_args += '-DNKRO_ENABLE=1'
 endif
 
+if get_option('isp').enabled()
+    cc_base_args += '-DISP_ENABLE=1'
+endif
+
 if get_option('sleep').enabled()
     cc_base_args += '-DSLEEP_ENABLE=1'
 endif

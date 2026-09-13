@@ -1,7 +1,9 @@
 #include "usb.h"
 #include "usbhw.h"
 #include "watchdog.h"
-#include "isp.h"
+#ifdef ISP_ENABLE
+#    include "isp.h"
+#endif
 #include "usbdef.h"
 #include "debug.h"
 #include "utils.h"
@@ -116,6 +118,7 @@ const uint8_t hid_report_desc_extra[] = {
         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_ARRAY | HID_IOF_ABSOLUTE),
     HID_RI_END_COLLECTION(0),
 
+#ifdef ISP_ENABLE
     HID_RI_USAGE_PAGE(16, 0xff00),        // Vendor
     HID_RI_USAGE(8, 0x01),                // Vendor
     HID_RI_COLLECTION(8, 0x01),           // Application
@@ -128,6 +131,7 @@ const uint8_t hid_report_desc_extra[] = {
         HID_RI_REPORT_COUNT(8, 5),
         HID_RI_FEATURE(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
     HID_RI_END_COLLECTION(0),
+#endif
 
 #if DEBUG == 1
     HID_RI_USAGE_PAGE(16, 0xff31),        // Vendor (console page)
@@ -345,9 +349,11 @@ uint8_t            active_configuration;
 uint8_t            interface0_protocol;
 uint8_t            interface1_protocol;
 // Host-controlled remote-wakeup enable, per SET/CLEAR_FEATURE.
-static __bit    usb_remote_wakeup;
-__bit           usb_suspended;
-static __bit    usb_isp_requested;
+static __bit usb_remote_wakeup;
+__bit        usb_suspended;
+#ifdef ISP_ENABLE
+static __bit usb_isp_requested;
+#endif
 uint8_t         idle_time;
 usb_ep0_state_t usb_ep0_state;
 
@@ -438,9 +444,11 @@ void usb_wait_for_enumeration(void)
 // not from the ISR: the bootloader never RETIs and reboots by jumping, so an in-service latch outlives it and kills USB.
 void usb_task(void)
 {
+#ifdef ISP_ENABLE
     if (usb_isp_requested) {
         isp_jump();
     }
+#endif
 }
 
 #if DEBUG == 1
@@ -1059,19 +1067,26 @@ static void usb_hid_set_report_handler(struct usb_req_setup *req)
 
             break;
 
-        case REPORT_TYPE_FEATURE:
-            if ((req->wValue & 0xff) == REPORT_ID_ISP) {
+        case REPORT_TYPE_FEATURE: {
+            // one read, because either arm below can be compiled out and an else-if chain
+            // cannot be
+            uint8_t report_id = (uint8_t)(req->wValue & 0xff);
+            (void)report_id;
+#ifdef ISP_ENABLE
+            if (report_id == REPORT_ID_ISP) {
                 usb_ep0_state = USB_EP0_STATE_ISP;
                 SET_EP0_OUT_RDY;
             }
+#endif
 #if DEBUG == 1
-            else if ((req->wValue & 0xff) == REPORT_ID_CONSOLE) {
+            if (report_id == REPORT_ID_CONSOLE) {
                 usb_ep0_state = USB_EP0_STATE_CONSOLE;
                 SET_EP0_OUT_RDY;
             }
 #endif
 
             break;
+        }
 
         default:
             STALL_EP0();
@@ -1129,12 +1144,14 @@ void usb_ep0_out_irq()
 
         CLEAR_EP0_CNT;
         SET_EP0_IN_RDY;
+#ifdef ISP_ENABLE
     } else if (usb_ep0_state == USB_EP0_STATE_ISP) {
         usb_ep0_state = 0;
 
         if (EP0_OUT_BUF[0] == 0x05 && EP0_OUT_BUF[1] == 0x75) {
             usb_isp_requested = 1;
         }
+#endif
 #if DEBUG == 1
     } else if (usb_ep0_state == USB_EP0_STATE_CONSOLE) {
         usb_ep0_state = 0;
