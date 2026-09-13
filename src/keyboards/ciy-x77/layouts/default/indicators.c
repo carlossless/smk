@@ -198,10 +198,15 @@ void indicators_pwm_disable(void)
     P4 = kb_p4_shadow;
 }
 
+// the P4 bits this owns; the rest of the port, notably the EEPROM write protect, is left
+// exactly as the shadow has it. Rebuilding the whole byte here re-asserted write protect
+// from under a settings save and left a half-written record behind.
+#define LED_P4_OWNED (uint8_t)(PCA_P4_PINS | LED_ENABLES | KB_C_P4_MASK)
+
 static void led_drive(uint8_t col, uint8_t group)
 {
     uint8_t mask = kb_col_masks[col];
-    uint8_t p4   = (uint8_t)(KB_P4_IDLE | (group ? _P4_5 : _P4_4));
+    uint8_t p4   = (uint8_t)((kb_p4_shadow & ~LED_P4_OWNED) | KB_C_P4_MASK | (group ? _P4_5 : _P4_4));
 
     sfr_page_0();
     P0 = (col < KB_C_P1_FIRST) ? (uint8_t)~mask : 0xFF;

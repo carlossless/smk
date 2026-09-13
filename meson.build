@@ -22,7 +22,7 @@ parts = [
     ['nuphy-air60', 'sh68f90', ['default'], { 'vendor_id': '0x05ac', 'product_id': '0x024f', 'wireless': 'bk3632', 'led_rows': '5', 'led_cols': '16', 'led_cx2': '13', 'led_cy2': '4' }],
     ['eyooso-z11', 'sh68f90', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x002a', 'led_rows': '5', 'led_cols': '14', 'led_cx2': '13', 'led_cy2': '4' }],
     ['genesis-thor-300', 'sh68f881', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x001f', 'led_rows': '6', 'led_cols': '19', 'led_cx2': '17', 'led_cy2': '5' }],
-    ['ciy-x77', 'sh68f89', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x0016', 'led_rows': '6', 'led_cols': '18', 'led_cx2': '17', 'led_cy2': '5' }],
+    ['ciy-x77', 'sh68f89', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x0016', 'nvm': '24cxx', 'led_rows': '6', 'led_cols': '18', 'led_cx2': '17', 'led_cy2': '5' }],
 ]
 
 # SMK
@@ -93,6 +93,16 @@ src_platform_bk3632 = [
     'src/platform/bk3632/rf_controller.c',
 ]
 
+inc_platform_eeprom_24cxx = [
+    'src/platform/eeprom_24cxx',
+    'src/platform', # for bb_i2c
+]
+
+src_platform_eeprom_24cxx = [
+    'src/platform/bb_i2c.c',
+    'src/platform/eeprom_24cxx/nvm.c',
+]
+
 inc_platform_sh68f881 = [
     'src/platform/sh68f881',
 ]
@@ -131,7 +141,6 @@ src_platform_sh68f89 = [
     'src/platform/sh68f89/extint.c',
     'src/platform/sh68f89/systick.c',
     'src/platform/sh68f89/stack.c',
-    'src/platform/sh68f89/nvm.c',
     'src/platform/sh68f89/pca.c',
     'src/platform/sh68f89/interrupts.c',
 ]
@@ -336,6 +345,14 @@ foreach part : parts
             cc_args += '-DRF_ENABLED=1'
         elif wireless != ''
             error('unsupported platform: @0@'.format(platform))
+        endif
+
+        nvm = options.get('nvm', '')
+        if nvm == '24cxx'
+            src_main += src_platform_eeprom_24cxx
+            inc_dirs += inc_platform_eeprom_24cxx
+        elif nvm != ''
+            error('unsupported nvm: @0@'.format(nvm))
         endif
 
         kb_inc_dir = 'src/keyboards/@0@'.format(keyboard)

@@ -6,7 +6,6 @@
 #    include "console.h"
 #    include "debug.h"
 #    include "kbdef.h"
-#    include "nvm.h"
 #    include <stdint.h>
 
 // information block layout in the address space MOVC sees while FAC is set; the same map a programmer reaches over ICP.
@@ -103,15 +102,12 @@ static void diag_emit(uint8_t step)
             dprintf("CFG p5cr=%02x p7cr=%02x pu5=%02x pu7=%02x\r\n", c5, c7, u5, u7);
             break;
         }
-        case 8:
-            dprintf("EE %s\r\n", nvm_present() ? "present" : "absent");
-            break;
         default:
             break;
     }
 }
 
-#    define DIAG_STEPS 9u
+#    define DIAG_STEPS 8u
 
 void diag_task(void)
 {

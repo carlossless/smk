@@ -71,25 +71,57 @@ extern uint8_t kb_p4_shadow;
 // lock LEDs off (they sink), PCA latches low, P3.6 high as the stock init leaves it.
 #define KB_P3_IDLE 0x47u
 
-// settings live in a 24Cxx on a bit-banged bus: SDA and SCL share P5 with the matrix rows,
-// write protect is a page 0 pin the platform releases only for the duration of a write.
-#define KB_EE_PORT      P5
-#define KB_EE_PORT_CR   P5CR
-#define KB_EE_SDA       _P5_6
-#define KB_EE_SCL       _P5_7
+// bit-banged I2C bus. SDA and SCL share P5 with the matrix rows, so a line is driven by
+// switching its direction rather than its level, and a transfer runs on SFR page 1.
+#define KB_I2C_SDA _P5_6
+#define KB_I2C_SCL _P5_7
+
+#define KB_I2C_SDA_LOW()            \
+    do {                            \
+        P5 &= (uint8_t)~KB_I2C_SDA; \
+        P5CR |= KB_I2C_SDA;         \
+    } while (0)
+#define KB_I2C_SDA_RELEASE() (P5CR &= (uint8_t)~KB_I2C_SDA)
+#define KB_I2C_SCL_LOW()            \
+    do {                            \
+        P5 &= (uint8_t)~KB_I2C_SCL; \
+        P5CR |= KB_I2C_SCL;         \
+    } while (0)
+#define KB_I2C_SCL_RELEASE() (P5CR &= (uint8_t)~KB_I2C_SCL)
+#define KB_I2C_SDA_READ()    ((P5 & KB_I2C_SDA) != 0)
+
+#define KB_I2C_WITH_BUS(body)        \
+    do {                             \
+        uint8_t saved_page = INSCON; \
+        sfr_page_1();                \
+        body;                        \
+        INSCON = saved_page;         \
+    } while (0)
+
+// the settings EEPROM on that bus
 #define KB_EE_DEV_ADDR  0xA0u
 #define KB_EE_PAGE_SIZE 8u
 
+// write protect is a page 0 pin on the port the PCA also drives, so it goes through the
+// shadow rather than reading P4 back, and pins the page itself.
 #define KB_EE_WP_P4_1 _P4_1
-#define KB_EE_WP_RELEASE()             \
-    do {                               \
-        P4 &= (uint8_t)~KB_EE_WP_P4_1; \
-        P4CR |= KB_EE_WP_P4_1;         \
+#define KB_EE_WP_RELEASE()                       \
+    do {                                         \
+        uint8_t wp_page = INSCON;                \
+        sfr_page_0();                            \
+        kb_p4_shadow &= (uint8_t)~KB_EE_WP_P4_1; \
+        P4 = kb_p4_shadow;                       \
+        P4CR |= KB_EE_WP_P4_1;                   \
+        INSCON = wp_page;                        \
     } while (0)
 #define KB_EE_WP_PROTECT()               \
     do {                                 \
+        uint8_t wp_page = INSCON;        \
+        sfr_page_0();                    \
         P4CR &= (uint8_t)~KB_EE_WP_P4_1; \
-        P4 |= KB_EE_WP_P4_1;             \
+        kb_p4_shadow |= KB_EE_WP_P4_1;   \
+        P4     = kb_p4_shadow;           \
+        INSCON = wp_page;                \
     } while (0)
 
 enum custom_keycodes {
