@@ -1,3 +1,4 @@
+#include "reset.h"
 #include "clock.h"
 #include "peripherals.h"
 #include "ldo.h"
@@ -25,6 +26,7 @@
 #endif
 void init(void)
 {
+    reset_init();
     ldo_init();
     clock_init();
     peripherals_init();

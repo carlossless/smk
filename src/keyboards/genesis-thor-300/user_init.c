@@ -1,8 +1,7 @@
 #include "kbdef.h"
 #include "user_init.h"
 #include "debug.h"
-
-extern uint8_t reset_status;
+#include "reset.h"
 
 void user_init(void)
 {

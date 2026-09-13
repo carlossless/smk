@@ -106,6 +106,8 @@ SFR(SPDAT, 0xa6);
 // REGULATOR
 SFR(REGCON, 0xa1);
 
+#define REGCON_ENABLE (uint8_t)(_REGS | _REGEN)
+
 // ADC, OP, PGA and LCD, all page 0; addresses and names from the SH79F6488/6489 map
 SFR(ADDL, 0x91);
 SFR(ADCDS, 0x92);

@@ -55,6 +55,8 @@ SFR(CLKRC1, 0xbf);
 // REGULATOR, page 0
 SFR(REGCON, 0x8f);
 
+#define REGCON_ENABLE (uint8_t)(_REGEN)
+
 // LOW POWER DETECT, page 0
 SFR(LPDCON, 0xb3);
 

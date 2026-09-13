@@ -118,6 +118,7 @@ src_platform_sh68f881 = [
     'src/platform/sh68f881/debug_sink.c',
     'src/platform/sh68f881/peripherals.c',
     'src/platform/sh68f881/power.c',
+    'src/platform/sh68f881/reset.c',
     'src/platform/sh68f881/extint.c',
     'src/platform/sh68f881/systick.c',
     'src/platform/sh68f881/stack.c',
@@ -140,6 +141,7 @@ src_platform_sh68f89 = [
     'src/platform/sh68f89/debug_sink.c',
     'src/platform/sh68f89/peripherals.c',
     'src/platform/sh68f89/power.c',
+    'src/platform/sh68f89/reset.c',
     'src/platform/sh68f89/extint.c',
     'src/platform/sh68f89/systick.c',
     'src/platform/sh68f89/stack.c',
@@ -166,6 +168,7 @@ src_platform_sh68f90 = [
     'src/platform/sh68f90/stack.c',
     'src/platform/sh68f90/peripherals.c',
     'src/platform/sh68f90/power.c',
+    'src/platform/sh68f90/reset.c',
     'src/platform/sh68f90/extint.c',
     'src/platform/sh68f90/interrupts.c',
 ]
