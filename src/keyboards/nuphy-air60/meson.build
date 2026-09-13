@@ -2,15 +2,15 @@ kb_dir = meson.current_source_dir()
 
 keyboards += {
     'nuphy-air60' : {
-        'dir'      : kb_dir,
+        'dir' : kb_dir,
         'platform' : 'sh68f90',
-        'src'      : files(
+        'src' : files(
             'user_matrix.c',
             'user_init.c',
             'user_sleep.c',
             'kb.c',
         ),
-        'layouts'  : {
+        'layouts' : {
             'default' : {
                 'dir' : kb_dir / 'layouts/default',
                 'src' : files(
@@ -19,14 +19,14 @@ keyboards += {
                 ),
             },
         },
-        'options'  : {
-            'vendor_id'  : '0x05ac',
+        'options' : {
+            'vendor_id' : '0x05ac',
             'product_id' : '0x024f',
-            'wireless'   : 'bk3632',
-            'led_rows'   : '5',
-            'led_cols'   : '16',
-            'led_cx2'    : '13',
-            'led_cy2'    : '4',
+            'wireless' : 'bk3632',
+            'led_rows' : '5',
+            'led_cols' : '16',
+            'led_cx2' : '13',
+            'led_cy2' : '4',
         },
     },
 }
