@@ -22,7 +22,7 @@ parts = [
     ['nuphy-air60', 'sh68f90', ['default'], { 'vendor_id': '0x05ac', 'product_id': '0x024f', 'wireless': 'bk3632', 'led_rows': '5', 'led_cols': '16', 'led_cx2': '13', 'led_cy2': '4' }],
     ['eyooso-z11', 'sh68f90', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x002a', 'led_rows': '5', 'led_cols': '14', 'led_cx2': '13', 'led_cy2': '4' }],
     ['genesis-thor-300', 'sh68f881', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x001f', 'led_rows': '6', 'led_cols': '19', 'led_cx2': '17', 'led_cy2': '5' }],
-    ['ciy-x77', 'sh68f89', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x0016', 'nvm': '24cxx', 'led_rows': '6', 'led_cols': '18', 'led_cx2': '17', 'led_cy2': '5' }],
+    ['ciy-x77', 'sh68f89', ['default', 'iso'], { 'vendor_id': '0x258a', 'product_id': '0x0016', 'nvm': '24cxx', 'led_rows': '6', 'led_cols': '18', 'led_cx2': '17', 'led_cy2': '5' }],
 ]
 
 # SMK
@@ -174,6 +174,7 @@ src_platform_sh68f90 = [
 ]
 
 possible_src_keyboard = [
+    'indicators.c', # a board with several layouts shares one; otherwise put it in the layout
     'user_matrix.c',
     'user_init.c',
     'user_sleep.c',

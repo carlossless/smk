@@ -3,7 +3,7 @@
 ## Specs
 
 - MCU: SH68F89
-- Layout: TKL (ANSI 87)
+- Layout: TKL, ANSI 87 (`default`) or ISO 88 (`iso`)
 - Matrix: 6 rows x 18 columns
 - Backlight: per-key RGB, driven from the four PCA units
 - Indicators: Num, Caps and Scroll Lock LEDs on P3.0-P3.2
@@ -54,9 +54,12 @@ The matrix is wider than an ANSI TKL fits. Two groups of positions are not popul
   since those pins may not even be routed here. A full-size unit would want them back.
 - **The ISO and JIS extras**: Yen at `(1,13)`, NonUS hash at `(3,12)` and `(4,12)`, Ro at
   `(4,11)`, NonUS backslash at `(4,14)`, Kana/Henkan/Muhenkan at `(5,3)`, `(5,6)`, `(5,7)`
-  and `(5,11)`, Hanja at `(5,4)` and a right Gui at `(5,13)`. They are `KC_NO` here. On an
-  ISO unit the NonUS backslash at `(4,14)` and the NonUS hash at `(3,12)` are the two to
-  bring back.
+  and `(5,11)`, Hanja at `(5,4)` and a right Gui at `(5,13)`.
+
+The `default` layout is ANSI and wires all of those to `KC_NO`. The `iso` layout takes two
+of them back: the hash key next to the tall Enter at `(3,12)` and the extra key left of Z at
+`(4,14)`, and gives up `(2,13)`, which the tall Enter covers. Build it with
+`meson compile -C build ciy-x77_iso_smk.hex`.
 
 All 18 columns and all 6 rows are confirmed on hardware.
 
