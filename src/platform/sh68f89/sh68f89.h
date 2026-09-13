@@ -45,6 +45,12 @@ SFR(ISPCON, 0xa6);
 // WDT, page 0
 SFR(RSTSTAT, 0xb1);
 
+#define WATCHDOG_PERIOD 0x02 // _WDT1
+
+#define ISP_ENTRY 0xff00
+#define ISP_KEY_B 0xa5
+#define ISP_KEY_A 0xea
+
 // SYSTEM CLOCK, page 0
 SFR(CLKCON, 0xb2);
 SFR(PLLCON, 0xbc);

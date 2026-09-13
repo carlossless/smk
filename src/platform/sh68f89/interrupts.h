@@ -5,6 +5,7 @@
 void systick_interrupt_handler(void) __interrupt(_INT_TIMER2);
 void usb_interrupt_handler(void) __interrupt(_INT_USB_TWI);
 
+// IEN0 and IEN1 read the same on both SFR pages, so the trampolines need no page fix-up.
 #define UNUSED_INTERRUPTS(X)                    \
     X(pca0, _INT_PCA0, IEN0, _EPCA0)            \
     X(pca1, _INT_PCA1, IEN0, _EPCA1)            \

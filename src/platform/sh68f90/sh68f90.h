@@ -35,6 +35,12 @@ SFR(FLASHCON, 0xa7);
 // WDT
 SFR(RSTSTAT, 0xb1);
 
+#define WATCHDOG_PERIOD 0x00
+
+#define ISP_ENTRY 0xff00
+#define ISP_KEY_B 0xa5
+#define ISP_KEY_A 0x5a
+
 // SYSTEM CLOCK
 SFR(CLKCON, 0xb2);
 SFR(PLLCON, 0xbc);
@@ -110,6 +116,14 @@ SFR(P1DRV, 0xa5);
 SFR(P2DRV, 0xa6);
 SFR(P3DRV, 0xbb);
 SFR(P5DRV, 0x8d);
+
+#define DRVCON_UNLOCK_P1 0x05
+#define DRVCON_UNLOCK_P2 0x45
+#define DRVCON_UNLOCK_P3 0x85
+#define DRVCON_UNLOCK_P5 0xc5
+#define DRVCON_LOCK      0x00
+
+#define GPIO_DRIVE_25MA 0x00
 
 // MAPPING
 SFR(MAPPING, 0x8a);
@@ -470,6 +484,13 @@ SBIT(PX2L, 0xB8, 3);
 SBIT(PSCML, 0xB8, 4);
 SBIT(PLPDL, 0xB8, 5);
 SBIT(PSPIL, 0xB8, 6);
+
+/**
+ * \name Bits from register FLASHCON
+ * @{
+ */
+#define _FAC (1u << 0)
+/**@}*/
 
 /**
  * \name Bits from register RSTSTAT
