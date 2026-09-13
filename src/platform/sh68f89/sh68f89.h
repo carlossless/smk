@@ -96,10 +96,10 @@ SFR(SCON, 0x98);
 SFR(SBUF, 0x99);
 SFR(SADDR, 0x9a);
 SFR(SADEN, 0x9b);
-// the datasheet and the vendor header swap these two names: table 9.1's bit map gives 0x9c
-// SBRTEN and SBRT[14:8], which is the high half, and EUART1 and the sibling parts agree.
-SFR(SBRTH, 0x9c);
-SFR(SBRTL, 0x9d);
+// the datasheet's SFR overview puts SBRTEN and SBRT[14:8] on the 0x9c row, contradicting its
+// own table 9.29 and the vendor header, which agree that the high half is SBRTH at 0x9d.
+SFR(SBRTL, 0x9c);
+SFR(SBRTH, 0x9d);
 SFR(SFINE, 0x9e);
 
 // EUART1, page 0
@@ -107,8 +107,8 @@ SFR(SCON1, 0xd8);
 SFR(SBUF1, 0xd9);
 SFR(SADDR1, 0xda);
 SFR(SADEN1, 0xdb);
-SFR(SBRTH1, 0xdc);
-SFR(SBRTL1, 0xdd);
+SFR(SBRTL1, 0xdc);
+SFR(SBRTH1, 0xdd);
 SFR(SFINE1, 0xde);
 SFR(PCON1, 0xd1);
 
