@@ -68,7 +68,7 @@ extern uint8_t kb_p4_shadow;
 #define KB_LOCK_LED_MASK (uint8_t)(LED_NUM_P3_0 | LED_CAPS_P3_1 | LED_SCROLL_P3_2)
 
 // P3 mixes the lock LEDs with four PCA outputs, so it gets the same shadow treatment as P4:
-// lock LEDs off (they sink), PCA latches low, P3.6 high as the stock init leaves it.
+// lock LEDs off (they sink), PCA latches low, P3.6 high.
 #define KB_P3_IDLE 0x47u
 
 // bit-banged I2C bus. SDA and SCL share P5 with the matrix rows, so a line is driven by
@@ -134,9 +134,9 @@ enum custom_keycodes {
     BRI_DN,
     SPD_UP,
     SPD_DN,
-    CLR_FWD, // steps the colour wheel, as the stock Fn+Up/Down do
+    CLR_FWD, // steps the colour wheel
     CLR_BAK,
-    FX_RST, // restores the backlight defaults, as the stock Fn+Del does
+    FX_RST, // restores the backlight defaults
 
     // direct effect select, one keycode per animation plus off.
     FX_SET_0,

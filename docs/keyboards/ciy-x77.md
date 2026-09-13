@@ -20,31 +20,30 @@
 
 ## Fn Layer
 
-The function row matches the stock keyboard, which is decodable from its firmware:
+Media, on the function row:
 
 - `Fn`+`F1`-`F4` - my computer, WWW home, mail, calculator
 - `Fn`+`F5`-`F8` - stop, previous, play/pause, next
 - `Fn`+`F10`-`F12` - volume down, volume up, mute
 
-Stock puts a lighting control on `F9` and effect selects on `1`-`5`; this firmware uses
-those keys the same way:
+Backlight:
 
-- `Fn`+`F9` - cycle to the next backlight animation
+- `Fn`+`F9` - cycle to the next animation
 - `Fn`+`1`-`5` - select an animation directly, `5` turns it off
-- `Fn`+`Up`/`Down` - backlight brightness
-- `Fn`+`Left`/`Right` - animation speed
+- `Fn`+`PgUp`/`PgDn` - brightness
+- `Fn`+`-`/`=` - animation speed
+- `Fn`+`Up`/`Down` - step the colour wheel
+- `Fn`+`Del` - restore the backlight defaults
 
-The rest are this firmware's own and sit on keys stock leaves with no secondary function:
+Keyboard:
 
 - `Fn`+`Pause` - keyboard lock, drops every key until pressed again
 - `Fn`+`ScrLk` - NKRO toggle
 - `Fn`+`W` - WASD swap, both ways, so the arrows type WASD
 - `Fn`+`Gui` - Gui lock, drops Gui and App
 
-Stock's remaining secondary functions sit on `Esc`, `PrtSc`, `Ins`, `Home`, `Del`, `End`,
-`PgUp`, `PgDn`, `-`, `=`, `Gui` and `App`. They are the firmware's own key classes rather
-than HID usages, and which class is which is a behavioural question the image does not
-answer, so they are not reproduced here.
+`Fn`+`Left`/`Right` are free: this layout carries a backlight direction control there,
+which these animations have no notion of.
 
 ## Matrix
 
@@ -52,16 +51,15 @@ Columns are driven low one at a time: 0-7 on P0, 8-15 on P1 and 16-17 on P4.6/P4
 read back on P5.0-P5.5, active low. The columns are on SFR page 0 and the rows on page 1,
 so every scan crosses the page boundary.
 
-The stock firmware ships one keymap for the whole board family, so its matrix is wider
-than this unit's. Two groups of its positions are not fitted on an ANSI TKL:
+The matrix is wider than an ANSI TKL fits. Two groups of positions are not populated:
 
 - **Columns 18-21 on P7.1-P7.4** are a numpad. `MATRIX_COLS` is 18 and P7 is left an input,
   since those pins may not even be routed here. A full-size unit would want them back.
-- **The ISO and JIS extras**, which the stock keymap fills with Yen at `(1,13)`, NonUS hash
-  at `(3,12)` and `(4,12)`, Ro at `(4,11)`, NonUS backslash at `(4,14)`,
-  Kana/Henkan/Muhenkan at `(5,3)`, `(5,6)`, `(5,7)` and `(5,11)`, Hanja at `(5,4)` and a
-  right Gui at `(5,13)`. They are `KC_NO` here. On an ISO unit the NonUS backslash at
-  `(4,14)` and the NonUS hash at `(3,12)` are the two to bring back.
+- **The ISO and JIS extras**: Yen at `(1,13)`, NonUS hash at `(3,12)` and `(4,12)`, Ro at
+  `(4,11)`, NonUS backslash at `(4,14)`, Kana/Henkan/Muhenkan at `(5,3)`, `(5,6)`, `(5,7)`
+  and `(5,11)`, Hanja at `(5,4)` and a right Gui at `(5,13)`. They are `KC_NO` here. On an
+  ISO unit the NonUS backslash at `(4,14)` and the NonUS hash at `(3,12)` are the two to
+  bring back.
 
 All 18 columns and all 6 rows are confirmed on hardware.
 
@@ -99,13 +97,11 @@ The board carries a second memory chip: a 24Cxx-class EEPROM on a bit-banged bus
 P5.6, SCL on P5.7 and write protect on P4.1. SDA and SCL share port 5 with the matrix
 rows, so the row read has to mask them off or an idle-low bus reads as a pressed key.
 
-The SH68F89's own 2 KB EEPROM-like block is left untouched, which is also what the stock
-firmware does.
+The SH68F89's own 2 KB EEPROM-like block is left untouched.
 
 ## Code Options
 
-This firmware requires the following (stock) code options that are programmed on the
-SH68F89 in the CIY X77:
+This firmware requires the following code options on the SH68F89:
 
 ```
 Code Options: b8c0038c

@@ -162,7 +162,7 @@ void indicators_step_speed(bool up)
     settings_save();
 }
 
-// eight steps round the wheel, which is what the stock colour keys give
+// eight steps round the wheel
 #define LED_COLOR_STEP 32u
 
 void indicators_step_color(bool forward)

@@ -6,12 +6,11 @@
 
 // clang-format off
 
-// The stock firmware ships a keymap for the whole board family, so its matrix is wider and
-// denser than this unit. Two groups of its positions are not fitted on an ANSI TKL and are
-// wired to KC_NO below: the ISO and JIS extras at (1,13) Yen, (3,12) and (4,12) NonUS hash,
-// (4,11) Ro, (4,14) NonUS backslash, (5,3) (5,6) (5,7) (5,11) Kana/Henkan/Muhenkan,
-// (5,4) Hanja and (5,13) RGui; and the four numpad columns 18-21, which MATRIX_COLS drops
-// entirely along with the P7 port that drove them.
+// The matrix is wider and denser than an ANSI TKL fits. Two groups of positions are not
+// populated here and are wired to KC_NO below: the ISO and JIS extras at (1,13) Yen,
+// (3,12) and (4,12) NonUS hash, (4,11) Ro, (4,14) NonUS backslash, (5,3) (5,6) (5,7)
+// (5,11) Kana/Henkan/Muhenkan, (5,4) Hanja and (5,13) RGui; and the four numpad columns
+// 18-21, which MATRIX_COLS drops entirely along with the P7 port that drove them.
 
 #define LAYOUT_TKL( \
     K00_0, K02_0, K03_0, K04_0, K05_0, K07_0, K08_0, K09_0, K10_0, K11_0, K12_0, K13_0, K14_0, K15_0, K16_0, K17_0, \
@@ -74,14 +73,10 @@ const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      * |    |Gui|   |                             |   |   |   |    |  |   |Cl-|   |
      * `-----------------------------------------------------------'  `-----------'
      *
-     * Taken from the stock keyboard's own manual and firmware. The function row is its
-     * media set, Fn+F9 cycles the animation, brightness is on PgUp/PgDn, animation speed on
-     * -/=, the colour wheel on Up/Down, backlight defaults on Del and the Gui lock on Gui.
-     *
-     * Not reproduced: the backlight recording on Esc and 1-5, which is what stock uses those
-     * five effect slots for, the Fn lock on End, and the backlight direction on Left/Right,
-     * which these animations have no notion of. Fx0-Off, Rst, NKR, Lck and WSD are this
-     * firmware's own.
+     * Fn+F9 cycles the animation, brightness is on PgUp/PgDn, animation speed on -/=, the
+     * colour wheel on Up/Down and the backlight defaults on Del. Left and Right are left
+     * free: they carry a backlight direction on this layout, which these animations have no
+     * notion of.
      */
     [_FL] = LAYOUT_TKL(
         _______, KC_MYCM, KC_WHOM, KC_MAIL, KC_CALC, KC_MSTP, KC_MPRV, KC_MPLY, KC_MNXT, FX_NEXT, KC_VOLD, KC_VOLU, KC_MUTE, _______, NKRO_TG, KB_LOCK,
