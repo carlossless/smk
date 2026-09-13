@@ -16,6 +16,8 @@
 void usb_interrupt_handler(void) __interrupt(USB_VECTOR);
 
 #define EP0_PACKET 8u
+#define EP1_PACKET 16u
+#define EP2_PACKET 64u
 
 #define REQ_GET_DESCRIPTOR    0x06u
 #define REQ_SET_ADDRESS       0x05u
@@ -39,18 +41,32 @@ static const __code uint8_t device_desc[] = {
 
 static const __code uint8_t config_desc[] = {
     9, DESC_CONFIG,
-    18, 0,                // wTotalLength
+    32, 0,                // wTotalLength
     1, 1,                 // one interface, configuration value 1
     0,                    // no string
     0x80,                 // bus powered, no remote wakeup
     50,                   // 100 mA
 
     9, 0x04,              // interface 0
-    0, 0, 0,              // alternate 0, no endpoints
+    0, 2,                 // alternate 0, two endpoints
     0xFF, 0x00, 0x00,     // vendor class
     0,                    // no string
+
+    7, 0x05,              // endpoint 1 IN
+    0x81, 0x03,           // interrupt
+    EP1_PACKET, 0,
+    10,                   // every 10 ms
+
+    7, 0x05,              // endpoint 2 IN
+    0x82, 0x03,           // interrupt
+    EP2_PACKET, 0,
+    10,
 };
 // clang-format on
+
+static uint8_t configured;
+static uint8_t ep1_report[4];
+static uint8_t ep2_report[8];
 
 static const __code uint8_t *ep0_in_src;
 static uint8_t               ep0_in_left;
@@ -99,7 +115,7 @@ static void ep0_setup(void)
             } else if (desc_type == DESC_CONFIG) {
                 ep0_in_start(config_desc, sizeof(config_desc), requested);
             } else {
-                SET_EP0_IN_STALL;
+                STALL_EP0();
             }
             break;
 
@@ -109,11 +125,12 @@ static void ep0_setup(void)
             break;
 
         case REQ_SET_CONFIGURATION:
+            configured = EP0_OUT_BUF[2];
             ep0_status_in();
             break;
 
         default:
-            SET_EP0_IN_STALL;
+            STALL_EP0();
             break;
     }
 }
@@ -152,8 +169,28 @@ void usb_irq_dispatch(void)
         ep0_setup();
     }
 
-    if (if1 & (_USBRSTIF | _SUSPIF | _RESMIF | _PUPIF)) {
-        USBIF1 &= ~(_USBRSTIF | _SUSPIF | _RESMIF | _PUPIF);
+    if (if1 & _USBRSTIF) {
+        USBIF1 &= ~_USBRSTIF;
+
+        // a bus reset drops the device back to address zero, so tear the block down and
+        // bring it up again rather than trying to patch up what it was doing
+        configured = 0;
+        usb_hw_deinit();
+        usb_hw_init();
+    }
+
+    if (if1 & (_SUSPIF | _RESMIF | _PUPIF)) {
+        USBIF1 &= ~(_SUSPIF | _RESMIF | _PUPIF);
+    }
+
+    if (if2 & _IEP1IF) {
+        USBIF2 &= ~_IEP1IF;
+        usb_hw_ep1_in_complete();
+    }
+
+    if (if2 & _IEP2IF) {
+        USBIF2 &= ~_IEP2IF;
+        usb_hw_ep2_in_complete();
     }
 
     if (if2 & _IEP0IF) {
@@ -179,5 +216,13 @@ void main(void)
 
     for (;;) {
         watchdog_kick();
+
+        if (configured != 0) {
+            ep1_report[0]++;
+            usb_hw_ep1_in_send(ep1_report, sizeof(ep1_report));
+
+            ep2_report[0]++;
+            usb_hw_ep2_in_send(ep2_report, sizeof(ep2_report));
+        }
     }
 }

@@ -1587,10 +1587,6 @@ SBIT(P3CCF0, 0xf8, 0);
 #define _P7_ALL (uint8_t)(_P7_0 | _P7_1 | _P7_2 | _P7_3 | _P7_4)
 /**@}*/
 
-#define USBCON_ENABLE (uint8_t)(_ENUSB | _SW1CON)
-#define USBIE1_INIT   (uint8_t)(_OVERIE | _SETUPIE | _RESMIE | _SUSPIE | _PBRSTIE)
-#define USBIE2_INIT   (uint8_t)(_OEP0IE | _IEP0IE)
-
 #define EP0_BUF_SIZE 8u
 #define EP1_BUF_SIZE 16u
 #define EP2_BUF_SIZE 64u

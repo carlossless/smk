@@ -42,6 +42,9 @@ void main(void)
         systick_arm(SYSTICK_SLOT_LED_SUBFRAME);
         delay_ms(100);
 
+        // the tick has to be off the back of anything that cannot be interrupted
+        systick_pause();
         GPIO_WRITE(3, (uint8_t)(ticks >> 8));
+        systick_resume();
     }
 }

@@ -20,6 +20,7 @@ platforms += {
         'example_core' : files('clock.c', 'peripherals.c'),
         'example_usbhw' : files('usbhw.c'),
         'example_systick' : files('systick.c'),
+        'example_power' : files('power.c', 'extint.c'),
         'src' : src_sh68f89,
         'flash_size' : 65536,
         'bootloader_size' : 4096,

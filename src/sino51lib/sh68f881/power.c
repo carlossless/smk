@@ -7,6 +7,7 @@
 
 #define SUSLO_POWERDOWN_KEY 0x55
 #define REGULATOR_SETTLE_US 500
+#define USBIE1_RESUME_ARM   (uint8_t)(_OVERIE | _SETUPIE | _SOFIE | _RESMIE | _SUSPIE | _PBRSTIE)
 
 // The USB block answers on SFR page 1, where the clock and regulator registers do not.
 #define USB_PAGE_ENTER()             \
@@ -62,7 +63,7 @@ static void usb_resume(powerdown_mode_t mode)
         USB_PAGE_ENTER();
         USBIF1 &= ~_SUSPIF;
         USBCON &= ~_GOSUSP;
-        USBIE1 = USBIE1_INIT;
+        USBIE1 = USBIE1_RESUME_ARM;
         USB_PAGE_LEAVE();
 
         IEN1 |= _EUSB;

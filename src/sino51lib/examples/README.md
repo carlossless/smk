@@ -22,10 +22,25 @@ keyboard uses them.
 | `pwm_duty` | sh68f90 | the PWM banks through `pwm.h`'s duty macros |
 | `pca_duty` | sh68f89 | the PCA units as an 8-bit PWM bank, with `pca_hold`/`pca_release` around a reload |
 | `flash_info` | all | reading the factory information block through the FAC window |
-| `usb_minimal` | all | `usbhw.c`: the SIE brought up, EP0 answered well enough to enumerate |
+| `usb_minimal` | all | `usbhw.c`: the SIE up, EP0 answered well enough to enumerate, EP1 and EP2 IN |
 | `systick_tick` | all | `systick.c`: Timer2 as the periodic tick, both slot lengths |
+| `bb_i2c_probe` | all | the bit-banged I2C master, on two GPIO pins named in `kbdef.h` |
+| `isp_powerdown` | all | `power_enter_powerdown()`, the `extint` wake calls, `isp_jump()` |
 
-Each links six or seven modules and comes to under two kilobytes.
+Each links six to eight modules and comes to under two kilobytes.
+
+## Coverage
+
+The point of these is that they actuate the library, not that they demonstrate it, so the
+whole callable surface is reached: of the 95 functions and function-like macros the library's
+headers declare, 88 are called by an example and the rest are macros expanded inside other
+macros in the same header. `utils` has no script for this; it was checked by hand against
+`src/sino51lib/**/*.h`.
+
+Two things are deliberately not exercised. `flash_program_from()` and `flash_erase()` are
+reachable from `flash_info` but left alone: an erase aimed at the wrong sector takes out the
+running code, and the settings store in `src/nvm/flash` is where that path belongs. And
+`isp_powerdown` is build-only -- see the warning at the top of it.
 
 ## Hooks
 
@@ -35,10 +50,14 @@ Two of the library's modules call outwards rather than only being called:
 | --- | --- | --- |
 | `usbhw.c` | `usb_irq_dispatch()` | the firmware's USB device stack, or `usb_minimal/main.c` |
 | `systick.c` | `tick_dispatch()` | the firmware's scheduler, or `systick_tick/main.c` |
+| `power.c` | `usb_init()`, `usb_deinit()`, `usb_suspended` | the firmware, or stubs in `isp_powerdown/main.c` |
 
-Each is one function behind a header the user of the library owns. `src/smk` has its own
-`usb.h` and `tick.h`; the examples have their own, a few lines each, and link none of the
-firmware.
+Each is behind a header the user of the library owns. `src/smk` has its own `usb.h` and
+`tick.h`; the examples have their own, a few lines each, and link none of the firmware.
+
+`power.c`'s is the widest of the three and the least like a hook: bringing a USB device back
+up after the clock tree restarts is the application's job, so the example stubs it and sleeps
+with nothing attached.
 
 ## Pins and board configuration
 
@@ -51,12 +70,13 @@ rate — the example ships a `kbdef.h` of its own holding what a board would set
 
 ## What is not here, and why
 
-`power.c` needs `usb_init`, `usb_deinit` and `usb_suspended`, which is a larger surface than a
-hook: parking and restoring a USB device across a power-down is the device stack's business,
-not the library's. An example would also have to sleep, and on the SH68F881 nothing but an
-external interrupt wakes it, so it would need a board.
+`diag.c` prints through `dprintf`, so it belongs to whatever owns the debug output; it is the
+one module left that an application cannot take without `src/smk`.
 
-`diag.c` prints through `dprintf`, so it belongs to whatever owns the debug output.
+`bb_spi.c` used to live in the library and does not any more: it drives the BK3632's MOT and
+CS lines by name and waits on that module's ACK, so it is a transport for one peripheral
+rather than a general bit-banged master. It is in `src/peripherals/bk3632/` with its
+consumer. `bb_i2c.c` is the genuinely general one, and `bb_i2c_probe` exercises it.
 
 Nothing else in the library reaches into `src/smk`, and the examples are built with `src/smk`
 off the include path, so anything that starts to will fail here rather than quietly compiling.

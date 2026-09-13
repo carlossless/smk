@@ -8,6 +8,7 @@
 #include "ldo.h"
 #include "peripherals.h"
 #include "watchdog.h"
+#include <stdbool.h>
 
 #define INFO_PART_NUMBER 0x1209u
 #define INFO_ID_CODE     0x127Bu
@@ -24,6 +25,11 @@ void main(void)
 
     flash_read_into(FLASH_DATA, INFO_PART_NUMBER, part_number, INFO_LEN);
     flash_read_into(FLASH_DATA, INFO_ID_CODE, id_code, INFO_LEN);
+
+    // reading it back through the comparison path instead, which is what the settings store
+    // uses to decide whether a write is needed at all
+    bool unchanged = flash_matches(FLASH_DATA, INFO_PART_NUMBER, part_number, INFO_LEN);
+    (void)unchanged;
 
     for (;;) {
         watchdog_kick();

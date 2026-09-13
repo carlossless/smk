@@ -1,6 +1,6 @@
 inc_base += meson.current_source_dir()
 
-src_bb_spi = files('bb_spi.c')
+# a bit-banged I2C master on whichever two pins the board names in kbdef.h
 src_bb_i2c = files('bb_i2c.c')
 
 # on-chip bus blocks, on pins the part fixes; a board adds these to its own 'src'
@@ -20,6 +20,7 @@ src_delay = files('delay.c')
 src_uart = files('uart.c')
 src_ldo = files('ldo.c')
 src_reset = files('reset.c')
+src_isp = files('isp.c')
 
 src_libc_files = ['startup.c', 'delay.c', 'uart.c']
 
