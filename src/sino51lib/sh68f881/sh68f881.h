@@ -1022,6 +1022,8 @@ _SBUF(0x0a20) EP1_IN_BUF[EP1_BUF_SIZE];
 _SBUF(0x0a30) EP2_OUT_BUF[EP2_BUF_SIZE];
 _SBUF(0x0a70) EP2_IN_BUF[EP2_BUF_SIZE];
 
+#define USB_VECTOR _INT_USB
+
 enum interrupt_index {
     _INT_INT0       = 0,
     _INT_TIMER4     = 1,

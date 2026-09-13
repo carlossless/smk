@@ -43,6 +43,20 @@ sino51lib_examples = [
         'args' : [],
     },
     {
+        'name' : 'usb_minimal',
+        'parts' : ['sh68f90', 'sh68f89', 'sh68f881'],
+        'src' : files('usb_minimal/main.c') + src_startup + src_delay + src_ldo,
+        'extra' : 'example_usbhw',
+        'args' : ['-I' + meson.current_source_dir() / 'usb_minimal'],
+    },
+    {
+        'name' : 'systick_tick',
+        'parts' : ['sh68f90', 'sh68f89', 'sh68f881'],
+        'src' : files('systick_tick/main.c') + src_startup + src_delay + src_ldo,
+        'extra' : 'example_systick',
+        'args' : ['-I' + meson.current_source_dir() / 'systick_tick'],
+    },
+    {
         'name' : 'flash_info',
         'parts' : ['sh68f90', 'sh68f89', 'sh68f881'],
         'src' : files('flash_info/main.c') + src_startup + src_delay + src_ldo + src_flash,

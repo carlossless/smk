@@ -1,8 +1,10 @@
 #include "usbhw.h"
 #include "usb.h"
 #include "interrupts.h"
-#include "report.h"
 #include "delay.h"
+#if DEBUG == 1
+#    include "report.h"
+#endif
 #include <stdint.h>
 
 #define EP_IN_DRAIN_TRIES 255

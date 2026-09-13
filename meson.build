@@ -283,7 +283,8 @@ foreach example : sino51lib_examples
             '-DWATCHDOG_ENABLE=1',
         ] + example['args']
 
-        ex_incs = ['-I' + dir_base, '-I' + spec['dir'], '-I' + dir_base / 'src/sino51lib', '-I' + dir_base / 'src/smk']
+        # no src/smk on the path: reaching into the firmware is the thing these prove absent
+        ex_incs = ['-I' + dir_base, '-I' + spec['dir'], '-I' + dir_base / 'src/sino51lib']
 
         ex_prefix = 'ex-@0@-@1@'.format(example['name'], platform)
 
@@ -294,7 +295,12 @@ foreach example : sino51lib_examples
             arguments : [sdcc_compile, '@DEPFILE@', cc.full_path()] + ex_args + ex_incs + ['-c', '@INPUT@', '-o', '@OUTPUT@'],
         )
 
-        ex_rel = ex_compiler.process(example['src'] + spec['example_core'])
+        ex_src = example['src'] + spec['example_core']
+        if example.has_key('extra')
+            ex_src += spec[example['extra']]
+        endif
+
+        ex_rel = ex_compiler.process(ex_src)
 
         ex_ihx = custom_target(
             ex_prefix + '.ihx',

@@ -2,8 +2,10 @@
 #include "usb.h"
 #include "interrupts.h"
 #include "watchdog.h"
-#include "report.h"
 #include "delay.h"
+#if DEBUG == 1
+#    include "report.h"
+#endif
 #include <stdint.h>
 
 // IEPxRDY does not read back the endpoint's busy state here, so completion is tracked in software instead of by polling.

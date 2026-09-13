@@ -2,6 +2,8 @@ platforms += {
     'sh68f90' : {
         'dir' : meson.current_source_dir(),
         'example_core' : files('clock.c', 'peripherals.c'),
+        'example_usbhw' : files('usbhw.c'),
+        'example_systick' : files('systick.c'),
         'src' : src_flash + files(
             'clock.c',
             'diag_info.c',
