@@ -30,11 +30,18 @@ jobs:
       run: nix develop --command meson compile -C build
     - name: Build library examples
       run: nix develop --command meson compile -C build examples
-    - name: Archive code coverage results
+    - name: Archive firmware
       uses: actions/upload-artifact@v7
       with:
         name: smk-${{ matrix.buildtype }}-${{ matrix.nkro == 'enabled' && 'nkro' || '6kro' }}
-        path: build/*.hex
+        path: build/*_smk.hex
+    # the examples compile with the model flags only, so they come out the same in every leg
+    - name: Archive library examples
+      if: matrix.buildtype == 'debug' && matrix.nkro == 'enabled'
+      uses: actions/upload-artifact@v7
+      with:
+        name: sino51lib-examples
+        path: build/ex-*.hex
 
   sim-tests:
     runs-on: ubuntu-latest
