@@ -55,8 +55,11 @@ volatile static __bit uart_tx_busy;
 
 void uart_init()
 {
-    SCON = SCON_INIT;
-    UART_SBRT_WRITE(SBRT_S);
+    UART_PAGE_ENTER();
+
+    SCON  = SCON_INIT;
+    SBRTH = (uint8_t)((SBRT_S >> 8) | _SBRTEN);
+    SBRTL = (uint8_t)(SBRT_S);
     SFINE = SFINE_INIT;
 
     PCON  = 0x00;
@@ -76,10 +79,14 @@ void uart_init()
     }
 
     UART_ISR_ENABLE();
+
+    UART_PAGE_LEAVE();
 }
 
 void uart_putc(unsigned char c)
 {
+    UART_PAGE_ENTER();
+
     UART_ISR_DISABLE();
 
     uart_tx_busy = 1;
@@ -91,10 +98,14 @@ void uart_putc(unsigned char c)
     while (uart_tx_busy) {
         watchdog_kick();
     }
+
+    UART_PAGE_LEAVE();
 }
 
 void uart_interrupt_handler() __interrupt(UART_VECTOR)
 {
+    UART_PAGE_ENTER();
+
     UART_ISR_DISABLE();
 
     if (TI) {
@@ -104,6 +115,8 @@ void uart_interrupt_handler() __interrupt(UART_VECTOR)
     }
 
     UART_ISR_ENABLE();
+
+    UART_PAGE_LEAVE();
 }
 
 #endif // DEBUG_SINK_UART

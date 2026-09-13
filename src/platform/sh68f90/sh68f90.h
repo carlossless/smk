@@ -660,6 +660,31 @@ SBIT(PSPIL, 0xB8, 6);
 /**@}*/
 
 /**
+ * \name Bits from register SPCON
+ * @{
+ */
+#define _SPR0  (1u << 0)
+#define _SPR1  (1u << 1)
+#define _SPR2  (1u << 2)
+#define _SSDIS (1u << 3)
+#define _CPOL  (1u << 4)
+#define _CPHA  (1u << 5)
+#define _MSTR  (1u << 6)
+#define _DIR   (1u << 7)
+/**@}*/
+
+/**
+ * \name Bits from register SPSTA
+ * @{
+ */
+#define _RXOV (1u << 3)
+#define _WCOL (1u << 4)
+#define _MODF (1u << 5)
+#define _SPIF (1u << 6)
+#define _SPEN (1u << 7)
+/**@}*/
+
+/**
  * \name Bits from register USBCON
  * @{
  */

@@ -96,8 +96,10 @@ SFR(SCON, 0x98);
 SFR(SBUF, 0x99);
 SFR(SADDR, 0x9a);
 SFR(SADEN, 0x9b);
-SFR(SBRTL, 0x9c);
-SFR(SBRTH, 0x9d);
+// the datasheet and the vendor header swap these two names: table 9.1's bit map gives 0x9c
+// SBRTEN and SBRT[14:8], which is the high half, and EUART1 and the sibling parts agree.
+SFR(SBRTH, 0x9c);
+SFR(SBRTL, 0x9d);
 SFR(SFINE, 0x9e);
 
 // EUART1, page 0
@@ -105,8 +107,8 @@ SFR(SCON1, 0xd8);
 SFR(SBUF1, 0xd9);
 SFR(SADDR1, 0xda);
 SFR(SADEN1, 0xdb);
-SFR(SBRTL1, 0xdc);
-SFR(SBRTH1, 0xdd);
+SFR(SBRTH1, 0xdc);
+SFR(SBRTL1, 0xdd);
 SFR(SFINE1, 0xde);
 SFR(PCON1, 0xd1);
 
@@ -781,7 +783,7 @@ SBIT(P3CCF0, 0xf8, 0);
 /**@}*/
 
 /**
- * \name Bits from register SBRTL
+ * \name Bits from register SBRTH
  * @{
  */
 #define _SBRTEN (1u << 7)
@@ -802,7 +804,7 @@ SBIT(P3CCF0, 0xf8, 0);
 /**@}*/
 
 /**
- * \name Bits from register SBRTL1
+ * \name Bits from register SBRTH1
  * @{
  */
 #define _SBRTEN1 (1u << 7)
