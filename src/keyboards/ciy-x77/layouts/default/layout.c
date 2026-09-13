@@ -40,11 +40,11 @@ const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      * ,-----------------------------------------------------------.  ,-----------.
      * |  `|  1|  2|  3|  4|  5|  6|  7|  8|  9|  0|  -|  =|Backspc|  |Ins|Hom|PgU|
      * |-----------------------------------------------------------|  |-----------|
-     * |Tab  |  Q|  W|  E|  R|  T|  Y|  U|  I|  O|  P|  [|  ]|    \ |  |Del|End|PgD|
+     * |Tab  |  Q|  W|  E|  R|  T|  Y|  U|  I|  O|  P|  [|  ]|    \|  |Del|End|PgD|
      * |-----------------------------------------------------------|  `-----------'
-     * |Caps  |  A|  S|  D|  F|  G|  H|  J|  K|  L|  ;|  '|  Enter |
+     * |Caps  |  A|  S|  D|  F|  G|  H|  J|  K|  L|  ;|  '| Enter  |
      * |-----------------------------------------------------------|      ,---.
-     * |Shift    |  Z|  X|  C|  V|  B|  N|  M|  ,|  .|  /|   Shift |      |Up |
+     * |Shift    |  Z|  X|  C|  V|  B|  N|  M|  ,|  .|  /|Shift    |      |Up |
      * |-----------------------------------------------------------|  ,-----------.
      * |Ctrl|Gui|Alt|            Space            |Alt|Fn |App|Ctrl|  |Lef|Dow|Rig|
      * `-----------------------------------------------------------'  `-----------'
@@ -64,9 +64,18 @@ const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      * `---'   `---------------' `---------------' `---------------'  `-----------'
      * ,-----------------------------------------------------------.  ,-----------.
      * |   |Fx0|Fx1|Fx2|Fx3|Off|   |   |   |   |   |   |   |       |  |Fx+|   |   |
+     * |-----------------------------------------------------------|  |-----------|
+     * |     |   |WSD|   |   |   |   |   |   |   |   |   |   |     |  |   |   |   |
+     * |-----------------------------------------------------------|  `-----------'
+     * |      |   |   |   |   |   |   |   |   |   |   |   |        |
+     * |-----------------------------------------------------------|      ,---.
+     * |         |   |   |   |   |   |   |   |   |   |   |         |      |Br+|
+     * |-----------------------------------------------------------|  ,-----------.
+     * |    |Gui|   |                             |   |   |   |    |  |Sp-|Br-|Sp+|
      * `-----------------------------------------------------------'  `-----------'
-     * Gui lock sits on the left Gui key and the WASD swap on W, both under the Fn
-     * key they toggle from. Brightness is on Up/Down, animation speed on Left/Right.
+     *
+     * Gui lock sits on the left Gui key and the WASD swap on W, both under the Fn key they
+     * toggle from. Fx0-Fx3 select a backlight animation, Off turns it off and Fx+ cycles.
      */
     [_FL] = LAYOUT_TKL(
         _______, KC_MYCM, KC_WSCH, KC_CALC, KC_MSEL, KC_MPRV, KC_MNXT, KC_MPLY, KC_MSTP, KC_MUTE, KC_VOLD, KC_VOLU, KB_LOCK, _______, NKRO_TG, _______,
