@@ -1,4 +1,5 @@
 #include "clock.h"
+#include "peripherals.h"
 #include "ldo.h"
 #include "watchdog.h"
 #include "interrupts.h"
@@ -26,6 +27,7 @@ void init(void)
 {
     ldo_init();
     clock_init();
+    peripherals_init();
 #ifdef DEBUG_SINK_UART
     uart_init();
 #endif
