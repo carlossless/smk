@@ -22,6 +22,7 @@ parts = [
     ['nuphy-air60', 'sh68f90', ['default'], { 'vendor_id': '0x05ac', 'product_id': '0x024f', 'wireless': 'bk3632', 'led_rows': '5', 'led_cols': '16', 'led_cx2': '13', 'led_cy2': '4' }],
     ['eyooso-z11', 'sh68f90', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x002a', 'led_rows': '5', 'led_cols': '14', 'led_cx2': '13', 'led_cy2': '4' }],
     ['genesis-thor-300', 'sh68f881', ['default'], { 'vendor_id': '0x258a', 'product_id': '0x001f', 'led_rows': '6', 'led_cols': '19', 'led_cx2': '17', 'led_cy2': '5' }],
+    ['ciy-x77', 'sh68f89', ['default', 'iso'], { 'vendor_id': '0x258a', 'product_id': '0x0016', 'nvm': '24cxx', 'led_rows': '6', 'led_cols': '18', 'led_cx2': '17', 'led_cy2': '5' }],
 ]
 
 # SMK
@@ -82,6 +83,72 @@ src_user = [
 
 # PLATFORM
 
+inc_platform_bk3632 = [
+    'src/platform/bk3632',
+    'src/platform', # for bb_spi
+]
+
+src_platform_bk3632 = [
+    'src/platform/bb_spi.c',
+    'src/platform/bk3632/rf_controller.c',
+]
+
+inc_platform_eeprom_24cxx = [
+    'src/platform/eeprom_24cxx',
+    'src/platform', # for bb_i2c
+]
+
+src_platform_eeprom_24cxx = [
+    'src/platform/bb_i2c.c',
+    'src/platform/eeprom_24cxx/nvm.c',
+]
+
+inc_platform_sh68f881 = [
+    'src/platform/sh68f881',
+]
+
+src_platform_sh68f881 = [
+    'src/platform/sh68f881/startup.c',
+    'src/platform/sh68f881/clock.c',
+    'src/platform/sh68f881/delay.c',
+    'src/platform/sh68f881/diag.c',
+    'src/platform/sh68f881/usbhw.c',
+    'src/platform/sh68f881/isp.c',
+    'src/platform/sh68f881/ldo.c',
+    'src/platform/sh68f881/debug_sink.c',
+    'src/platform/sh68f881/peripherals.c',
+    'src/platform/sh68f881/power.c',
+    'src/platform/sh68f881/reset.c',
+    'src/platform/sh68f881/extint.c',
+    'src/platform/sh68f881/systick.c',
+    'src/platform/sh68f881/stack.c',
+    'src/platform/sh68f881/nvm.c',
+    'src/platform/sh68f881/interrupts.c',
+]
+
+inc_platform_sh68f89 = [
+    'src/platform/sh68f89',
+]
+
+src_platform_sh68f89 = [
+    'src/platform/sh68f89/startup.c',
+    'src/platform/sh68f89/clock.c',
+    'src/platform/sh68f89/delay.c',
+    'src/platform/sh68f89/diag.c',
+    'src/platform/sh68f89/usbhw.c',
+    'src/platform/sh68f89/isp.c',
+    'src/platform/sh68f89/ldo.c',
+    'src/platform/sh68f89/debug_sink.c',
+    'src/platform/sh68f89/peripherals.c',
+    'src/platform/sh68f89/power.c',
+    'src/platform/sh68f89/reset.c',
+    'src/platform/sh68f89/extint.c',
+    'src/platform/sh68f89/systick.c',
+    'src/platform/sh68f89/stack.c',
+    'src/platform/sh68f89/pca.c',
+    'src/platform/sh68f89/interrupts.c',
+]
+
 inc_platform_sh68f90 = [
     'src/platform/sh68f90',
 ]
@@ -99,43 +166,15 @@ src_platform_sh68f90 = [
     'src/platform/sh68f90/uart.c',
     'src/platform/sh68f90/usbhw.c',
     'src/platform/sh68f90/stack.c',
+    'src/platform/sh68f90/peripherals.c',
     'src/platform/sh68f90/power.c',
+    'src/platform/sh68f90/reset.c',
     'src/platform/sh68f90/extint.c',
     'src/platform/sh68f90/interrupts.c',
 ]
 
-inc_platform_sh68f881 = [
-    'src/platform/sh68f881',
-]
-
-src_platform_sh68f881 = [
-    'src/platform/sh68f881/startup.c',
-    'src/platform/sh68f881/clock.c',
-    'src/platform/sh68f881/delay.c',
-    'src/platform/sh68f881/diag.c',
-    'src/platform/sh68f881/usbhw.c',
-    'src/platform/sh68f881/isp.c',
-    'src/platform/sh68f881/ldo.c',
-    'src/platform/sh68f881/debug_sink.c',
-    'src/platform/sh68f881/power.c',
-    'src/platform/sh68f881/extint.c',
-    'src/platform/sh68f881/systick.c',
-    'src/platform/sh68f881/stack.c',
-    'src/platform/sh68f881/nvm.c',
-    'src/platform/sh68f881/interrupts.c',
-]
-
-inc_platform_bk3632 = [
-    'src/platform/bk3632',
-    'src/platform', # for bb_spi
-]
-
-src_platform_bk3632 = [
-    'src/platform/bb_spi.c',
-    'src/platform/bk3632/rf_controller.c',
-]
-
 possible_src_keyboard = [
+    'indicators.c', # a board with several layouts shares one; otherwise put it in the layout
     'user_matrix.c',
     'user_init.c',
     'user_sleep.c',
@@ -149,14 +188,6 @@ possible_src_layout = [
 ]
 
 platform_specs = {
-    'sh68f90' : {
-        'flash_size'      : 65536,
-        'bootloader_size' : 4096,
-        'sector_size'     : 512,
-        'xram_size'       : 4096,
-        'freq_sys'        : 24000000,
-        'settings_store'  : 'flash',
-    },
     'sh68f881' : {
         'flash_size'      : 32768,
         'bootloader_size' : 4096,
@@ -164,6 +195,22 @@ platform_specs = {
         'xram_size'       : 2304,
         'freq_sys'        : 12000000,
         'settings_store'  : 'eeprom',
+    },
+    'sh68f89' : {
+        'flash_size'      : 65536,
+        'bootloader_size' : 4096,
+        'sector_size'     : 1024,
+        'xram_size'       : 2816,
+        'freq_sys'        : 24000000,
+        'settings_store'  : 'external',
+    },
+    'sh68f90' : {
+        'flash_size'      : 65536,
+        'bootloader_size' : 4096,
+        'sector_size'     : 512,
+        'xram_size'       : 4096,
+        'freq_sys'        : 24000000,
+        'settings_store'  : 'flash',
     },
 }
 
@@ -255,12 +302,15 @@ foreach part : parts
     foreach layout : layouts
         src_main = src_smk
         inc_dirs = inc_base_dirs
-        if platform == 'sh68f90'
-            src_main += src_platform_sh68f90
-            inc_dirs += inc_platform_sh68f90
-        elif platform == 'sh68f881'
+        if platform == 'sh68f881'
             src_main += src_platform_sh68f881
             inc_dirs += inc_platform_sh68f881
+        elif platform == 'sh68f89'
+            src_main += src_platform_sh68f89
+            inc_dirs += inc_platform_sh68f89
+        elif platform == 'sh68f90'
+            src_main += src_platform_sh68f90
+            inc_dirs += inc_platform_sh68f90
         else
             error('unsupported platform: @0@'.format(platform))
         endif
@@ -283,7 +333,7 @@ foreach part : parts
                 '-DFLASH_MARKER_ADDR=@0@u'.format(marker_addr),
             ]
         else
-            # settings live in the EEPROM-like block, so code may run up to the marker sector
+            # settings live outside the program flash, so code may run up to the marker sector
             platform_cc_args += ['--code-size', '@0@'.format(marker_addr)]
         endif
 
@@ -302,6 +352,14 @@ foreach part : parts
             cc_args += '-DRF_ENABLED=1'
         elif wireless != ''
             error('unsupported platform: @0@'.format(platform))
+        endif
+
+        nvm = options.get('nvm', '')
+        if nvm == '24cxx'
+            src_main += src_platform_eeprom_24cxx
+            inc_dirs += inc_platform_eeprom_24cxx
+        elif nvm != ''
+            error('unsupported nvm: @0@'.format(nvm))
         endif
 
         kb_inc_dir = 'src/keyboards/@0@'.format(keyboard)

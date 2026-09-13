@@ -7,6 +7,7 @@ typedef struct {
     uint8_t led_effect;
     uint8_t led_brightness;
     uint8_t led_speed;
+    uint8_t led_color;
     uint8_t ul_effect;
     uint8_t ul_brightness;
     uint8_t ul_speed;

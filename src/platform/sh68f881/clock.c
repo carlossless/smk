@@ -3,7 +3,6 @@
 #include "watchdog.h"
 #include <stdint.h>
 
-#define REGCON_INIT   (uint8_t)(_REGS | _REGEN)
 #define CLKCON_WARMUP (uint8_t)(_OSC2ON)
 #define PLLCON_WARMUP (uint8_t)(_PLLON)
 #define PLLCON_RUN    (uint8_t)(_PLLON | _PLLFS)
@@ -24,34 +23,11 @@ static void pll_settle(void)
     }
 }
 
-// a pin mux'ed to an analog block ignores its port registers: OPCON.OPOS takes rows P2.1-P2.3, ADCH and P5SS the anodes.
-static void peripherals_reset(void)
-{
-    OPCON   = 0;
-    ADCON   = 0;
-    ADCDS   = 0;
-    ADCH    = 0;
-    LCDCON  = 0;
-    LCDCON1 = 0;
-    P5SS    = 0;
-    P6SS    = 0;
-    P7SS    = 0;
-    P8SS    = 0;
-    PXSS    = 0;
-    SPCON   = 0;
-    SPSTA   = 0;
-    SPDAT   = 0;
-}
-
 void clock_init(void)
 {
-    REGCON = REGCON_INIT;
     CLKCON = CLKCON_WARMUP;
     PLLCON = PLLCON_WARMUP;
     pll_settle();
     PLLCON = PLLCON_RUN;
     CLKCON = CLKCON_RUN;
-
-    sfr_page_0();
-    peripherals_reset();
 }

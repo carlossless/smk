@@ -81,6 +81,8 @@ SFR(SPDAT, 0xa3);
 // REGULATOR
 SFR(REGCON, 0x8f);
 
+#define REGCON_ENABLE (uint8_t)(_REGEN)
+
 // USB
 SFR(USBCON, 0x91);
 SFR(USBIF1, 0x92);

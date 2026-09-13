@@ -1,5 +1,5 @@
 #include "ldo.h"
-#include "sh68f90.h"
+#include "sh68f89.h"
 
 void ldo_init()
 {
