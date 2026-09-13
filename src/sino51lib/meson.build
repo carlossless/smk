@@ -10,7 +10,6 @@ src_libc += files(
     'isp.c',
     'ldo.c',
     'reset.c',
-    'stack.c',
     'diag.c',
     'interrupts.c',
 )

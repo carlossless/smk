@@ -361,9 +361,20 @@ class Air60Sim(UcsimSession):
     # self.stack_base, derived from __start__stack to match the firmware).
     STACK_TOP = 0xFF
 
+    def paint_stack(self, sentinel=0xAA):
+        """Fill the stack above the live frame with a sentinel, so
+        stack_highwater() can tell afterwards how deep the firmware went.
+        Painting starts above SP so the frames the run needs survive."""
+        addr = self.get_sfr(0x81) + 1
+        while addr <= self.STACK_TOP:
+            # a long `set mem` echoes back more than one reply, so write a row at a time
+            n = min(16, self.STACK_TOP - addr + 1)
+            self.cmd("set mem iram 0x%02x " % addr + " ".join(["0x%02x" % sentinel] * n))
+            addr += n
+
     def stack_highwater(self, base=None, sentinel=0xAA):
         """Bytes of the painted stack (base+1 .. 0xFF) used at the peak: the
-        highest address still overwritten from its boot-time sentinel."""
+        highest address still overwritten from its sentinel."""
         if base is None:
             base = self.stack_base
         vals = self.get_iram(base + 1, self.STACK_TOP - base)
