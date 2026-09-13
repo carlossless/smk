@@ -1,6 +1,11 @@
 #pragma once
 
-#include "sh68f90.h"
+// The PWM banks, where the part has them. The duty macros paste the register names together
+// from the bank the board names, so they hold for any part that follows the family's
+// PWM<bank><channel>DUTY<n><H|L> naming; the part's pwm_hw.h says whether there is a bank at
+// all and which vector the banks raise.
+
+#include "pwm_hw.h"
 #include <stdint.h>
 
 #define PWM_CLK_DIV_4   0b010 // PWM_CLK = SYS_CLK / 4

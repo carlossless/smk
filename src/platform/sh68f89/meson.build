@@ -6,8 +6,7 @@ src_sh68f89 = files(
     'power.c',
     'extint.c',
     'systick.c',
-    'pca.c',
-)
+) + src_pca
 
 # boards here keep their settings off-chip, so nothing links nvm.c; that leaves diag as the
 # SSP engine's only caller, and only in a debug build
