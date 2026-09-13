@@ -13,7 +13,6 @@
 #include "user_init.h"
 #include "indicators.h"
 #include "kb.h"
-#include "stack.h"
 #include "settings.h"
 #include "tick.h"
 #include "sleep.h"
@@ -69,11 +68,6 @@ void main(void)
 {
     init();
 
-#if DEBUG == 1
-    // Must run after init(): anything before clock_init() bricks the keyboard.
-    stack_paint();
-#endif
-
     dprintf("SMK v" TOSTRING(SMK_VERSION) "\r\n");
     dprintf("KB " KEYBOARD_NAME " / " LAYOUT_NAME "\r\n");
     dprintf("DEVICE vId:" TOSTRING(USB_VID) " pId:" TOSTRING(USB_PID) "\n\r");
@@ -112,7 +106,6 @@ void main(void)
         sleep_task();
 
 #if DEBUG == 1
-        stack_task();
         diag_task();
         interrupts_task();
         console_task();

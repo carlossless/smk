@@ -99,8 +99,8 @@ def read_intel_hex(hex_path):
 def find_post_init(syms, hex_path):
     """The address right after the first `LCALL _init` instruction in `_main`.
     `_main` itself isn't a stable breakpoint for "post-init" because main() may
-    call other functions first (e.g. stack_paint() under DEBUG=1), so we scan the
-    first ~64 bytes of main() for the 3-byte opcode `12 hi lo` matching _init."""
+    call other functions first, so we scan the first ~64 bytes of main() for the
+    3-byte opcode `12 hi lo` matching _init."""
     init_addr = syms["init"]
     target = (0x12, (init_addr >> 8) & 0xFF, init_addr & 0xFF)
     mem = read_intel_hex(hex_path)
@@ -177,7 +177,7 @@ def set_report_isp_setup():
 
 
 class Sim:
-    # SH68F90 SFR addresses / bits (see src/platform/sh68f90/sh68f90.h)
+    # SH68F90 SFR addresses / bits (see src/sino51lib/sh68f90/sh68f90.h)
     IE, IEN1, USBADDR, USBIF1, USBIF2, EP0CON = 0xA8, 0xA9, 0x96, 0x92, 0x93, 0x97
     SP_SFR = 0x81
     EP0_OUT_BUF = 0x1100

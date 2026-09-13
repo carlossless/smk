@@ -2,19 +2,19 @@ kb_dir = meson.current_source_dir()
 
 keyboards += {
     'example' : {
-        'dir'      : kb_dir,
+        'dir' : kb_dir,
         'platform' : 'sh68f90',
-        'src'      : files(
+        'src' : files(
             'user_matrix.c',
             'user_sleep.c',
             'kb.c',
         ),
-        'layouts'  : {
+        'layouts' : {
             'default' : {
                 'dir' : kb_dir / 'layouts/default',
                 'src' : files('layouts/default/layout.c'),
             },
         },
-        'options'  : {},
+        'options' : {},
     },
 }
