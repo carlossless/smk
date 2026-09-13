@@ -18,6 +18,7 @@ dir_base = meson.current_source_dir()
 
 inc_base = [dir_base]
 src_smk = []
+src_libc = []
 src_kb = []
 src_user = []
 platforms = {}
@@ -134,7 +135,7 @@ foreach keyboard, board : keyboards
     endif
 
     foreach layout, variant : board['layouts']
-        src_main = src_smk + spec['src']
+        src_main = src_smk + src_libc + spec['src']
         inc_dirs = inc_base + [spec['dir']]
 
         cc_args = cc_base_args + platform_cc_args + [

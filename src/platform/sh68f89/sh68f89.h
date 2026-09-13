@@ -45,6 +45,12 @@ SFR(ISPCON, 0xa6);
 // WDT, page 0
 SFR(RSTSTAT, 0xb1);
 
+#define WATCHDOG_PERIOD 0x02 // _WDT1
+
+#define ISP_ENTRY 0xff00
+#define ISP_KEY_B 0xa5
+#define ISP_KEY_A 0xea
+
 // SYSTEM CLOCK, page 0
 SFR(CLKCON, 0xb2);
 SFR(PLLCON, 0xbc);
@@ -835,45 +841,7 @@ SBIT(P3CCF0, 0xf8, 0);
 #define _SPEN (1u << 7)
 /**@}*/
 
-/**
- * \name Bits from register USBCON
- * @{
- */
-#define _GOSUSP (1u << 0)
-#define _WKUP   (1u << 1)
-#define _SW2CON (1u << 2)
-#define _DMSTA  (1u << 3)
-#define _DPSTA  (1u << 4)
-#define _SWRST  (1u << 5)
-#define _SW1CON (1u << 6)
-#define _ENUSB  (1u << 7)
-/**@}*/
-
-/**
- * \name Bits from register USBIF1
- * @{
- */
-#define _USBRSTIF (1u << 0)
-#define _SUSPIF   (1u << 1)
-#define _RESMIF   (1u << 2)
-#define _SOFIF    (1u << 3)
-#define _SETUPIF  (1u << 4)
-#define _OW       (1u << 5)
-#define _OVERIF   (1u << 6)
-#define _PUPIF    (1u << 7)
-/**@}*/
-
-/**
- * \name Bits from register USBIF2
- * @{
- */
-#define _IEP0IF (1u << 0)
-#define _IEP1IF (1u << 1)
-#define _IEP2IF (1u << 2)
-#define _OEP0IF (1u << 4)
-#define _OEP1IF (1u << 5)
-#define _OEP2IF (1u << 6)
-/**@}*/
+#include "usbsfr.h"
 
 /**
  * \name Bits from register USBIE1
@@ -886,30 +854,6 @@ SBIT(P3CCF0, 0xf8, 0);
 #define _SETUPIE (1u << 4)
 #define _OVERIE  (1u << 6)
 #define _PUPIE   (1u << 7)
-/**@}*/
-
-/**
- * \name Bits from register USBIE2
- * @{
- */
-#define _IEP0IE (1u << 0)
-#define _IEP1IE (1u << 1)
-#define _IEP2IE (1u << 2)
-#define _OEP0IE (1u << 4)
-#define _OEP1IE (1u << 5)
-#define _OEP2IE (1u << 6)
-/**@}*/
-
-/**
- * \name Bits from register EP0CON
- * @{
- */
-#define _OEP0RDY (1u << 0)
-#define _OEP0STL (1u << 1)
-#define _IEP0RDY (1u << 2)
-#define _IEP0STL (1u << 3)
-#define _OEP0DTG (1u << 6)
-#define _IEP0DTG (1u << 7)
 /**@}*/
 
 /**
@@ -1582,10 +1526,6 @@ SBIT(P3CCF0, 0xf8, 0);
 #define USBCON_ENABLE (uint8_t)(_ENUSB | _SW1CON)
 #define USBIE1_INIT   (uint8_t)(_OVERIE | _SETUPIE | _RESMIE | _SUSPIE | _PBRSTIE)
 #define USBIE2_INIT   (uint8_t)(_OEP0IE | _IEP0IE)
-
-#define EP0_BUF_SIZE 8u
-#define EP1_BUF_SIZE 16u
-#define EP2_BUF_SIZE 64u
 
 _SBUF(0x0b28) EP0_OUT_BUF[EP0_BUF_SIZE];
 _SBUF(0x0b30) EP0_IN_BUF[EP0_BUF_SIZE];
