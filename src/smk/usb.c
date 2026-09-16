@@ -22,6 +22,18 @@
 #    define USB_PID 0xbeef
 #endif
 
+#ifndef USB_STR_MANUFACTURER
+#    define USB_STR_MANUFACTURER "contact@carlossless.io"
+#endif
+
+#ifndef USB_STR_PRODUCT
+#    define USB_STR_PRODUCT "SMK Keyboard"
+#endif
+
+#ifndef USB_STR_SERIAL
+#    define USB_STR_SERIAL "0001"
+#endif
+
 #define BCDHID 0x0111 // HID Class Spec Version
 
 enum usb_string_index {
@@ -288,9 +300,9 @@ static usb_desc_langid_c usb_langid = {
 };
 
 usb_ascii_string_c usb_strings[] = {
-    [USB_STRING_MANUFACTURER - 1]  = "contact@carlossless.io",
-    [USB_STRING_PRODUCT - 1]       = "SMK Keyboard",
-    [USB_STRING_SERIAL_NUMBER - 1] = "0001",
+    [USB_STRING_MANUFACTURER - 1]  = USB_STR_MANUFACTURER,
+    [USB_STRING_PRODUCT - 1]       = USB_STR_PRODUCT,
+    [USB_STRING_SERIAL_NUMBER - 1] = USB_STR_SERIAL,
 };
 
 usb_descriptor_set_c usb_descriptor_set = {

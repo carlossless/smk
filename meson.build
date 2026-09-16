@@ -65,6 +65,12 @@ endif
 
 sdar_args = ['-rc']
 
+usb_string_defines = {
+    'manufacturer' : 'USB_STR_MANUFACTURER',
+    'product' : 'USB_STR_PRODUCT',
+    'serial' : 'USB_STR_SERIAL',
+}
+
 cc = find_program('sdcc', required : true)
 sdar = find_program('sdar', required : true)
 packihx = find_program('packihx', required : true)
@@ -149,6 +155,16 @@ foreach keyboard, board : keyboards
             '-DKEYBOARD_NAME="@0@"'.format(keyboard),
             '-DLAYOUT_NAME="@0@"'.format(layout),
         ]
+
+        foreach key, define : usb_string_defines
+            value = get_option('usb_' + key)
+            if value == ''
+                value = options.get(key, '')
+            endif
+            if value != ''
+                cc_args += '-D@0@="@1@"'.format(define, value)
+            endif
+        endforeach
 
         wireless = options.get('wireless', '')
         if wireless != ''

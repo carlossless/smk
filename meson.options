@@ -13,3 +13,21 @@ option(
     value : 'console',
     description : 'Where dprintf output goes in debug builds: HID console only (default), UART only, or both. UART has a blocking busy-wait per byte (uart_putc), so picking it can stall the main loop while the TX shift register drains.',
 )
+option(
+    'usb_manufacturer',
+    type : 'string',
+    value : '',
+    description : 'Override the USB manufacturer string; empty keeps the keyboard\'s value, or SMK\'s default when the keyboard sets none.',
+)
+option(
+    'usb_product',
+    type : 'string',
+    value : '',
+    description : 'Override the USB product string; empty keeps the keyboard\'s value, or SMK\'s default when the keyboard sets none.',
+)
+option(
+    'usb_serial',
+    type : 'string',
+    value : '',
+    description : 'Override the USB serial number string; empty keeps the keyboard\'s value, or SMK\'s default when the keyboard sets none.',
+)
